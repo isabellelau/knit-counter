@@ -1279,160 +1279,13 @@
 
   <script type="module">
     import { STITCH_LIB, COLOR_THEMES, OLD_ID_MAP, ALIAS_TO_ID, STITCHES, SM, parsePattern, extractStitches, normalizeStitch, resolveColor } from './stitches.js';
-
-    // ═══════════════════════════════════════════
-    //  State
-    // ═══════════════════════════════════════════
-    let data = {
-      projects: [],
-      settings: {
-        theme: "macaron",
-        customColors: {},
-        voiceEnabled: false
-      }
-    };
-    let curProjId = null;
-    let expandedRounds = new Set();
-    let selectedStitch = null;
-    let pendingInsert = null;
-    let dlgCallback = null;
-    let confirmCallback = null;
-    let filterByRound = true;
-    window.editingPartId = null;
-    let currentTab = 'projects';
-    let voiceMode = false;
-    let recognition = null;
-
-    // ── UI 流程状态（替代散落的 window._ flag）──
-    const flowState = {
-      importMode: null,        // null | 'create'
-      newProjectFlow: false,   // 新建项目流程是否进行中
-      setupMode: null,         // null | 'create' | 'edit'
-      setupSelections: null,   // 针法选择器的临时勾选状态 { [sid]: boolean }
-      customizingSid: null,    // 当前正在自定义的针法 id
-      pendingParsed: null,     // 解析图解的缓冲结果 Array | null
-      projMenuId: null,        // 当前展开菜单的项目 id
-      captureEdit: null,       // 部件名称编辑状态捕获
-      glowTimer: null,         // 语音边缘发光的 timer id
-    };
-
-    // ── 单步撤销（仅用于 deleteRound）──
-    let _lastDeletedRound = null;
-    // 结构：{ round: {...}, partId: string, index: number, activeRoundId: string } | null
-
-    const NUMBER_MAP = {
-      '一': 1, '幺': 1, '1': 1, '一号': 1, '一针': 1, '第一': 1,
-      '二': 2, '两': 2, '俩': 2, '2': 2, '二号': 2, '二针': 2, '第二': 2,
-      '三': 3, '3': 3, '三号': 3, '三针': 3, '第三': 3,
-      '四': 4, '4': 4, '四号': 4, '四针': 4, '第四': 4,
-      '五': 5, '5': 5, '五号': 5, '五针': 5, '第五': 5,
-      '六': 6, '6': 6, '六号': 6, '六针': 6, '第六': 6,
-      '七': 7, '7': 7, '七号': 7, '七针': 7, '第七': 7,
-      '八': 8, '8': 8, '八号': 8, '八针': 8, '第八': 8,
-      '九': 9, '9': 9, '九号': 9, '九针': 9, '第九': 9,
-    };
-
-    // ── persistence ──
-    function saveData() {
-      localStorage.setItem("crochet_v3_fixed", JSON.stringify(data));
-    }
-
-    function loadData() {
-      try {
-        const d = localStorage.getItem("crochet_v3_fixed") || localStorage.getItem("crochet_v3");
-        if (d) data = JSON.parse(d);
-      } catch (e) { }
-
-      // 保底结构
-      if (!data || typeof data !== "object") data = {};
-      if (!Array.isArray(data.projects)) data.projects = [];
-      if (!data.settings || typeof data.settings !== "object") {
-        data.settings = { theme: "macaron", customColors: {}, voiceEnabled: false };
-      }
-
-      // 迁移旧数据
-      migrateData(data);
-      saveData();
-    }
-
-    // ── 数据迁移：兼容旧版格式 ──
-    function migrateData(d) {
-      d.projects.forEach(p => {
-        // 补全 customSettings
-        if (!p.customSettings) p.customSettings = { names: {}, colors: {}, customStitches: {} };
-        if (!p.customSettings.customStitches) p.customSettings.customStitches = {};
-        if (p.archived === undefined) p.archived = false;
-        if (p.coverImage === undefined) p.coverImage = null;
-
-        // 旧版 → 新版：将顶层 rounds 封装为 parts
-        if (!p.parts && p.rounds) {
-          const partId = uid();
-          p.parts = [{
-            id: partId,
-            title: '主图解',
-            rawPattern: '',
-            rounds: p.rounds || [],
-            activeRoundId: p.activeRoundId || (p.rounds?.length ? p.rounds[p.rounds.length - 1].id : null),
-            customPalette: p.customPalette || null
-          }];
-          p.activePartId = partId;
-          delete p.rounds;
-          delete p.activeRoundId;
-          delete p.customPalette;
-        }
-
-        // 保底：确保 parts 数组存在
-        if (!p.parts || !Array.isArray(p.parts)) {
-          const partId = uid();
-          p.parts = [{ id: partId, title: '主图解', rawPattern: '', rounds: [], activeRoundId: null, customPalette: null }];
-          p.activePartId = partId;
-        }
-
-        // 保底 activePartId
-        if (!p.activePartId || !p.parts.find(pt => pt.id === p.activePartId)) {
-          p.activePartId = p.parts[0]?.id || null;
-        }
-
-        // 迁移每个 part 内的 rounds
-        p.parts.forEach(part => {
-          if (!part.rounds) part.rounds = [];
-          if (part.customPalette === undefined) part.customPalette = null;
-          if (!part.rawPattern && part.rawPattern !== '') part.rawPattern = '';
-          if (!part.title) part.title = '未命名';
-
-          part.rounds.forEach(r => {
-            if (!r.instruction && r.instruction !== "") r.instruction = "";
-            if (r.isTextCard === undefined) r.isTextCard = false;
-            if (Array.isArray(r.seq)) {
-              r.seq = r.seq.map(sid => OLD_ID_MAP[sid] || sid)
-                .filter(sid => STITCH_LIB[sid]);
-            }
-          });
-
-          // 保底 activeRoundId
-          if (!part.activeRoundId && part.rounds.length) {
-            part.activeRoundId = part.rounds[part.rounds.length - 1].id;
-          }
-        });
-      });
-    }
-
-    // ── helpers ──
-    function uid() { return String(Date.now() + Math.random()); }
-    function getProj(id) { return data.projects.find(p => String(p.id) === String(id)); }
-    function getActivePart(proj) {
-      if (!proj || !proj.parts || !proj.parts.length) return null;
-      return proj.parts.find(p => p.id === proj.activePartId) || proj.parts[0];
-    }
-    function isPartEmpty(part) {
-      if (!part) return true;
-      const hasNoRounds = part.rounds.length === 0;
-      const hasOnlyEmptyRound = part.rounds.length === 1 &&
-        part.rounds[0].seq.length === 0 &&
-        !part.rounds[0].instruction &&
-        !part.rounds[0].isTextCard;
-      return hasNoRounds || hasOnlyEmptyRound;
-    }
+    import {
+      data, curProjId, expandedRounds, selectedStitch, pendingInsert, dlgCallback,
+      confirmCallback, filterByRound, editingPartId, currentTab, voiceMode, recognition,
+      flowState, _lastDeletedRound, NUMBER_MAP,
+      uid, getProj, getActivePart, isPartEmpty, getEditingPartId
+    } from './js/state.js';
+    import { saveData, loadData, migrateData, exportPDF, exportData, exportSingleProject } from './js/storage.js';
     function getUnitLabel(proj) {
       const p = proj || getProj(curProjId);
       return p && p.useRowTerms ? '行' : '圈';
@@ -1585,51 +1438,6 @@
       const setBtn = document.getElementById('tab-settings');
       if (projBtn) projBtn.classList.toggle('active', currentTab === 'projects');
       if (setBtn) setBtn.classList.toggle('active', currentTab === 'settings');
-    }
-
-    function exportPDF() {
-      window.print();
-    }
-
-    // ── 数据导出/导入 ──
-    function exportData() {
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `钩织计数本备份_${new Date().toISOString().slice(0,10)}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
-
-    function exportSingleProject(id) {
-      const proj = data.projects.find(p => String(p.id) === String(id));
-      if (!proj) return;
-
-      const payload = {
-        version: 1,
-        exportedAt: new Date().toISOString(),
-        project: proj
-      };
-
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      const date = new Date().toISOString().slice(0, 10);
-      a.download = `${proj.name}_${date}.knt`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      const guide = document.getElementById('backup-guide');
-      if (guide) {
-        guide.style.display = 'block';
-        guide.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }
     }
 
     function importData(input) {
@@ -3697,7 +3505,6 @@
       renderProject();
     }
 
-    function getEditingPartId() { return window.editingPartId; }
     function handleEditBtnClick(event, partId, el) {
       event.preventDefault();
       event.stopPropagation();

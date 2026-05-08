@@ -3,7 +3,9 @@ const HTML_PATH = './index.html';
 const PRECACHE = [
   HTML_PATH,
   './stitches.js',
-  './styles.css'
+  './styles.css',
+  './js/state.js',
+  './js/storage.js'
 ];
 
 async function getVersionFromHtml() {
