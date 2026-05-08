@@ -6,7 +6,8 @@ const PRECACHE = [
   './styles.css',
   './js/state.js',
   './js/storage.js',
-  './js/ui.js'
+  './js/ui.js',
+  './js/voice.js'
 ];
 
 async function getVersionFromHtml() {
