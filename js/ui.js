@@ -1,4 +1,4 @@
-import { pendingInsert, selectedStitch, flowState, dlgCallback, confirmCallback } from './state.js';
+import { state } from './state.js';
 
 export function esc(s) {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -74,16 +74,16 @@ export function showSheet(html) {
 export function closeSheet() {
   document.getElementById("sheet").classList.remove("show");
   document.getElementById("overlay").classList.remove("show");
-  pendingInsert = null; selectedStitch = null;
+  state.pendingInsert = null; state.selectedStitch = null;
 
   // ── 流程分支（顺序敏感，不要调换）──
-  if (flowState.importMode === 'create') {
-    flowState.importMode = null;
+  if (state.flowState.importMode === 'create') {
+    state.flowState.importMode = null;
     showEntryChoiceSheet();
     return;
   }
-  if (flowState.newProjectFlow) {
-    flowState.newProjectFlow = false;
+  if (state.flowState.newProjectFlow) {
+    state.flowState.newProjectFlow = false;
     window.renderProject();
   }
 }
@@ -118,8 +118,8 @@ export function showConfirmDialog(message, onConfirm) {
   document.getElementById("dlg-msg").textContent = message;
   document.getElementById("dlg-msg").style.display = "";
   document.getElementById("dlg-input").style.display = "none";
-  dlgCallback = null;
-  confirmCallback = onConfirm;
+  state.dlgCallback = null;
+  state.confirmCallback = onConfirm;
   document.getElementById("dialog").classList.add("show");
   // 聚焦确定按钮避免键盘陷阱
   setTimeout(() => document.querySelector("#dialog .dialog-btn.ok").focus(), 100);
@@ -127,14 +127,14 @@ export function showConfirmDialog(message, onConfirm) {
 
 export function confirmDialog() {
   const val = document.getElementById("dlg-input").value;
-  const cb = confirmCallback;
-  confirmCallback = null;
+  const cb = state.confirmCallback;
+  state.confirmCallback = null;
   closeDialog();
-  if (dlgCallback) { dlgCallback(val); dlgCallback = null; }
+  if (state.dlgCallback) { state.dlgCallback(val); state.dlgCallback = null; }
   if (cb) { cb(true); }
 }
 
 export function closeDialog() {
   document.getElementById("dialog").classList.remove("show");
-  if (confirmCallback) { confirmCallback(false); confirmCallback = null; }
+  if (state.confirmCallback) { state.confirmCallback(false); state.confirmCallback = null; }
 }

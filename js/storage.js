@@ -1,25 +1,25 @@
-import { data, uid } from './state.js';
+import { state, uid } from './state.js';
 import { STITCH_LIB, OLD_ID_MAP } from '../stitches.js';
 
 export function saveData() {
-  localStorage.setItem("crochet_v3_fixed", JSON.stringify(data));
+  localStorage.setItem("crochet_v3_fixed", JSON.stringify(state.data));
 }
 
 export function loadData() {
   try {
     const d = localStorage.getItem("crochet_v3_fixed") || localStorage.getItem("crochet_v3");
-    if (d) data = JSON.parse(d);
+    if (d) state.data = JSON.parse(d);
   } catch (e) { }
 
   // 保底结构
-  if (!data || typeof data !== "object") data = {};
-  if (!Array.isArray(data.projects)) data.projects = [];
-  if (!data.settings || typeof data.settings !== "object") {
-    data.settings = { theme: "macaron", customColors: {}, voiceEnabled: false };
+  if (!state.data || typeof state.data !== "object") state.data = {};
+  if (!Array.isArray(state.data.projects)) state.data.projects = [];
+  if (!state.data.settings || typeof state.data.settings !== "object") {
+    state.data.settings = { theme: "macaron", customColors: {}, voiceEnabled: false };
   }
 
   // 迁移旧数据
-  migrateData(data);
+  migrateData(state.data);
   saveData();
 }
 
@@ -91,7 +91,7 @@ export function exportPDF() {
 
 // ── 数据导出/导入 ──
 export function exportData() {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify(state.data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -103,7 +103,7 @@ export function exportData() {
 }
 
 export function exportSingleProject(id) {
-  const proj = data.projects.find(p => String(p.id) === String(id));
+  const proj = state.data.projects.find(p => String(p.id) === String(id));
   if (!proj) return;
 
   const payload = {

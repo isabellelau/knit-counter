@@ -1,48 +1,45 @@
 // ═══════════════════════════════════════════
 //  State
 // ═══════════════════════════════════════════
-export let data = {
-  projects: [],
-  settings: {
-    theme: "macaron",
-    customColors: {},
-    voiceEnabled: false
-  }
+export const state = {
+  data: {
+    projects: [],
+    settings: {
+      theme: "macaron",
+      customColors: {},
+      voiceEnabled: false
+    }
+  },
+  curProjId: null,
+  expandedRounds: new Set(),
+  selectedStitch: null,
+  pendingInsert: null,
+  dlgCallback: null,
+  confirmCallback: null,
+  filterByRound: true,
+  editingPartId: null,
+  currentTab: 'projects',
+  voiceMode: false,
+  recognition: null,
+  flowState: {
+    importMode: null,
+    newProjectFlow: false,
+    setupMode: null,
+    setupSelections: null,
+    customizingSid: null,
+    pendingParsed: null,
+    projMenuId: null,
+    captureEdit: null,
+    glowTimer: null,
+  },
+  _lastDeletedRound: null,
 };
-export let curProjId = null;
-export let expandedRounds = new Set();
-export let selectedStitch = null;
-export let pendingInsert = null;
-export let dlgCallback = null;
-export let confirmCallback = null;
-export let filterByRound = true;
-export let editingPartId = null;
-export let currentTab = 'projects';
-export let voiceMode = false;
-export let recognition = null;
 
 // Sync editingPartId with window for inline HTML handlers
 Object.defineProperty(window, 'editingPartId', {
-  get() { return editingPartId; },
-  set(v) { editingPartId = v; }
+  get() { return state.editingPartId; },
+  set(v) { state.editingPartId = v; }
 });
-
-// ── UI 流程状态（替代散落的 window._ flag）──
-export const flowState = {
-  importMode: null,        // null | 'create'
-  newProjectFlow: false,   // 新建项目流程是否进行中
-  setupMode: null,         // null | 'create' | 'edit'
-  setupSelections: null,   // 针法选择器的临时勾选状态 { [sid]: boolean }
-  customizingSid: null,    // 当前正在自定义的针法 id
-  pendingParsed: null,     // 解析图解的缓冲结果 Array | null
-  projMenuId: null,        // 当前展开菜单的项目 id
-  captureEdit: null,       // 部件名称编辑状态捕获
-  glowTimer: null,         // 语音边缘发光的 timer id
-};
-
-// ── 单步撤销（仅用于 deleteRound）──
-export let _lastDeletedRound = null;
-// 结构：{ round: {...}, partId: string, index: number, activeRoundId: string } | null
 
 export const NUMBER_MAP = {
   '一': 1, '幺': 1, '1': 1, '一号': 1, '一针': 1, '第一': 1,
@@ -58,7 +55,7 @@ export const NUMBER_MAP = {
 
 // ── helpers ──
 export function uid() { return String(Date.now() + Math.random()); }
-export function getProj(id) { return data.projects.find(p => String(p.id) === String(id)); }
+export function getProj(id) { return state.data.projects.find(p => String(p.id) === String(id)); }
 export function getActivePart(proj) {
   if (!proj || !proj.parts || !proj.parts.length) return null;
   return proj.parts.find(p => p.id === proj.activePartId) || proj.parts[0];
@@ -72,4 +69,4 @@ export function isPartEmpty(part) {
     !part.rounds[0].isTextCard;
   return hasNoRounds || hasOnlyEmptyRound;
 }
-export function getEditingPartId() { return editingPartId; }
+export function getEditingPartId() { return state.editingPartId; }
