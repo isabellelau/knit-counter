@@ -6,9 +6,15 @@ export function saveData() {
 }
 
 export function loadData() {
+  // 诊断：列出 localStorage 中所有 key
+  const allKeys = Object.keys(localStorage);
+  const dataKeys = allKeys.filter(k => k.includes('crochet') || k.includes('knit'));
+  console.log('[loadData] localStorage keys:', allKeys);
+  console.log('[loadData] data-related keys:', dataKeys);
+
   try {
     const d = localStorage.getItem("crochet_v3_fixed") || localStorage.getItem("crochet_v3");
-    console.log('[loadData] localStorage key found:', d ? 'yes (' + d.substring(0, 60) + '...)' : 'no');
+    console.log('[loadData] primary key found:', d ? 'yes (' + d.substring(0, 60) + '...)' : 'no');
     if (d) state.data = JSON.parse(d);
   } catch (e) {
     console.error('[loadData] parse error:', e);

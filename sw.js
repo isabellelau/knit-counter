@@ -54,16 +54,20 @@ self.addEventListener('fetch', (e) => {
   const { request } = e;
   const url = new URL(request.url);
 
+  // 只缓存 GET 请求
+  if (request.method !== 'GET') return;
+
   // 对主 HTML 使用网络优先
   if (request.mode === 'navigate' || url.pathname.endsWith('index.html')) {
     e.respondWith(
       fetch(request, { cache: 'no-cache' })
-        .then((resp) =>
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, resp.clone());
-            return resp;
-          })
-        )
+        .then((resp) => {
+          if (resp.ok) {
+            const clone = resp.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          }
+          return resp;
+        })
         .catch(() => caches.match(request).then((c) => c || caches.match(HTML_PATH)))
     );
     return;
@@ -72,15 +76,16 @@ self.addEventListener('fetch', (e) => {
   // 其他资源：缓存优先，后台回源更新
   e.respondWith(
     caches.match(request).then((cached) => {
-      const fetchPromise = fetch(request)
+      const networkFetch = fetch(request)
         .then((resp) => {
-          if (resp.ok) {
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, resp.clone()));
+          if (resp.ok && resp.type === 'basic') {
+            const clone = resp.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           }
           return resp;
         })
         .catch(() => cached);
-      return cached || fetchPromise;
+      return cached || networkFetch;
     })
   );
 });
