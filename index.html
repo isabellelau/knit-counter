@@ -7,7 +7,7 @@
   <title>钩织计数本</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#C07A45">
-  <meta name="version" content="v3">
+  <meta name="version" content="v4">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -3731,7 +3731,20 @@
   </script>
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch((err) => {
+      navigator.serviceWorker.register('sw.js').then((reg) => {
+        // 检测新版本并提示刷新
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              console.log('[SW] 新版本已安装，请刷新页面');
+              if (window.showToast) {
+                showToast('新版本已就绪，刷新后生效', { label: '刷新', onClick: () => location.reload() }, 8000);
+              }
+            }
+          });
+        });
+      }).catch((err) => {
         console.warn('SW 注册失败:', err);
       });
     }

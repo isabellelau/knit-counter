@@ -8,12 +8,21 @@ export function saveData() {
 export function loadData() {
   try {
     const d = localStorage.getItem("crochet_v3_fixed") || localStorage.getItem("crochet_v3");
+    console.log('[loadData] localStorage key found:', d ? 'yes (' + d.substring(0, 60) + '...)' : 'no');
     if (d) state.data = JSON.parse(d);
-  } catch (e) { }
+  } catch (e) {
+    console.error('[loadData] parse error:', e);
+  }
 
   // 保底结构
-  if (!state.data || typeof state.data !== "object") state.data = {};
-  if (!Array.isArray(state.data.projects)) state.data.projects = [];
+  if (!state.data || typeof state.data !== "object") {
+    console.warn('[loadData] state.data invalid, resetting');
+    state.data = {};
+  }
+  if (!Array.isArray(state.data.projects)) {
+    console.warn('[loadData] state.data.projects not array, resetting');
+    state.data.projects = [];
+  }
   if (!state.data.settings || typeof state.data.settings !== "object") {
     state.data.settings = { theme: "macaron", customColors: {}, voiceEnabled: false };
   }
@@ -21,6 +30,7 @@ export function loadData() {
   // 迁移旧数据
   migrateData(state.data);
   saveData();
+  console.log('[loadData] done, projects:', state.data.projects.length);
 }
 
 // ── 数据迁移：兼容旧版格式 ──

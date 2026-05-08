@@ -47,20 +47,40 @@ self.addEventListener('activate', (e) => {
   self.clients.claim();
 });
 
+// ── 缓存策略 ──
+// HTML：网络优先（确保总是拿到最新版本）
+// 其他资源：缓存优先，后台更新
 self.addEventListener('fetch', (e) => {
-  e.respondWith(
-    caches.match(e.request).then((cached) => {
-      if (cached) {
-        return cached;
-      }
-      return fetch(e.request)
+  const { request } = e;
+  const url = new URL(request.url);
+
+  // 对主 HTML 使用网络优先
+  if (request.mode === 'navigate' || url.pathname.endsWith('index.html')) {
+    e.respondWith(
+      fetch(request, { cache: 'no-cache' })
         .then((resp) =>
           caches.open(CACHE_NAME).then((cache) => {
-            cache.put(e.request, resp.clone());
+            cache.put(request, resp.clone());
             return resp;
           })
         )
-        .catch(() => caches.match(HTML_PATH));
+        .catch(() => caches.match(request).then((c) => c || caches.match(HTML_PATH)))
+    );
+    return;
+  }
+
+  // 其他资源：缓存优先，后台回源更新
+  e.respondWith(
+    caches.match(request).then((cached) => {
+      const fetchPromise = fetch(request)
+        .then((resp) => {
+          if (resp.ok) {
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, resp.clone()));
+          }
+          return resp;
+        })
+        .catch(() => cached);
+      return cached || fetchPromise;
     })
   );
 });
