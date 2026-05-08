@@ -3867,7 +3867,7 @@
 
       r.onerror = (e) => {
         console.log('语音错误:', e.error, e.message);
-        alert('语音错误：' + e.error);  // 临时，确认问题后删除
+        if (!voiceMode) return;
         voiceMode = false;
         recognition = null;
         updateVoiceButton();
@@ -3881,21 +3881,41 @@
       return r;
     }
 
+    async function requestMicPermission() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach(t => t.stop());
+        flowState.micPermission = 'granted';
+      } catch (err) {
+        flowState.micPermission = 'denied';
+      }
+    }
+
     async function toggleVoiceMode() {
+      if (flowState.voiceStarting) return;
+      flowState.voiceStarting = true;
+
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SR) {
         alert('您的浏览器不支持语音识别，请使用 Chrome 或 Safari');
+        flowState.voiceStarting = false;
         return;
       }
 
       voiceMode = !voiceMode;
 
       if (voiceMode) {
-        try {
-          await navigator.mediaDevices.getUserMedia({ audio: true });
-        } catch (err) {
-          showToast('请允许麦克风权限后重试');
+        if (flowState.micPermission === 'denied') {
+          showToast('请在浏览器设置里允许麦克风权限');
           voiceMode = false;
+          flowState.voiceStarting = false;
+          updateVoiceButton();
+          return;
+        }
+        if (flowState.micPermission !== 'granted') {
+          showToast('麦克风权限尚未就绪，请稍后再试');
+          voiceMode = false;
+          flowState.voiceStarting = false;
           updateVoiceButton();
           return;
         }
@@ -3910,10 +3930,12 @@
           showToast('麦克风启动失败，请检查权限');
           setVoicePulse(false);
           updateVoiceButton();
+          flowState.voiceStarting = false;
           return;
         }
         playSound('enter');
         setVoicePulse(true);
+        flowState.voiceStarting = false;
       } else {
         if (recognition) {
           recognition.onend = null;
@@ -4133,6 +4155,7 @@
 
     document.getElementById("tab-nav").style.display = "flex";
     loadData();
+    requestMicPermission();
     renderHome();
   </script>
   <script>
