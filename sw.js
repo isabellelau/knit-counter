@@ -5,7 +5,8 @@ const PRECACHE = [
   './stitches.js',
   './styles.css',
   './js/state.js',
-  './js/storage.js'
+  './js/storage.js',
+  './js/ui.js'
 ];
 
 async function getVersionFromHtml() {
