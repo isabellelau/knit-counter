@@ -3864,18 +3864,11 @@
       };
 
       r.onerror = (e) => {
-        if (!voiceMode) return; // 已被 catch 处理过，避免重复重置
         voiceMode = false;
         recognition = null;
         updateVoiceButton();
         playSound('exit');
         setVoicePulse(false);
-        // 同步刷新 bottom-bar 移除 hint
-        const proj = getProj(curProjId);
-        if (proj) {
-          const bar = document.getElementById('bottom-bar');
-          if (bar) bar.innerHTML = renderDynamicPalette(proj) + renderFilterToggle() + renderBarRow();
-        }
         if (e.error === 'not-allowed') {
           alert('麦克风权限被拒绝，请在浏览器设置中允许');
         }
