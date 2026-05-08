@@ -302,6 +302,7 @@
       scrollbar-width: none;
       -ms-overflow-style: none;
       padding-bottom: 4px;
+      padding-right: 20px;
     }
     .part-tabs-scroll::-webkit-scrollbar { display: none; }
     .part-tab {
@@ -341,7 +342,8 @@
       font-size: inherit;
       font-weight: inherit;
       outline: none;
-      min-width: 30px;
+      min-width: 80px;
+      width: 80px;
       padding: 0 4px;
       margin: 0 -4px;
       border-radius: 4px;
@@ -360,6 +362,9 @@
     }
     .part-tab-edit-icon {
       color: var(--accent);
+      padding: 4px;
+      z-index: 10;
+      position: relative;
     }
     .part-tab.active .part-tab-edit-icon {
       color: #fff;
@@ -371,6 +376,9 @@
       margin-left: 2px;
       font-weight: 400;
       pointer-events: auto;
+      padding: 4px;
+      z-index: 10;
+      position: relative;
     }
     .part-tab-del:hover { opacity: 1; }
     .part-tab-edit-icon { pointer-events: auto; }
@@ -3569,8 +3577,8 @@
         onfocus="this.setSelectionRange(this.value.length, this.value.length)"
         onblur="partNameBlur(this, '${pt.id}')"
         onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">
-      <span class="part-tab-edit-icon" onclick="${isEditing ? 'event.stopPropagation();this.previousElementSibling.blur()' : `event.stopPropagation();startEditPartName(this, '${pt.id}')`}" style="font-size:11px;cursor:pointer;opacity:.6;margin-left:2px" title="${isEditing ? '完成编辑' : '编辑名称'}">${isEditing ? '✔' : '✎'}</span>
-      ${(proj.parts||[]).length > 1 ? `<span class="part-tab-del" onclick="event.stopPropagation();deletePart('${pt.id}')" title="删除部件">×</span>` : ''}
+      <span class="part-tab-edit-icon" onclick="handleEditBtnClick(event, '${pt.id}', this)" style="font-size:11px;cursor:pointer;opacity:.6;margin-left:2px" title="${isEditing ? '完成编辑' : '编辑名称'}">${isEditing ? '✔' : '✎'}</span>
+      ${(proj.parts||[]).length > 1 ? `<span class="part-tab-del" onclick="handleDeleteBtnClick(event, '${pt.id}')" title="删除部件">×</span>` : ''}
     </button>`;
       });
       html += `<button class="part-tab part-tab-add" onclick="addPart()" title="新增部件">＋</button>
@@ -3652,21 +3660,35 @@
     }
 
     function getEditingPartId() { return editingPartId; }
+    function handleEditBtnClick(event, partId, el) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (editingPartId === partId) {
+        el.previousElementSibling.blur();
+      } else {
+        startEditPartName(el, partId);
+      }
+    }
+    function handleDeleteBtnClick(event, partId) {
+      event.preventDefault();
+      event.stopPropagation();
+      deletePart(partId);
+    }
+
     function startEditPartName(icon, partId) {
+      console.log('Action Triggered: startEditPartName', partId);
       editingPartId = partId;
       const input = icon.previousElementSibling;
       const span = input.previousElementSibling;
       span.style.display = 'none';
       input.style.display = '';
       input.focus();
-      icon.textContent = '✔';
+      renderProject();
     }
     function partNameBlur(input, partId) {
       renamePart(partId, input.value.trim());
       editingPartId = null;
-      input.style.display = 'none';
-      input.previousElementSibling.style.display = '';
-      input.nextElementSibling.textContent = '✎';
+      renderProject();
     }
     function renamePart(partId, name) {
       if (!name || !curProjId) return;
@@ -3677,6 +3699,7 @@
     }
 
     function deletePart(partId) {
+      console.log('Action Triggered: deletePart', partId);
       const proj = getProj(curProjId);
       if (!proj) return;
       if (!proj.parts || proj.parts.length <= 1) return;
@@ -4188,7 +4211,7 @@
       openStitchCustomize, saveStitchCustomize, resetStitchCustomize, backToSetupGrid,
       openNewStitchForm, saveNewStitch, deleteCustomStitch,
       addPart, switchPart, renamePart, deletePart,
-      startEditPartName, partNameBlur, getEditingPartId,
+      startEditPartName, partNameBlur, getEditingPartId, handleEditBtnClick, handleDeleteBtnClick,
       toggleProjMenu, archiveProject, showArchiveSuccessSheet, handlePwaHintOptOut, showPwaTutorial, unarchiveProject,
       toggleVoiceMode, updateVoiceButton,
       openSettings, changeTheme, toggleVoiceDefault, clearAllData,
