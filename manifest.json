@@ -1,0 +1,22 @@
+{
+  "name": "钩织计数本",
+  "short_name": "钩织",
+  "start_url": "./针织计数-v2.html",
+  "display": "standalone",
+  "background_color": "#F7F3EE",
+  "theme_color": "#C07A45",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

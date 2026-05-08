@@ -1,0 +1,4130 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
+  <title>钩织计数本 - 专业版</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#C07A45">
+  <meta name="version" content="v2">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <style>
+    :root {
+      --pink: #F472B6;
+      --green: #4ADE80;
+      --blue: #7DD3FC;
+      --indigo: #818CF8;
+      --cyan: #22D3EE;
+      --yellow: #FACC15;
+      --bg: #F7F3EE;
+      --card: #FFFFFF;
+      --border: #EDE5D8;
+      --text: #2D1E10;
+      --muted: #9E8A74;
+      --hdr-h: 57px;
+      --accent: #C07A45;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent
+    }
+
+    html,
+    body {
+      height: 100%;
+      overflow: hidden
+    }
+
+    body {
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      max-width: 430px;
+      margin: 0 auto;
+      padding-bottom: env(safe-area-inset-bottom)
+    }
+
+    /* ── screens ── */
+    #screen {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 12px
+    }
+
+    /* page transitions */
+    @keyframes slide-in-right {
+      from { transform: translateX(100%); opacity: 0 }
+      to   { transform: translateX(0);    opacity: 1 }
+    }
+    @keyframes slide-out-left {
+      from { transform: translateX(0);   opacity: 1 }
+      to   { transform: translateX(-30%); opacity: 0 }
+    }
+    @keyframes slide-in-left {
+      from { transform: translateX(-30%); opacity: 0 }
+      to   { transform: translateX(0);     opacity: 1 }
+    }
+    #screen.enter-forward { animation: slide-in-right .25s cubic-bezier(.25,.46,.45,.94) }
+    #screen.enter-back    { animation: slide-in-left  .25s cubic-bezier(.25,.46,.45,.94) }
+
+    /* ── header ── */
+    .hdr {
+      background: rgba(255,255,255,0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      position: sticky;
+      top: 0;
+      z-index: 30
+    }
+
+    .hdr-back {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: none;
+      font-size: 20px;
+      color: var(--muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      flex-shrink: 0
+    }
+
+    .hdr-back:active {
+      background: var(--bg)
+    }
+
+    .hdr-title {
+      flex: 1;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis
+    }
+
+    .hdr-title input {
+      width: 100%;
+      border: none;
+      background: none;
+      font: inherit;
+      color: inherit;
+      outline: none
+    }
+
+    .hdr-sub {
+      font-size: 11px;
+      color: var(--muted)
+    }
+
+    .hdr-btn {
+      background: none;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 4px
+    }
+
+    /* ── project list ── */
+    .home-top {
+      padding: 20px 16px 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between
+    }
+
+    .home-heading {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text)
+    }
+
+    .proj-list {
+      padding: 0 12px
+    }
+
+    .proj-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: box-shadow .15s;
+      position: relative
+    }
+
+    .proj-card:active {
+      box-shadow: 0 0 0 2px var(--accent)
+    }
+
+    .proj-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0
+    }
+
+    .proj-cover-img {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      object-fit: cover;
+      flex-shrink: 0;
+      cursor: pointer;
+      border: 1px solid var(--border)
+    }
+
+    .proj-info {
+      flex: 1;
+      min-width: 0
+    }
+
+    .proj-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap
+    }
+
+    .proj-meta {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px
+    }
+
+    .proj-del {
+      background: none;
+      border: none;
+      color: #D0B0A0;
+      font-size: 18px;
+      padding: 8px;
+      cursor: pointer;
+      flex-shrink: 0
+    }
+
+    .proj-del:active {
+      color: #E07070
+    }
+
+    /* ── project popup menu ── */
+    .proj-menu {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: 100%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: 0 4px 14px rgba(0,0,0,.1);
+      z-index: 20;
+      min-width: 120px;
+      overflow: hidden;
+    }
+    .proj-menu.show { display: block; }
+    .proj-menu-item {
+      display: block;
+      width: 100%;
+      border: none;
+      background: none;
+      padding: 10px 14px;
+      font-size: 13px;
+      text-align: left;
+      cursor: pointer;
+      color: var(--text);
+      font-family: inherit;
+    }
+    .proj-menu-item:hover { background: var(--bg); }
+    .proj-menu-item.danger { color: #E07070; }
+
+    /* ── archived project ── */
+    .proj-card.archived .proj-icon { opacity: .6; filter: grayscale(.4); }
+    .proj-card.archived .proj-info { opacity: .65; }
+    .proj-card.archived .proj-del { opacity: .65; }
+
+    /* ── add buttons ── */
+    .fab {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 4px 12px;
+      padding: 13px 16px;
+      background: var(--accent);
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      width: calc(100% - 24px)
+    }
+
+    .fab:active {
+      opacity: .85
+    }
+
+    /* ── rounds ── */
+    .part-tabs-wrap {
+      padding: 8px 12px 0 12px;
+    }
+    .part-tabs-scroll {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      padding-bottom: 4px;
+    }
+    .part-tabs-scroll::-webkit-scrollbar { display: none; }
+    .part-tab {
+      flex-shrink: 0;
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--card);
+      color: var(--muted);
+      font-size: 13px;
+      cursor: pointer;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all .15s;
+      user-select: none;
+    }
+    .part-tab:active {
+      transform: scale(.95);
+      filter: brightness(.9);
+    }
+    .part-tab.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+    .part-tab > span {
+      pointer-events: none;
+    }
+    .part-name-input {
+      background: transparent;
+      border: none;
+      color: inherit;
+      font: inherit;
+      font-size: inherit;
+      font-weight: inherit;
+      outline: none;
+      min-width: 30px;
+      padding: 0 4px;
+      margin: 0 -4px;
+      border-radius: 4px;
+      pointer-events: auto;
+      box-shadow: 0 0 0 0 transparent;
+      transition: box-shadow .15s;
+    }
+    .part-name-input:focus {
+      box-shadow: 0 0 0 2px #a8d8ea;
+    }
+    .part-tab.active .part-name-input {
+      color: #fff;
+    }
+    .part-tab.active .part-name-input:focus {
+      box-shadow: 0 0 0 2px rgba(255,255,255,.5);
+    }
+    .part-tab-edit-icon {
+      color: var(--accent);
+    }
+    .part-tab.active .part-tab-edit-icon {
+      color: #fff;
+    }
+    .part-tab-del {
+      font-size: 11px;
+      color: inherit;
+      opacity: .6;
+      margin-left: 2px;
+      font-weight: 400;
+      pointer-events: auto;
+    }
+    .part-tab-del:hover { opacity: 1; }
+    .part-tab-edit-icon { pointer-events: auto; }
+    .part-tab-del { pointer-events: auto; }
+    .part-tab-add {
+      padding: 6px 10px;
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .rounds-wrap {
+      padding: 10px 12px 0
+    }
+
+    .round-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      margin-bottom: 10px;
+      overflow: hidden
+    }
+
+    .round-hdr {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 14px;
+      cursor: pointer;
+      user-select: none
+    }
+
+    .round-hdr:active {
+      background: var(--bg)
+    }
+
+    .round-badge {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent);
+      flex-shrink: 0
+    }
+
+    .round-badge.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff
+    }
+
+    .round-info {
+      flex: 1
+    }
+
+    .round-label {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text)
+    }
+
+    .round-count {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 1px
+    }
+
+    .round-chev {
+      color: var(--muted);
+      font-size: 16px;
+      transition: transform .2s;
+      flex-shrink: 0
+    }
+
+    .round-chev.open {
+      transform: rotate(90deg)
+    }
+
+    .round-body {
+      border-top: 1px solid var(--border);
+      padding: 10px 12px 12px;
+      display: none
+    }
+
+    .round-body.open {
+      display: block
+    }
+
+    /* ── stitch sequence ── */
+    .seq-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      min-height: 36px
+    }
+
+    .seq-empty {
+      font-size: 12px;
+      color: var(--muted);
+      padding: 6px 0;
+      align-self: center
+    }
+
+    .spill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px 9px;
+      border-radius: 20px;
+      border: 1.5px solid;
+      cursor: pointer;
+      user-select: none;
+      transition: transform .1s
+    }
+
+    .spill:active {
+      transform: scale(.93)
+    }
+
+    .spill-idx {
+      font-size: 10px;
+      opacity: .65;
+      font-weight: 700
+    }
+
+    .spill-abbr {
+      font-size: 12px;
+      font-weight: 700
+    }
+
+    .spill.selected {
+      box-shadow: 0 0 0 2.5px var(--text)
+    }
+
+    /* ── bottom palette ── */
+    .bottom-bar {
+      background: var(--card);
+      border-top: 1px solid var(--border);
+      padding: 8px 10px;
+      padding-bottom: calc(8px + env(safe-area-inset-bottom));
+      flex-shrink: 0;
+      z-index: 20
+    }
+
+    .palette {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-bottom: 6px
+    }
+
+    .pal-btn {
+      border: none;
+      border-radius: 10px;
+      padding: 10px 4px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      cursor: pointer;
+      text-align: center;
+      line-height: 1.3
+    }
+
+    .pal-btn:active {
+      opacity: .8;
+      transform: scale(.97)
+    }
+
+    .bar-row {
+      display: flex;
+      gap: 6px
+    }
+
+    .bar-btn {
+      flex: 1;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg);
+      padding: 9px 4px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer
+    }
+
+    .bar-btn:active {
+      background: var(--border)
+    }
+
+    .bar-btn.primary {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent)
+    }
+
+    .bar-btn.primary:active {
+      opacity: .85
+    }
+
+    /* ── tab nav ── */
+    #tab-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      height: 56px;
+      padding-bottom: env(safe-area-inset-bottom);
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-top: 1px solid var(--border);
+      z-index: 20;
+      flex-shrink: 0
+    }
+    .tab-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      padding: 0;
+      border: none;
+      background: none;
+      cursor: pointer;
+      color: var(--muted);
+      font-family: inherit;
+      transition: color .15s
+    }
+    .tab-btn.active {
+      color: var(--accent)
+    }
+    .tab-btn .tab-icon {
+      font-size: 22px;
+      line-height: 1;
+      transition: transform .15s
+    }
+    .tab-btn.active .tab-icon {
+      transform: scale(1.1)
+    }
+    .tab-label {
+      font-size: 10px;
+      font-weight: 600;
+      line-height: 1
+    }
+
+    /* ── print styles ── */
+    @media print {
+      body {
+        background: #fff !important;
+        max-width: 100% !important;
+        overflow: visible !important;
+        height: auto !important;
+      }
+
+      #screen {
+        overflow: visible !important;
+        height: auto !important;
+        padding: 0 !important;
+      }
+
+      .bottom-bar,
+      #tab-nav,
+      .fab,
+      .proj-del,
+      .hdr-back,
+      .round-chev,
+      .bar-row,
+      .hdr-btn,
+      .overlay,
+      .sheet,
+      .dialog {
+        display: none !important;
+      }
+
+      .hdr {
+        position: static !important;
+        border: none !important;
+        padding: 20px 0 !important;
+      }
+
+      .hdr-title span {
+        font-size: 24px !important;
+      }
+
+      .round-card {
+        border: 1px solid #eee !important;
+        break-inside: avoid;
+        margin-bottom: 20px !important;
+      }
+
+      .round-body {
+        display: block !important;
+        border-top: 1px solid #eee !important;
+      }
+
+      .round-badge.active {
+        background: var(--accent) !important;
+        color: #fff !important;
+        -webkit-print-color-adjust: exact;
+      }
+
+      .spill {
+        border-width: 1px !important;
+        -webkit-print-color-adjust: exact;
+      }
+    }
+
+    /* ── overlays ── */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .4);
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .25s
+    }
+
+    .overlay.show {
+      opacity: 1;
+      pointer-events: auto
+    }
+
+    .sheet {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      max-width: 430px;
+      margin: 0 auto;
+      background: var(--card);
+      border-radius: 18px 18px 0 0;
+      z-index: 110;
+      padding: 6px 0 30px;
+      max-height: 80vh;
+      overflow-y: auto;
+      transform: translateY(100%);
+      transition: transform .35s cubic-bezier(.34,1.56,.64,1)
+    }
+
+    .sheet.show {
+      transform: translateY(0)
+    }
+
+    .sheet-handle {
+      width: 36px;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: 10px auto 8px
+    }
+
+    .sheet-title {
+      font-size: 13px;
+      color: var(--muted);
+      text-align: center;
+      padding: 0 16px 10px;
+      border-bottom: 1px solid var(--border)
+    }
+
+    .sheet-section {
+      padding: 6px 14px 2px;
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .5px
+    }
+
+    .sheet-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border)
+    }
+
+    .sheet-item:last-child {
+      border-bottom: none
+    }
+
+    .sheet-item:active {
+      background: var(--bg)
+    }
+
+    .sheet-item-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      flex-shrink: 0
+    }
+
+    .sheet-item-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text)
+    }
+
+    .sheet-item-sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 1px
+    }
+
+    .sheet-item-arrow {
+      margin-left: auto;
+      flex-shrink: 0
+    }
+
+    .sheet-del .sheet-item-label {
+      color: #E07070
+    }
+
+    .sheet-del .sheet-item-icon {
+      background: #FEF2F2
+    }
+
+    .sheet-del {
+      color: #E07070
+    }
+
+    .picker-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      padding: 12px 14px
+    }
+
+    .picker-btn {
+      border: none;
+      border-radius: 10px;
+      padding: 12px 8px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      cursor: pointer;
+      text-align: center
+    }
+
+    .picker-btn:active {
+      opacity: .8
+    }
+
+    .sheet-cancel {
+      width: calc(100% - 28px);
+      margin: 10px 14px 0;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: none;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--muted);
+      cursor: pointer
+    }
+
+    /* ── settings ── */
+    .settings-theme-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      padding: 10px 16px 6px
+    }
+
+    .settings-theme-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      padding: 8px 4px;
+      border-radius: 12px;
+      transition: transform .15s
+    }
+
+    .settings-theme-item:hover {
+      transform: scale(1.03)
+    }
+
+    .settings-theme-item.active {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px
+    }
+
+    .settings-theme-dots {
+      display: flex;
+      gap: 3px
+    }
+
+    .settings-theme-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%
+    }
+
+    .settings-theme-name {
+      font-size: 11px;
+      color: var(--text);
+      font-weight: 600
+    }
+
+    .settings-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      cursor: pointer;
+      gap: 12px
+    }
+
+    .settings-item-label {
+      font-size: 14px;
+      color: var(--text);
+      font-weight: 600
+    }
+
+    .settings-item-sub {
+      font-size: 12px;
+      color: var(--muted)
+    }
+
+    .settings-toggle {
+      display: inline-block;
+      width: 48px;
+      height: 26px;
+      border-radius: 13px;
+      background: var(--border);
+      position: relative;
+      transition: background .2s;
+      flex-shrink: 0
+    }
+
+    .settings-toggle.on {
+      background: var(--accent)
+    }
+
+    .settings-toggle-knob {
+      display: block;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #fff;
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      transition: left .2s ease;
+      box-shadow: 0 1px 3px rgba(0,0,0,.2)
+    }
+
+    .settings-toggle.on .settings-toggle-knob {
+      left: 24px
+    }
+
+    .settings-stat {
+      text-align: center;
+      padding: 6px 16px 2px;
+      font-size: 13px;
+      color: var(--muted)
+    }
+
+    .settings-btn-row {
+      padding: 6px 16px
+    }
+
+    .settings-btn {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      margin-bottom: 8px;
+      text-align: center
+    }
+
+    .settings-btn:last-child {
+      margin-bottom: 0
+    }
+
+    .settings-btn-primary {
+      background: var(--accent);
+      color: #fff
+    }
+
+    .settings-btn-secondary {
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border)
+    }
+
+    .settings-btn-danger {
+      background: #FEF2F2;
+      color: #EF4444
+    }
+
+    /* ── project name dialog ── */
+    .dialog {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .45);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px
+    }
+
+    .dialog.show {
+      display: flex
+    }
+
+    .dialog-box {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 340px
+    }
+
+    .dialog-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      color: var(--text)
+    }
+
+    .dialog-msg {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 14px;
+      line-height: 1.5;
+      white-space: pre-line
+    }
+
+    .dialog-input {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 15px;
+      color: var(--text);
+      background: var(--bg);
+      outline: none;
+      font-family: inherit
+    }
+
+    .dialog-input:focus {
+      border-color: var(--accent)
+    }
+
+    .dialog-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px
+    }
+
+    .dialog-btn {
+      flex: 1;
+      padding: 11px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      background: none;
+      color: var(--muted);
+      font-family: inherit
+    }
+
+    .dialog-btn.ok {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent)
+    }
+
+    /* ── task slide ── */
+    .task-slide {
+      position: sticky;
+      top: var(--hdr-h);
+      z-index: 20;
+      margin: 10px 12px 0;
+      padding: 8px 16px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .task-slide-text {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.4;
+      transition: opacity 0.25s ease;
+    }
+
+    .task-slide-text.fading {
+      opacity: 0;
+    }
+
+    .task-slide-empty {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .exp-count {
+      color: var(--accent);
+      border-bottom: 1px dashed var(--accent);
+      cursor: pointer;
+      min-width: 20px;
+      display: inline-block;
+      text-align: center
+    }
+
+    .exp-count-input {
+      width: 40px;
+      border: none;
+      border-bottom: 1px solid var(--accent);
+      background: transparent;
+      font-size: 13px;
+      color: var(--accent);
+      text-align: center;
+      outline: none;
+      padding: 0;
+      margin: 0
+    }
+
+    /* ── round delete ── */
+    .round-del {
+      background: none;
+      border: none;
+      color: #D0B0A0;
+      font-size: 20px;
+      padding: 8px;
+      cursor: pointer;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+
+    .round-del:active {
+      color: #E07070;
+    }
+
+    /* ── Loading mask ── */
+    .loading-mask {
+      position: fixed;
+      inset: 0;
+      background: rgba(255,255,255,.85);
+      backdrop-filter: blur(4px);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      z-index: 200;
+    }
+    .loading-mask.show {
+      display: flex;
+    }
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes voice-breathing {
+      0%, 100% { opacity: 0.3; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.3); }
+    }
+    @keyframes btn-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    #voice-pulse.active {
+      animation: voice-breathing 1.8s ease-in-out infinite;
+    }
+    .loading-text {
+      font-size: 14px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Header -->
+  <div class="hdr" id="hdr">
+    <button class="hdr-back" id="hdr-back" style="display:none" onclick="goHome()">‹</button>
+    <div class="hdr-title" id="hdr-title">
+      <span>🧶 钩织计数本</span>
+    </div>
+    <div class="hdr-sub" id="hdr-sub"></div>
+    <button class="hdr-btn" id="hdr-settings" style="display:none" onclick="openSettings()" title="设置">⚙️</button>
+    <button class="hdr-btn" id="hdr-pdf" style="display:none" onclick="exportPDF()" title="导出PDF">📄</button>
+  </div>
+
+  <!-- Main screen -->
+  <div id="screen"></div>
+
+  <!-- Bottom palette -->
+  <div class="bottom-bar" id="bottom-bar" style="display:none"></div>
+
+  <!-- Tab Navigation -->
+  <div id="tab-nav">
+    <button class="tab-btn active" data-tab="projects" onclick="switchTab('projects')">
+      <span class="tab-icon">🧶</span>
+      <span class="tab-label">项目</span>
+    </button>
+    <button class="tab-btn" data-tab="settings" onclick="switchTab('settings')">
+      <span class="tab-icon">⚙️</span>
+      <span class="tab-label">设置</span>
+    </button>
+  </div>
+
+  <!-- Overlay + action sheet -->
+  <div class="overlay" id="overlay" onclick="closeSheet()"></div>
+  <div class="sheet" id="sheet"></div>
+
+  <!-- Global loading mask -->
+  <div class="loading-mask" id="loading-mask">
+    <div class="loading-spinner"></div>
+    <div class="loading-text" id="loading-text">正在加载...</div>
+  </div>
+
+  <!-- New project dialog -->
+  <div class="dialog" id="dialog">
+    <div class="dialog-box">
+      <div class="dialog-title" id="dlg-title">新建项目</div>
+      <p class="dialog-msg" id="dlg-msg" style="display:none"></p>
+      <input class="dialog-input" id="dlg-input" placeholder="项目名称，例如：粉色帽子" maxlength="30">
+      <div class="dialog-row">
+        <button class="dialog-btn" onclick="closeDialog()">取消</button>
+        <button class="dialog-btn ok" onclick="confirmDialog()">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Voice edge glow overlay -->
+  <div id="edge-glow" style="
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0;
+    border-radius: 0;
+    transition: opacity 0.08s ease-in;
+    box-shadow: inset 0 0 0 8px transparent;
+  "></div>
+
+  <!-- Voice breathing indicator -->
+  <div id="voice-pulse" style="
+    position: fixed;
+    right: 16px;
+    bottom: 100px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #EF4444;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 9999;
+    transition: opacity 0.3s;
+  "></div>
+
+  <script type="module">
+    import { STITCH_LIB, COLOR_THEMES, OLD_ID_MAP, ALIAS_TO_ID, STITCHES, SM, parsePattern, extractStitches, normalizeStitch, resolveColor } from './stitches.js';
+
+    // ═══════════════════════════════════════════
+    //  State
+    // ═══════════════════════════════════════════
+    let data = {
+      projects: [],
+      settings: {
+        theme: "macaron",
+        customColors: {},
+        voiceEnabled: false
+      }
+    };
+    let curProjId = null;
+    let expandedRounds = new Set();
+    let selectedStitch = null;
+    let pendingInsert = null;
+    let dlgCallback = null;
+    let confirmCallback = null;
+    let filterByRound = true;
+    let editingPartId = null;
+    let currentTab = 'projects';
+    let voiceMode = false;
+    let recognition = null;
+
+    // ── UI 流程状态（替代散落的 window._ flag）──
+    const flowState = {
+      importMode: null,        // null | 'create'
+      newProjectFlow: false,   // 新建项目流程是否进行中
+      setupMode: null,         // null | 'create' | 'edit'
+      setupSelections: null,   // 针法选择器的临时勾选状态 { [sid]: boolean }
+      customizingSid: null,    // 当前正在自定义的针法 id
+      pendingParsed: null,     // 解析图解的缓冲结果 Array | null
+      projMenuId: null,        // 当前展开菜单的项目 id
+      captureEdit: null,       // 部件名称编辑状态捕获
+      glowTimer: null,         // 语音边缘发光的 timer id
+    };
+
+    // ── 单步撤销（仅用于 deleteRound）──
+    let _lastDeletedRound = null;
+    // 结构：{ round: {...}, partId: string, index: number, activeRoundId: string } | null
+
+    const NUMBER_MAP = {
+      '一': 1, '幺': 1, '1': 1, '一号': 1, '一针': 1, '第一': 1,
+      '二': 2, '两': 2, '俩': 2, '2': 2, '二号': 2, '二针': 2, '第二': 2,
+      '三': 3, '3': 3, '三号': 3, '三针': 3, '第三': 3,
+      '四': 4, '4': 4, '四号': 4, '四针': 4, '第四': 4,
+      '五': 5, '5': 5, '五号': 5, '五针': 5, '第五': 5,
+      '六': 6, '6': 6, '六号': 6, '六针': 6, '第六': 6,
+      '七': 7, '7': 7, '七号': 7, '七针': 7, '第七': 7,
+      '八': 8, '8': 8, '八号': 8, '八针': 8, '第八': 8,
+      '九': 9, '9': 9, '九号': 9, '九针': 9, '第九': 9,
+    };
+
+    // ── persistence ──
+    function saveData() {
+      localStorage.setItem("crochet_v3_fixed", JSON.stringify(data));
+    }
+
+    function loadData() {
+      try {
+        const d = localStorage.getItem("crochet_v3_fixed") || localStorage.getItem("crochet_v3");
+        if (d) data = JSON.parse(d);
+      } catch (e) { }
+
+      // 保底结构
+      if (!data || typeof data !== "object") data = {};
+      if (!Array.isArray(data.projects)) data.projects = [];
+      if (!data.settings || typeof data.settings !== "object") {
+        data.settings = { theme: "macaron", customColors: {}, voiceEnabled: false };
+      }
+
+      // 迁移旧数据
+      migrateData(data);
+      saveData();
+    }
+
+    // ── 数据迁移：兼容旧版格式 ──
+    function migrateData(d) {
+      d.projects.forEach(p => {
+        // 补全 customSettings
+        if (!p.customSettings) p.customSettings = { names: {}, colors: {}, customStitches: {} };
+        if (!p.customSettings.customStitches) p.customSettings.customStitches = {};
+        if (p.archived === undefined) p.archived = false;
+        if (p.coverImage === undefined) p.coverImage = null;
+
+        // 旧版 → 新版：将顶层 rounds 封装为 parts
+        if (!p.parts && p.rounds) {
+          const partId = uid();
+          p.parts = [{
+            id: partId,
+            title: '主图解',
+            rawPattern: '',
+            rounds: p.rounds || [],
+            activeRoundId: p.activeRoundId || (p.rounds?.length ? p.rounds[p.rounds.length - 1].id : null),
+            customPalette: p.customPalette || null
+          }];
+          p.activePartId = partId;
+          delete p.rounds;
+          delete p.activeRoundId;
+          delete p.customPalette;
+        }
+
+        // 保底：确保 parts 数组存在
+        if (!p.parts || !Array.isArray(p.parts)) {
+          const partId = uid();
+          p.parts = [{ id: partId, title: '主图解', rawPattern: '', rounds: [], activeRoundId: null, customPalette: null }];
+          p.activePartId = partId;
+        }
+
+        // 保底 activePartId
+        if (!p.activePartId || !p.parts.find(pt => pt.id === p.activePartId)) {
+          p.activePartId = p.parts[0]?.id || null;
+        }
+
+        // 迁移每个 part 内的 rounds
+        p.parts.forEach(part => {
+          if (!part.rounds) part.rounds = [];
+          if (part.customPalette === undefined) part.customPalette = null;
+          if (!part.rawPattern && part.rawPattern !== '') part.rawPattern = '';
+          if (!part.title) part.title = '未命名';
+
+          part.rounds.forEach(r => {
+            if (!r.instruction && r.instruction !== "") r.instruction = "";
+            if (r.isTextCard === undefined) r.isTextCard = false;
+            if (Array.isArray(r.seq)) {
+              r.seq = r.seq.map(sid => OLD_ID_MAP[sid] || sid)
+                .filter(sid => STITCH_LIB[sid]);
+            }
+          });
+
+          // 保底 activeRoundId
+          if (!part.activeRoundId && part.rounds.length) {
+            part.activeRoundId = part.rounds[part.rounds.length - 1].id;
+          }
+        });
+      });
+    }
+
+    // ── helpers ──
+    function uid() { return String(Date.now() + Math.random()); }
+    function getProj(id) { return data.projects.find(p => String(p.id) === String(id)); }
+    function getActivePart(proj) {
+      if (!proj || !proj.parts || !proj.parts.length) return null;
+      return proj.parts.find(p => p.id === proj.activePartId) || proj.parts[0];
+    }
+    function findRound(proj, roundId) {
+      if (!proj || !proj.parts) return null;
+      for (const part of proj.parts) {
+        const r = part.rounds.find(r => r.id === roundId);
+        if (r) return r;
+      }
+      return null;
+    }
+    function getRoundStitches(round) {
+      if (!round || !round.instruction || !round.instruction.trim()) return [];
+      return [...new Set(extractStitches(round.instruction))];
+    }
+    function resolveLabel(sid, proj) {
+      if (proj?.customSettings?.names?.[sid]) return proj.customSettings.names[sid];
+      const s = STITCH_LIB[sid];
+      return s ? s.label : sid;
+    }
+    // 扩展主题色（HTML 内定义，不修改 stitches.js）
+    const ALL_THEMES = {
+      macaron: null, // 使用 stitches.js 中的 COLOR_THEMES.macaron
+      ocean: {
+        X: "#5BC0DE", T: "#7ED6DF", F: "#2980B9", E: "#6C5CE7",
+        V: "#48DBFB", W: "#0ABDE3", TV: "#54A0FF", TW: "#2E86DE",
+        FV: "#0984E3", FW: "#0652DD", EV: "#4834D4",
+        A: "#FF9FF3", M: "#F368E0", TA: "#FF6B6B", TM: "#EE5A24",
+        FA: "#FDA7DF", FM: "#D980FA", EA: "#B53471",
+        CH: "#C23616", SL: "#95A5A6", SK: "#BDC3C7", G: "#E84393", Q: "#A29BFE"
+      },
+      forest: {
+        X: "#55E6C1", T: "#A3CB38", F: "#218C74", E: "#6A89CC",
+        V: "#58B19F", W: "#1B9A59", TV: "#82CCDD", TW: "#B8E994",
+        FV: "#26DE81", FW: "#20BF6B", EV: "#3B3B98",
+        A: "#FD79A8", M: "#E84393", TA: "#E66767", TM: "#F97F51",
+        FA: "#F8A5C2", FM: "#C4E538", EA: "#B33771",
+        CH: "#C44569", SL: "#A4B0BE", SK: "#CED6E0", G: "#FF6B81", Q: "#778BEB"
+      },
+      minimal: {
+        X: "#636E72", T: "#95A5A6", F: "#7F8C8D", E: "#57606F",
+        V: "#2ED573", W: "#1E90FF", TV: "#26DE81", TW: "#10AC84",
+        FV: "#45AAF2", FW: "#2E86DE", EV: "#5F27CD",
+        A: "#FF6B81", M: "#FF4757", TA: "#FFA502", TM: "#Eccc68",
+        FA: "#FF6348", FM: "#FF9F43", EA: "#EE5A24",
+        CH: "#C44569", SL: "#A4B0BE", SK: "#CED6E0", G: "#FD79A8", Q: "#778BEB"
+      }
+    };
+
+    function getProjColor(sid, proj) {
+      const themeKey = data?.settings?.theme || "macaron";
+      const ext = ALL_THEMES[themeKey];
+      if (ext && ext[sid]) return ext[sid];
+      const color = resolveColor(sid, data.settings, proj?.customSettings);
+      if (color !== '#ccc') return color;
+      const cs = proj?.customSettings?.customStitches?.[sid];
+      return cs?.color || color;
+    }
+    function getStitchInfo(sid, proj) {
+      const cs = proj?.customSettings?.customStitches?.[sid];
+      const lib = STITCH_LIB[sid];
+      if (!cs && !lib) return null;
+      return {
+        id: sid,
+        label: resolveLabel(sid, proj),
+        abbr: cs ? cs.id : (lib?.abbr || sid),
+        color: getProjColor(sid, proj),
+        category: cs?.category || lib?.category || 'basic',
+        isCustom: !!cs
+      };
+    }
+    function getAllStitchesForProject(proj) {
+      const list = STITCHES.map(s => ({
+        ...s,
+        label: resolveLabel(s.id, proj),
+        color: getProjColor(s.id, proj)
+      }));
+      if (proj?.customSettings?.customStitches) {
+        Object.values(proj.customSettings.customStitches).forEach(cs => {
+          list.push({
+            id: cs.id,
+            label: resolveLabel(cs.id, proj),
+            abbr: cs.id,
+            color: getProjColor(cs.id, proj),
+            category: cs.category || 'basic'
+          });
+        });
+      }
+      return list;
+    }
+
+    // ── navigation ──
+    function goHome() {
+      curProjId = null; expandedRounds.clear(); selectedStitch = null;
+      flowState.projMenuId = null;
+      document.getElementById("bottom-bar").style.display = "none";
+      document.getElementById("hdr-pdf").style.display = "none";
+      document.getElementById("hdr-settings").style.display = "none";
+      document.getElementById("tab-nav").style.display = "flex";
+      currentTab = 'projects';
+      updateTabNav();
+      const screen = document.getElementById("screen");
+      screen.classList.add("enter-back");
+      screen.addEventListener("animationend", () => screen.classList.remove("enter-back"), { once: true });
+      renderHome();
+    }
+
+    function openProject(id) {
+      curProjId = String(id); selectedStitch = null;
+      const proj = getProj(id);
+      if (proj) {
+        const part = getActivePart(proj);
+        if (part && part.rounds.length) {
+          expandedRounds.add(part.rounds[part.rounds.length - 1].id);
+          if (!part.activeRoundId || !part.rounds.find(r => r.id === part.activeRoundId)) {
+            part.activeRoundId = part.rounds[part.rounds.length - 1].id;
+          }
+        }
+      }
+      document.getElementById("hdr-pdf").style.display = "block";
+      document.getElementById("hdr-settings").style.display = "none";
+      document.getElementById("tab-nav").style.display = "none";
+      document.getElementById("bottom-bar").style.display = "block";
+      const screen = document.getElementById("screen");
+      screen.classList.add("enter-forward");
+      screen.addEventListener("animationend", () => screen.classList.remove("enter-forward"), { once: true });
+      renderProject();
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      updateTabNav();
+      if (tab === 'projects') {
+        renderHome();
+      } else if (tab === 'settings') {
+        renderSettings();
+      }
+    }
+
+    function updateTabNav() {
+      const projBtn = document.getElementById('tab-projects');
+      const setBtn = document.getElementById('tab-settings');
+      if (projBtn) projBtn.classList.toggle('active', currentTab === 'projects');
+      if (setBtn) setBtn.classList.toggle('active', currentTab === 'settings');
+    }
+
+    function exportPDF() {
+      window.print();
+    }
+
+    // ── 数据导出/导入 ──
+    function exportData() {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `钩织计数本备份_${new Date().toISOString().slice(0,10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function exportSingleProject(id) {
+      const proj = data.projects.find(p => String(p.id) === String(id));
+      if (!proj) return;
+
+      const payload = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        project: proj
+      };
+
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const date = new Date().toISOString().slice(0, 10);
+      a.download = `${proj.name}_${date}.knt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      const guide = document.getElementById('backup-guide');
+      if (guide) {
+        guide.style.display = 'block';
+        guide.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    function importData(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (!imported || typeof imported !== 'object') throw new Error('文件格式错误');
+          if (!Array.isArray(imported.projects)) throw new Error('缺少 projects 数组');
+
+          // 校验每个项目的基本结构
+          imported.projects.forEach((p, i) => {
+            if (!p.id || !p.name) throw new Error(`第 ${i + 1} 个项目缺少必要字段`);
+          });
+
+          showConfirmDialog(`确定导入备份？\n共有 ${imported.projects.length} 个项目\n当前 ${data.projects.length} 个项目将被覆盖`, (ok) => {
+            if (!ok) return;
+            data = imported;
+            migrateData(data);
+            saveData();
+            renderHome();
+            alert('✅ 数据恢复成功');
+          });
+        } catch (err) {
+          alert('❌ 导入失败：' + err.message);
+        } finally {
+          input.value = '';
+        }
+      };
+      reader.onerror = () => {
+        alert('❌ 文件读取失败');
+        input.value = '';
+      };
+      reader.readAsText(file);
+    }
+
+    // ── project actions ──
+    function showNewProjectDialog() {
+      dlgCallback = (name) => {
+        if (!name.trim()) return;
+        const r = { id: uid(), seq: [], instruction: "", isTextCard: false };
+        const partId = uid();
+        const proj = {
+          id: uid(), name: name.trim(),
+          parts: [{ id: partId, title: '主图解', rawPattern: '', rounds: [r], activeRoundId: r.id, customPalette: null }],
+          activePartId: partId,
+          customSettings: { names: {}, colors: {}, customStitches: {} }
+        };
+        data.projects.push(proj);
+        saveData();
+        curProjId = String(proj.id);
+        expandedRounds.clear();
+        selectedStitch = null;
+        document.getElementById("hdr-pdf").style.display = "block";
+        document.getElementById("hdr-settings").style.display = "none";
+        flowState.newProjectFlow = true;
+        showEntryChoiceSheet();
+      };
+      document.getElementById("dlg-title").textContent = "新建项目";
+      document.getElementById("dlg-msg").style.display = "none";
+      document.getElementById("dlg-input").style.display = "";
+      document.getElementById("dlg-input").value = "";
+      confirmCallback = null;
+      document.getElementById("dialog").classList.add("show");
+      setTimeout(() => document.getElementById("dlg-input").focus(), 100);
+    }
+
+    function showConfirmDialog(message, onConfirm) {
+      document.getElementById("dlg-title").textContent = "确认操作";
+      document.getElementById("dlg-msg").textContent = message;
+      document.getElementById("dlg-msg").style.display = "";
+      document.getElementById("dlg-input").style.display = "none";
+      dlgCallback = null;
+      confirmCallback = onConfirm;
+      document.getElementById("dialog").classList.add("show");
+      // 聚焦确定按钮避免键盘陷阱
+      setTimeout(() => document.querySelector("#dialog .dialog-btn.ok").focus(), 100);
+    }
+
+    function confirmDialog() {
+      const val = document.getElementById("dlg-input").value;
+      const cb = confirmCallback;
+      confirmCallback = null;
+      closeDialog();
+      if (dlgCallback) { dlgCallback(val); dlgCallback = null; }
+      if (cb) { cb(true); }
+    }
+
+    function closeDialog() {
+      document.getElementById("dialog").classList.remove("show");
+      if (confirmCallback) { confirmCallback(false); confirmCallback = null; }
+    }
+
+    // ── 入口选择：粘贴图解 / 手动创建 ──
+    function showEntryChoiceSheet() {
+      let html = `<div class="sheet-handle"></div>
+      <div class="sheet-title">选择创建方式</div>
+      <div style="padding:14px 16px;display:flex;flex-direction:column;gap:12px">
+        <div onclick="startImportFlow()" style="background:var(--card);border:2px solid var(--accent);border-radius:14px;padding:18px 16px;cursor:pointer;display:flex;align-items:center;gap:14px">
+          <div style="width:48px;height:48px;border-radius:12px;background:#FEF3C7;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">📋</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:3px">粘贴图解（自动配置）</div>
+            <div style="font-size:12px;color:var(--muted)">自动识别针法，快速开始钩织</div>
+          </div>
+          <div style="color:var(--accent);font-size:20px;flex-shrink:0">→</div>
+        </div>
+        <div onclick="startManualFlow()" style="background:var(--card);border:2px solid var(--border);border-radius:14px;padding:18px 16px;cursor:pointer;display:flex;align-items:center;gap:14px">
+          <div style="width:48px;height:48px;border-radius:12px;background:#EDE9FE;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">✋</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:3px">手动创建（自定义针法）</div>
+            <div style="font-size:12px;color:var(--muted)">自行选择需要的针法组合</div>
+          </div>
+          <div style="color:var(--muted);font-size:20px;flex-shrink:0">→</div>
+        </div>
+      </div>
+      <button class="sheet-cancel" onclick="dismissEntryChoice()">跳过（使用全部针法）</button>`;
+      showSheet(html);
+    }
+
+    function startImportFlow() {
+      document.getElementById("sheet").classList.remove("show");
+      document.getElementById("overlay").classList.remove("show");
+      flowState.importMode = 'create';
+      openPatternPasteSheet();
+    }
+
+    function startManualFlow() {
+      document.getElementById("sheet").classList.remove("show");
+      document.getElementById("overlay").classList.remove("show");
+      openStitchSetup('create');
+    }
+
+    function dismissEntryChoice() {
+      flowState.newProjectFlow = false;
+      closeSheet();
+      renderProject();
+    }
+
+    document.getElementById("dlg-input").addEventListener("keydown", e => {
+      if (e.key === "Enter") confirmDialog();
+    });
+    document.getElementById("dialog").addEventListener("keydown", e => {
+      if (e.key === "Escape") closeDialog();
+    });
+
+    function toggleProjMenu(id, e) {
+      e.stopPropagation();
+      if (flowState.projMenuId === id) {
+        flowState.projMenuId = null;
+      } else {
+        flowState.projMenuId = id;
+      }
+      renderHome();
+    }
+
+    function archiveProject(id) {
+      const proj = data.projects.find(p => String(p.id) === String(id));
+      if (!proj) return;
+
+      showConfirmDialog(`确定归档「${proj.name}」？归档后可在下方列表找到，仍可继续编辑。`, (ok) => {
+        if (!ok) return;
+        proj.archived = true;
+        flowState.projMenuId = null;
+        saveData();
+        renderHome();
+        showArchiveSuccessSheet(proj);
+      });
+    }
+
+    function showArchiveSuccessSheet(proj) {
+      const isHintHidden = localStorage.getItem('hide_pwa_hint') === 'true';
+      const allNeedles = (proj.parts || []).reduce((s, pt) =>
+        s + (pt.rounds || []).reduce((ss, r) => ss + (r.seq?.length || 0), 0), 0);
+      const allRounds = (proj.parts || []).reduce((s, pt) => s + (pt.rounds?.length || 0), 0);
+
+      let pwaHint = '';
+      if (!isHintHidden) {
+        pwaHint = `
+          <div style="margin:0 16px 12px;padding:14px;background:#FEF3C7;border-radius:12px;font-size:12px;color:#92400E;line-height:1.6">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <div style="font-weight:bold">💡 技巧提示</div>
+              <div onclick="event.stopPropagation();showPwaTutorial()" style="color:#C07A45;font-weight:bold;cursor:pointer;text-decoration:underline;white-space:nowrap">详细教程 ></div>
+            </div>
+            您可以将本页面"添加到主屏幕"，下次即可像 App 一样从桌面直接打开，体验更沉浸。
+            <div style="margin-top:8px;display:flex;align-items:center;gap:6px;opacity:0.8;cursor:pointer" onclick="handlePwaHintOptOut(event)">
+              <input type="checkbox" id="stop-pwa-hint" style="width:14px;height:14px;accent-color:#C07A45">
+              <label for="stop-pwa-hint" style="cursor:pointer">后续不再提示</label>
+            </div>
+          </div>`;
+      }
+
+      const html = `<div class="sheet-handle"></div>
+        <div style="text-align:center;padding:20px 16px 12px">
+          <div style="font-size:36px;margin-bottom:8px">📦</div>
+          <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px">「${esc(proj.name)}」已归档</div>
+          <div style="font-size:12px;color:var(--muted)">${allRounds} 圈 · ${allNeedles} 针</div>
+        </div>
+        ${pwaHint}
+        <div style="margin:0 16px 8px;padding:14px;background:var(--bg);border-radius:12px">
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">💾 下载备份文件</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:10px">如果你需要<strong>换手机</strong>或<strong>多设备使用</strong>，建议保存一份备份。平时只用一台手机的话，无需操作。</div>
+          <button class="bar-btn primary" style="width:100%" onclick="exportSingleProject('${proj.id}')">下载「${esc(proj.name)}」的备份</button>
+        </div>
+        <div id="backup-guide" style="display:none;margin:0 16px 8px;padding:12px 14px;background:var(--bg);border-radius:10px;font-size:12px;color:var(--muted);line-height:1.8">
+          📁 <strong>在哪里找到备份文件？</strong><br>
+          iPhone：文件 App → 我的iPhone → 下载<br>
+          安卓：文件管理器 → 下载文件夹<br><br>
+          📲 <strong>防丢小技巧：</strong>把文件发送到<strong>微信收藏</strong>，换手机后也能找回
+        </div>
+        <button class="sheet-cancel" onclick="closeSheet()">完成</button>`;
+
+      showSheet(html);
+    }
+
+    function handlePwaHintOptOut(e) {
+      const checkbox = document.getElementById('stop-pwa-hint');
+      if (e.target !== checkbox) {
+        checkbox.checked = !checkbox.checked;
+      }
+      if (checkbox.checked) {
+        localStorage.setItem('hide_pwa_hint', 'true');
+      } else {
+        localStorage.removeItem('hide_pwa_hint');
+      }
+    }
+
+    function showPwaTutorial() {
+      const content = `
+        <div class="sheet-handle"></div>
+        <div style="padding:16px 16px 8px;max-height:70vh;overflow-y:auto">
+          <h3 style="font-size:18px;margin-bottom:16px;text-align:center">如何安装为 App</h3>
+
+          <div style="display:flex;flex-direction:column;gap:20px;color:var(--text);line-height:1.6">
+            <section>
+              <h4 style="color:var(--accent);margin-bottom:8px"> iOS (Safari 浏览器)</h4>
+              <p style="font-size:13px">1. 点击浏览器底部的<strong>分享按钮</strong>（方框带向上箭头）。</p>
+              <p style="font-size:13px">2. 向上滑动菜单，找到并点击<strong>"添加到主屏幕"</strong>。</p>
+              <p style="font-size:13px">3. 点击右上角的"添加"即可完成。</p>
+            </section>
+
+            <section>
+              <h4 style="color:var(--accent);margin-bottom:8px">🤖 Android (Chrome/自带浏览器)</h4>
+              <p style="font-size:13px">1. 点击右上角或右下角的<strong>"三个点"</strong>或"菜单"图标。</p>
+              <p style="font-size:13px">2. 找到并点击<strong>"安装应用"</strong>或<strong>"添加到主屏幕"</strong>。</p>
+              <p style="font-size:13px">3. 根据系统提示完成添加。</p>
+            </section>
+
+            <section style="background:var(--bg);padding:12px;border-radius:10px">
+              <h4 style="font-size:14px;margin-bottom:4px">为什么推荐安装？</h4>
+              <ul style="font-size:12px;color:var(--muted);padding-left:16px">
+                <li><strong>离线可用</strong>：在没有网络的情况下也能打开和使用。</li>
+                <li><strong>纯净体验</strong>：隐藏浏览器地址栏，操作空间更大。</li>
+                <li><strong>快速启动</strong>：直接从桌面点击图标，无需在浏览器标签页寻找。</li>
+              </ul>
+            </section>
+          </div>
+
+          <button class="sheet-cancel" onclick="closeSheet()" style="width:100%;margin-top:24px">我知道了</button>
+        </div>`;
+
+      showSheet(content);
+    }
+
+    function unarchiveProject(id) {
+      const proj = data.projects.find(p => String(p.id) === String(id));
+      if (proj) { proj.archived = false; flowState.projMenuId = null; saveData(); renderHome(); }
+    }
+
+    function deleteProject(id, e) {
+      e.stopPropagation();
+      flowState.projMenuId = null;
+      showConfirmDialog("确定要删除这个项目吗？此操作不可恢复。", (ok) => {
+        if (!ok) return;
+        data.projects = data.projects.filter(p => String(p.id) !== String(id));
+        saveData(); renderHome();
+      });
+    }
+
+    // ── round actions ──
+    function normalizeRoundNums(rounds) {
+      let n = 1;
+      for (const r of rounds) {
+        if (r.isTextCard) {
+          r.roundNum = null;
+        } else if (r.roundNum === 0) {
+          // 起针保持 0
+        } else {
+          r.roundNum = n++;
+        }
+      }
+    }
+
+    function addRound() {
+      const proj = getProj(curProjId);
+      const part = getActivePart(proj);
+      if (!part) return;
+      const r = { id: uid(), seq: [], instruction: "", isTextCard: false };
+      part.rounds.push(r);
+      normalizeRoundNums(part.rounds);
+      expandedRounds.add(r.id);
+      saveData();
+      setActiveRound(proj, r.id);
+      setTimeout(() => {
+        const el = document.getElementById("round-" + r.id);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 60);
+    }
+
+    function toggleRound(rid) {
+      const wasExpanded = expandedRounds.has(rid);
+      if (wasExpanded) expandedRounds.delete(rid);
+      else expandedRounds.add(rid);
+
+      const roundEl = document.getElementById("round-" + rid);
+      if (roundEl) {
+        const body = roundEl.querySelector('.round-body');
+        const chev = roundEl.querySelector('.round-chev');
+        if (body) body.classList.toggle('open', !wasExpanded);
+        if (chev) chev.classList.toggle('open', !wasExpanded);
+      } else {
+        renderProject();
+      }
+    }
+
+    // ── stitch actions ──
+
+    // 增量更新辅助函数：生成单个针的 HTML
+    function renderSpillHTML(sid, idx, r, proj) {
+      const info = getStitchInfo(sid, proj);
+      if (!info) return '';
+      const sel = selectedStitch && selectedStitch.roundId === r.id && selectedStitch.idx === idx;
+      const bg = info.color + "28";
+      return `<span class="spill${sel ? " selected" : ""}"
+    style="background:${bg};border-color:${info.color};color:${info.color}"
+    onclick="stitchTap('${r.id}',${idx})">
+    <span class="spill-idx">${idx + 1}</span>
+    <span class="spill-abbr">${esc(info.abbr)}</span>
+  </span>`;
+    }
+
+    // 增量更新辅助函数：更新圈头部的针数统计和 dots
+    function updateRoundHeader(r, proj) {
+      const roundEl = document.getElementById("round-" + r.id);
+      if (!roundEl) return;
+      const countEl = roundEl.querySelector('.round-count');
+      if (countEl) {
+        const total = r.seq.length;
+        const dots = r.seq.slice(-8).map(sid => {
+          const c = getProjColor(sid, proj);
+          return `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${c};margin-right:2px"></span>`;
+        }).join("");
+        countEl.innerHTML = `${total} 针 ${dots}`;
+      }
+    }
+
+    // 增量更新辅助函数：更新全局统计
+    function updateHeaderStats(proj) {
+      const allRounds = (proj.parts || []).reduce((s, pt) => s + (pt.rounds?.length || 0), 0);
+      const allNeedles = (proj.parts || []).reduce((s, pt) => s + (pt.rounds || []).reduce((ss, r) => ss + (r.seq?.length || 0), 0), 0);
+      const hdrSub = document.getElementById("hdr-sub");
+      if (hdrSub) hdrSub.textContent = `${(proj.parts||[]).length} 部件 · ${allRounds} 圈 · ${allNeedles} 针`;
+    }
+
+    /**
+     * 增量更新 task-slide 的进度部分，避免全量替换 slide
+     */
+    function updateTaskSlideProgress(r) {
+      const proj = getProj(curProjId);
+      const slide = document.getElementById('task-slide');
+      if (!slide) return;
+      slide.outerHTML = renderTaskSlide(proj);
+    }
+
+    // 增量更新辅助函数：重新编号圈内的针（idx + onclick）
+    function reindexSpills(seqWrap, roundId) {
+      const spills = seqWrap.querySelectorAll('.spill');
+      spills.forEach((spill, i) => {
+        const idxEl = spill.querySelector('.spill-idx');
+        if (idxEl) idxEl.textContent = i + 1;
+        spill.setAttribute('onclick', `stitchTap('${roundId}',${i})`);
+        // 同步更新选中状态的类名
+        if (selectedStitch && selectedStitch.roundId === roundId && selectedStitch.idx === i) {
+          spill.classList.add('selected');
+        } else {
+          spill.classList.remove('selected');
+        }
+      });
+    }
+
+    function pushStitch(sid) {
+      const proj = getProj(curProjId);
+      const part = getActivePart(proj);
+      if (!part) return;
+      const r = part.rounds.find(x => x.id === part.activeRoundId);
+      if (!r) return;
+
+      r.seq.push(sid);
+
+      saveData();
+
+      // 增量更新：直接操作 DOM，避免全量重绘
+      const roundEl = document.getElementById("round-" + r.id);
+      if (roundEl) {
+        const seqWrap = roundEl.querySelector('.seq-wrap');
+        if (seqWrap) {
+          const emptySpan = seqWrap.querySelector('.seq-empty');
+          if (emptySpan) emptySpan.remove();
+          const idx = r.seq.length - 1;
+          seqWrap.insertAdjacentHTML('beforeend', renderSpillHTML(sid, idx, r, proj));
+        }
+        updateRoundHeader(r, proj);
+        updateHeaderStats(proj);
+        updateTaskSlideProgress(r);
+        roundEl.scrollIntoView({ behavior: "smooth", block: "center" });
+      } else {
+        renderProject();
+        const el = document.getElementById("round-" + r.id);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }
+
+    function undoStitch() {
+      const proj = getProj(curProjId);
+      const part = getActivePart(proj);
+      if (!part) return;
+      const r = part.rounds.find(x => x.id === part.activeRoundId);
+      if (!r || !r.seq.length) return;
+      r.seq.pop();
+      saveData();
+
+      // 增量更新
+      const roundEl = document.getElementById("round-" + r.id);
+      if (roundEl) {
+        const seqWrap = roundEl.querySelector('.seq-wrap');
+        if (seqWrap) {
+          const lastSpill = seqWrap.querySelector('.spill:last-child');
+          if (lastSpill) lastSpill.remove();
+          if (r.seq.length === 0) {
+            seqWrap.innerHTML = '<span class="seq-empty">暂无记录，点击下方针法按钮添加</span>';
+          }
+        }
+        updateRoundHeader(r, proj);
+        updateHeaderStats(proj);
+        updateTaskSlideProgress(r);
+      } else {
+        renderProject();
+      }
+    }
+
+    function stitchTap(roundId, idx) {
+      selectedStitch = { roundId, idx };
+      openStitchSheet(roundId, idx);
+    }
+
+    function openStitchSheet(roundId, idx) {
+      const proj = getProj(curProjId);
+      const r = findRound(proj, roundId);
+      const sid = r.seq[idx];
+      const s = SM[sid];
+      const projColor = getProjColor(sid, proj);
+      const projLabel = resolveLabel(sid, proj);
+
+      let html = `<div class="sheet-handle"></div>
+  <div class="sheet-title">第 ${idx + 1} 针 · <span style="color:${projColor};font-weight:700">${esc(projLabel)}</span></div>`;
+
+      html += `<div class="sheet-section">更改为</div>`;
+      html += `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:8px 14px">`;
+      getAllStitchesForProject(proj).forEach(st => {
+        if (st.id === sid) return;
+        html += `<button class="picker-btn" style="background:${st.color}" onclick="changeStitch('${roundId}',${idx},'${st.id}')">${esc(st.label)}</button>`;
+      });
+      html += `</div>`;
+
+      html += `<div class="sheet-section" style="margin-top:4px">插入针法</div>`;
+      html += `<div class="sheet-item" onclick="startInsert('${roundId}',${idx},'before')">
+    <div class="sheet-item-icon" style="background:#EFF6FF;color:#3B82F6">↑</div>
+    <div><div class="sheet-item-label">在此针前插入</div><div class="sheet-item-sub">第 ${idx + 1} 针之前</div></div>
+  </div>`;
+      html += `<div class="sheet-item" onclick="startInsert('${roundId}',${idx},'after')">
+    <div class="sheet-item-icon" style="background:#F0FDF4;color:#22C55E">↓</div>
+    <div><div class="sheet-item-label">在此针后插入</div><div class="sheet-item-sub">第 ${idx + 1} 针之后</div></div>
+  </div>`;
+
+      html += `<div class="sheet-item sheet-del" onclick="deleteStitch('${roundId}',${idx})">
+    <div class="sheet-item-icon" style="background:#FEF2F2;color:#EF4444">×</div>
+    <div><div class="sheet-item-label" style="color:#EF4444">删除此针</div></div>
+  </div>`;
+
+      html += `<button class="sheet-cancel" onclick="closeSheet()">取消</button>`;
+      showSheet(html);
+    }
+
+    function changeStitch(roundId, idx, sid) {
+      const proj = getProj(curProjId);
+      const r = findRound(proj, roundId);
+      if (!r) return;
+      r.seq[idx] = sid;
+      saveData(); closeSheet();
+
+      // 增量更新：直接修改对应 spill 的样式
+      const roundEl = document.getElementById("round-" + r.id);
+      if (roundEl) {
+        const seqWrap = roundEl.querySelector('.seq-wrap');
+        if (seqWrap) {
+          const spills = seqWrap.querySelectorAll('.spill');
+          if (spills[idx]) {
+            const info = getStitchInfo(sid, proj);
+            if (info) {
+              const bg = info.color + "28";
+              spills[idx].style.background = bg;
+              spills[idx].style.borderColor = info.color;
+              spills[idx].style.color = info.color;
+              const abbrEl = spills[idx].querySelector('.spill-abbr');
+              if (abbrEl) abbrEl.textContent = esc(info.abbr);
+            }
+          }
+        }
+        updateRoundHeader(r, proj);
+      } else {
+        renderProject();
+      }
+    }
+
+    function deleteStitch(roundId, idx) {
+      const proj = getProj(curProjId);
+      const r = findRound(proj, roundId);
+      if (!r) return;
+      r.seq.splice(idx, 1);
+      saveData(); closeSheet();
+
+      // 增量更新
+      const roundEl = document.getElementById("round-" + r.id);
+      if (roundEl) {
+        const seqWrap = roundEl.querySelector('.seq-wrap');
+        if (seqWrap) {
+          const spills = seqWrap.querySelectorAll('.spill');
+          if (spills[idx]) spills[idx].remove();
+          if (r.seq.length === 0) {
+            seqWrap.innerHTML = '<span class="seq-empty">暂无记录，点击下方针法按钮添加</span>';
+          } else {
+            reindexSpills(seqWrap, roundId);
+          }
+        }
+        updateRoundHeader(r, proj);
+        updateHeaderStats(proj);
+        // 同步选中状态
+        if (selectedStitch && selectedStitch.roundId === roundId) {
+          if (selectedStitch.idx === idx) {
+            selectedStitch = null;
+          } else if (selectedStitch.idx > idx) {
+            selectedStitch.idx--;
+          }
+        }
+      } else {
+        renderProject();
+      }
+    }
+
+    function startInsert(roundId, idx, dir) {
+      pendingInsert = { roundId, idx, dir };
+      const proj = getProj(curProjId);
+      let html = `<div class="sheet-handle"></div>
+  <div class="sheet-title">选择要插入的针法</div>
+  <div class="picker-grid">`;
+      getAllStitchesForProject(proj).forEach(s => {
+        html += `<button class="picker-btn" style="background:${s.color}" onclick="doInsert('${s.id}')">${esc(s.label)}</button>`;
+      });
+      html += `</div><button class="sheet-cancel" onclick="closeSheet()">取消</button>`;
+      showSheet(html);
+    }
+
+    function doInsert(sid) {
+      if (!pendingInsert) return;
+      const { roundId, idx, dir } = pendingInsert;
+      const proj = getProj(curProjId);
+      const r = findRound(proj, roundId);
+      if (!r) return;
+      const pos = dir === "before" ? idx : idx + 1;
+      r.seq.splice(pos, 0, sid);
+      pendingInsert = null;
+      saveData(); closeSheet();
+
+      // 增量更新
+      const roundEl = document.getElementById("round-" + r.id);
+      if (roundEl) {
+        const seqWrap = roundEl.querySelector('.seq-wrap');
+        if (seqWrap) {
+          const emptySpan = seqWrap.querySelector('.seq-empty');
+          if (emptySpan) emptySpan.remove();
+
+          const spills = seqWrap.querySelectorAll('.spill');
+          const spillHtml = renderSpillHTML(sid, pos, r, proj);
+
+          if (spills[pos]) {
+            spills[pos].insertAdjacentHTML('beforebegin', spillHtml);
+          } else if (spills.length > 0) {
+            spills[spills.length - 1].insertAdjacentHTML('afterend', spillHtml);
+          } else {
+            seqWrap.insertAdjacentHTML('beforeend', spillHtml);
+          }
+          reindexSpills(seqWrap, roundId);
+        }
+        updateRoundHeader(r, proj);
+        updateHeaderStats(proj);
+        // 同步选中状态
+        if (selectedStitch && selectedStitch.roundId === roundId && selectedStitch.idx >= pos) {
+          selectedStitch.idx++;
+        }
+      } else {
+        renderProject();
+      }
+    }
+
+    function showSheet(html) {
+      document.getElementById("sheet").innerHTML = html;
+      document.getElementById("sheet").classList.add("show");
+      document.getElementById("overlay").classList.add("show");
+    }
+    function closeSheet() {
+      document.getElementById("sheet").classList.remove("show");
+      document.getElementById("overlay").classList.remove("show");
+      pendingInsert = null; selectedStitch = null;
+
+      // ── 流程分支（顺序敏感，不要调换）──
+      if (flowState.importMode === 'create') {
+        flowState.importMode = null;
+        showEntryChoiceSheet();
+        return;
+      }
+      if (flowState.newProjectFlow) {
+        flowState.newProjectFlow = false;
+        renderProject();
+      }
+    }
+
+    // ═══════════════════════════════════════════
+    //  Task Slide（图解灯片）
+    // ═══════════════════════════════════════════
+
+    /**
+     * 从图解指令文字中估算预期针数（用于进度显示）
+     * 规则：提取所有"数字+针法"或独立针法 token，累加数量
+     * 无法解析时返回 null（不显示进度条）
+     * @param {string} instruction
+     * @returns {number|null}
+     */
+    function calcExpectedCount(instruction) {
+      if (!instruction) return null;
+
+      // 支持多种圈号前缀：第1圈：/ 第一圈：/ R1: / Row1: 等
+      let body = instruction
+        .replace(/^第[一二三四五六七八九十百零\d]+[圈行环][:：]?\s*/i, '')
+        .replace(/^[Rr]\d+[:：]?\s*/, '');
+
+      if (!body.trim()) return null;
+
+      let total = 0;
+      let found = false;
+
+      let remaining = body;
+
+      // 先匹配 N(...) 格式：数字(针法组合) 表示总针数 = 数字本身
+      const groupRe = /(\d+)\s*\([^)]+\)/gi;
+      let groupMatch;
+      while ((groupMatch = groupRe.exec(body)) !== null) {
+        total += parseInt(groupMatch[1], 10);
+        found = true;
+        remaining = remaining.replace(groupMatch[0], ' ');
+      }
+
+      // 重复组：支持 [...]×N / [...]*N / [...]重复N次 / [...]钩N组 等
+      const repeatRes = [
+        /\[([^\]]+)\]\s*[*×x]\s*(\d+)/gi,
+        /\[([^\]]+)\]\s*(?:重复|钩|织|做|组|遍)\s*(\d+)(?:次|组|遍|个)?/gi,
+      ];
+
+      for (const repeatRe of repeatRes) {
+        let match;
+        while ((match = repeatRe.exec(body)) !== null) {
+          const inner = match[1];
+          const times = parseInt(match[2], 10);
+          const innerCount = countTokens(inner);
+          if (innerCount > 0) {
+            total += innerCount * times;
+            found = true;
+          }
+          remaining = remaining.replace(match[0], ' ');
+        }
+      }
+
+      const rest = countTokens(remaining);
+      if (rest > 0) { total += rest; found = true; }
+
+      // fallback：当标记解析未命中时，提取 "共N针" / "总计N针" 等显式提示
+      if (!found) {
+        const hint = body.match(/(?:共|总计|合计|总)\s*[:：]?\s*(\d+)\s*针/);
+        if (hint) return parseInt(hint[1], 10);
+      }
+
+      return found ? total : null;
+    }
+
+    /**
+     * 计算文本片段中的针法数量
+     * 支持：字母缩写（6X）、中文针法名（6短针/短针6针）、纯数量（6针）
+     */
+    function countTokens(text) {
+      if (!text) return 0;
+
+      const abbrs = 'BLO|FLO|TV|TA|TW|TM|FV|FA|FW|FM|EV|EA|SL|CH|SK|X|V|A|F|T|E|W|M|G|Q';
+      const cnNames = '短针|长针|中长针|长长针|长长长针|加针|减针|枣形针|枣针|引拔针|锁针|辫子针|起立针|空针|跳针|内半针|外半针|爆米花针|狗牙针|短加针|长加针|中长加针';
+      const allStitches = `(?:${abbrs}|${cnNames})`;
+
+      let sum = 0;
+      let found = false;
+
+      // 模式1: 数字前缀 + 可选量词 + 针法名  如 "6X" "6短针" "6个短针"
+      text = text.replace(new RegExp(`(\\d+)(?:个|针)?\\s*${allStitches}`, 'gi'), (m, num) => {
+        sum += parseInt(num, 10);
+        found = true;
+        return ' ';
+      });
+
+      // 模式2: 针法名 + 数字 + 可选量词  如 "短针6针" "短针6个" "X6"
+      text = text.replace(new RegExp(`${allStitches}\\s*(\\d+)(?:针|个)?`, 'gi'), (m, num) => {
+        sum += parseInt(num, 10);
+        found = true;
+        return ' ';
+      });
+
+      // 模式3: 单独针法名（无数字前缀，默认1针） 如 "X" "短针"
+      text = text.replace(new RegExp(allStitches, 'gi'), () => {
+        sum += 1;
+        found = true;
+        return ' ';
+      });
+
+      // 模式4: 纯数字 + "针" 量词  如 "6针" "12针"
+      text = text.replace(/(\d+)\s*针/gi, (m, num) => {
+        sum += parseInt(num, 10);
+        found = true;
+        return ' ';
+      });
+
+      return found ? sum : 0;
+    }
+
+    function renderTaskSlide(proj) {
+      const part = getActivePart(proj);
+      const activeRound = part ? part.rounds.find(r => r.id === part.activeRoundId) : null;
+      const instruction = activeRound?.instruction;
+
+      if (!instruction) {
+        return `<div class="task-slide" id="task-slide">
+      <span class="task-slide-empty">暂无图解，点击导入或开始记录</span>
+    </div>`;
+      }
+
+      const done = activeRound.seq?.length || 0;
+      const autoExpected = calcExpectedCount(instruction);
+      const expected = activeRound.expectedCount != null ? activeRound.expectedCount : autoExpected;
+      const expectedDisplay = expected != null ? expected : '--';
+      const hasProgress = expected !== null && expected > 0;
+
+      let progressHtml = '';
+      if (hasProgress) {
+        const pct = Math.min(done / expected, 1);
+        const isOver = done > expected;
+        const progressColor = isOver ? '#EF4444' : 'var(--accent)';
+        const countText = isOver
+          ? `<span style="color:#EF4444;font-weight:700">${done}</span> / <span class="exp-count" onclick="editExpectedCount(this)">${expectedDisplay}</span> 针（超出 ${done - expected}）`
+          : `<span style="color:var(--accent);font-weight:700">${done}</span> / <span class="exp-count" onclick="editExpectedCount(this)">${expectedDisplay}</span> 针`;
+
+        progressHtml = `
+      <div style="margin-top:6px;width:100%">
+        <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden">
+          <div style="height:100%;width:${(pct*100).toFixed(1)}%;background:${progressColor};border-radius:2px;transition:width .2s ease"></div>
+        </div>
+        <div style="margin-top:3px;font-size:12px;color:var(--muted);text-align:center">${countText}</div>
+      </div>`;
+      } else if (done > 0) {
+        progressHtml = `<div style="margin-top:4px;font-size:12px;color:var(--muted);text-align:center">已钩 <span style="color:var(--accent);font-weight:700">${done}</span> 针</div>`;
+      }
+
+      return `<div class="task-slide" id="task-slide">
+    <div style="width:100%">
+      <div class="task-slide-text" id="task-slide-text">${esc(instruction)}</div>
+      ${progressHtml}
+    </div>
+  </div>`;
+    }
+
+    function editExpectedCount(el) {
+      const currentVal = el.textContent === '--' ? '' : el.textContent;
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.value = currentVal;
+      input.className = 'exp-count-input';
+
+      const save = () => {
+        const val = input.value.trim();
+        const num = val === '' ? null : parseInt(val, 10);
+        const proj = getProj(curProjId);
+        const part = getActivePart(proj);
+        const round = part?.rounds.find(r => r.id === part.activeRoundId);
+        if (round) {
+          round.expectedCount = (num === null || isNaN(num) || num === 0) ? null : num;
+          saveData();
+        }
+        const slide = document.getElementById('task-slide');
+        if (slide) slide.outerHTML = renderTaskSlide(proj);
+      };
+
+      input.onblur = save;
+      input.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); input.blur(); } };
+
+      el.replaceWith(input);
+      input.focus();
+      input.select();
+    }
+
+    function setActiveRound(proj, rid) {
+      if (!proj) proj = getProj(curProjId);
+      const part = getActivePart(proj);
+      if (!part) return;
+      const oldRid = part.activeRoundId;
+      if (oldRid === rid) return;
+
+      part.activeRoundId = rid;
+      saveData();
+
+      const oldIdx = part.rounds.findIndex(r => r.id === oldRid);
+      const newIdx = part.rounds.findIndex(r => r.id === rid);
+      const oldRound = oldIdx >= 0 ? part.rounds[oldIdx] : null;
+      const newRound = newIdx >= 0 ? part.rounds[newIdx] : null;
+
+      // 辅助：生成圈的 label HTML
+      function roundLabelHtml(r, idx, isActive) {
+        const base = r.isTextCard
+          ? (r.instruction || "备注")
+          : (r.roundNum === 0 ? "起针" : `第 ${r.roundNum != null ? r.roundNum : idx + 1} 圈`);
+        return isActive
+          ? base + " <span style='font-size:10px;background:var(--accent);color:#fff;border-radius:4px;padding:1px 5px;margin-left:4px'>编辑中</span>"
+          : base;
+      }
+
+      // 更新旧活跃圈的 DOM
+      if (oldRound) {
+        const oldEl = document.getElementById("round-" + oldRid);
+        if (oldEl) {
+          const badge = oldEl.querySelector('.round-badge');
+          if (badge) badge.classList.remove('active');
+          const label = oldEl.querySelector('.round-label');
+          if (label) label.innerHTML = roundLabelHtml(oldRound, oldIdx, false);
+        }
+      }
+
+      // 更新新活跃圈的 DOM
+      if (newRound) {
+        const newEl = document.getElementById("round-" + rid);
+        if (newEl) {
+          const badge = newEl.querySelector('.round-badge');
+          if (badge) badge.classList.add('active');
+          const label = newEl.querySelector('.round-label');
+          if (label) label.innerHTML = roundLabelHtml(newRound, newIdx, true);
+
+          // 如果新活跃圈未展开，自动展开
+          if (!expandedRounds.has(rid)) {
+            expandedRounds.add(rid);
+            const body = newEl.querySelector('.round-body');
+            const chev = newEl.querySelector('.round-chev');
+            if (body) body.classList.add('open');
+            if (chev) chev.classList.add('open');
+          }
+        }
+      }
+
+      // 更新底部栏
+      const bar = document.getElementById("bottom-bar");
+      if (bar) {
+        let bhtml = renderDynamicPalette(proj);
+        bhtml += renderFilterToggle();
+        bhtml += renderBarRow();
+        bar.innerHTML = bhtml;
+        updateVoiceButton();
+      }
+
+      // 更新任务灯片（保留淡出淡入动画）
+      const slideText = document.getElementById('task-slide-text');
+      if (slideText) {
+        slideText.classList.add('fading');
+        setTimeout(() => {
+          const slide = document.getElementById('task-slide');
+          if (slide) slide.outerHTML = renderTaskSlide(proj);
+          requestAnimationFrame(() => {
+            const el = document.getElementById('task-slide-text');
+            if (el) el.classList.remove('fading');
+          });
+        }, 250);
+      } else {
+        const slide = document.getElementById('task-slide');
+        if (slide) slide.outerHTML = renderTaskSlide(proj);
+      }
+    }
+
+    // ═══════════════════════════════════════════
+    //  动态针法栏
+    // ═══════════════════════════════════════════
+
+    function renderDynamicPalette(proj) {
+      const part = getActivePart(proj);
+      if (!part) return '<div class="palette"></div>';
+
+      let displayIds;
+      if (part.customPalette && part.customPalette.length > 0) {
+        displayIds = part.customPalette.filter(sid => STITCH_LIB[sid] || proj.customSettings?.customStitches?.[sid]);
+      } else {
+        const hasPattern = part.rounds.some(r => r.instruction && r.instruction.trim());
+        if (hasPattern) {
+          const planned = new Set();
+          part.rounds.forEach(r => {
+            if (r.instruction) extractStitches(r.instruction).forEach(sid => planned.add(sid));
+          });
+          displayIds = Array.from(planned);
+        } else {
+          displayIds = ['CH', 'X', 'V', 'A', 'T', 'F', 'SL'];
+        }
+      }
+
+      // 极简模式：仅显示当前圈涉及的针法
+      if (filterByRound) {
+        const activeRound = part.rounds.find(r => r.id === part.activeRoundId);
+        const roundStitches = getRoundStitches(activeRound);
+        if (roundStitches.length > 0) {
+          const roundSet = new Set(roundStitches);
+          const filtered = displayIds.filter(sid => roundSet.has(sid));
+          if (filtered.length > 0) displayIds = filtered;
+        }
+      }
+
+      // 合并自定义针法到备选列表（回退模式）
+      if (!part.customPalette || part.customPalette.length === 0) {
+        const customIds = Object.keys(proj.customSettings?.customStitches || {});
+        if (customIds.length > 0) {
+          displayIds = [...displayIds, ...customIds];
+        }
+      }
+
+      let html = `<div class="palette">`;
+      displayIds.forEach((sid, idx) => {
+        const info = getStitchInfo(sid, proj);
+        if (!info) return;
+        html += `<button class="pal-btn" data-sid="${sid}" style="background:${info.color}" onclick="pushStitch('${sid}')">
+      ${voiceMode ? `<span style="font-size:22px;font-weight:900;line-height:1">${idx + 1}</span><br><small style="opacity:.8;font-size:11px">${esc(info.label)}(${sid})</small>` : `${esc(info.label)}<br><small style="opacity:.8">${sid}</small>`}
+    </button>`;
+      });
+      html += `<button class="pal-btn" style="background:var(--bg);color:var(--accent);border:2px dashed var(--accent);font-size:18px" onclick="openStitchSetup('edit')" title="增减针法">
+      ＋<br><small style="opacity:.7;font-size:11px">增减</small>
+    </button>`;
+      html += `</div>`;
+      return html;
+    }
+
+    function toggleFilterByRound() {
+      filterByRound = !filterByRound;
+      const proj = getProj(curProjId);
+      if (!proj) return;
+      const bar = document.getElementById('bottom-bar');
+      const paletteHtml = renderDynamicPalette(proj);
+      const toggleHtml = renderFilterToggle();
+      const barRowHtml = renderBarRow();
+      bar.innerHTML = paletteHtml + toggleHtml + barRowHtml;
+      updateVoiceButton();
+    }
+
+    function renderFilterToggle() {
+      const dotBg = filterByRound ? 'var(--accent)' : 'var(--border)';
+      const dotPos = filterByRound ? '18px' : '2px';
+      return `<div style="display:flex;align-items:center;justify-content:flex-end;padding:2px 4px 6px;gap:6px;cursor:pointer" onclick="toggleFilterByRound()">
+      <span style="font-size:10px;color:var(--muted);user-select:none">仅显示本圈针法</span>
+      <span style="display:inline-block;width:34px;height:20px;border-radius:10px;background:${dotBg};position:relative;transition:background .2s;flex-shrink:0">
+        <span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;left:${dotPos};transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></span>
+      </span>
+    </div>`;
+    }
+
+    function renderBarRow() {
+      const hint = voiceMode
+        ? `<div style="text-align:center;font-size:11px;color:#EF4444;padding:2px 0 4px;opacity:.8">🎙 说数字 1-9 添加针法 · 说"撤销"删除上一针</div>`
+        : '';
+      return `${hint}<div class="bar-row">
+      <button class="bar-btn" onclick="undoStitch()">↩ 撤销</button>
+      <button class="bar-btn" onclick="openPatternPasteSheet()">📥 图解</button>
+      <button class="bar-btn" id="voice-mode-btn" onclick="toggleVoiceMode()">🎙 语音</button>
+      <button class="bar-btn primary" onclick="addRound()">＋ 新一圈</button>
+    </div>`;
+    }
+
+    // ═══════════════════════════════════════════
+    //  针法选择器（新建/编辑共用）
+    // ═══════════════════════════════════════════
+
+    function openStitchSetup(mode) {
+      const proj = getProj(curProjId);
+      if (!proj) return;
+      const part = getActivePart(proj);
+      if (!part) return;
+
+      let selected;
+      if (flowState.setupSelections) {
+        selected = new Set();
+        Object.entries(flowState.setupSelections).forEach(([sid, checked]) => {
+          if (checked) selected.add(sid);
+        });
+        flowState.setupSelections = null;
+      } else {
+        const initial = part.customPalette || [];
+        selected = new Set(initial);
+
+        if (initial.length === 0 && mode === 'create') {
+          selected.add('CH');
+        }
+
+        if (initial.length === 0 && mode === 'edit') {
+          const hasPattern = part.rounds.some(r => r.instruction && r.instruction.trim());
+          if (hasPattern) {
+            part.rounds.forEach(r => {
+              if (r.instruction) extractStitches(r.instruction).forEach(sid => selected.add(sid));
+            });
+          } else {
+            Object.keys(STITCH_LIB).forEach(sid => selected.add(sid));
+            Object.keys(proj.customSettings?.customStitches || {}).forEach(sid => selected.add(sid));
+          }
+        }
+      }
+
+      const categories = {
+        basic: '基础针法',
+        increase: '加针类',
+        decrease: '减针类',
+        special: '特殊针法'
+      };
+
+      // 收集自定义针法按分类
+      const customByCat = { basic: [], increase: [], decrease: [], special: [] };
+      if (proj.customSettings?.customStitches) {
+        Object.values(proj.customSettings.customStitches).forEach(cs => {
+          const cat = cs.category || 'basic';
+          if (customByCat[cat]) customByCat[cat].push(cs);
+          else customByCat.basic.push(cs);
+        });
+      }
+
+      let html = `<div class="sheet-handle"></div>
+  <div class="sheet-title">选择常用针法</div>
+  <div style="font-size:10px;color:var(--muted);text-align:center;padding:0 14px 6px">点击 ✎ 可自定义名称与颜色</div>
+  <div style="max-height:55vh;overflow-y:auto;padding:0 14px">`;
+
+      Object.entries(categories).forEach(([cat, catLabel]) => {
+        const presetItems = Object.values(STITCH_LIB).filter(s => s.category === cat);
+        const customItems = customByCat[cat] || [];
+        const items = [...presetItems, ...customItems];
+        if (items.length === 0) return;
+        html += `<div class="sheet-section">${catLabel}</div>`;
+        html += `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:6px 0 12px">`;
+        items.forEach(s => {
+          const isSel = selected.has(s.id);
+          const color = getProjColor(s.id, proj);
+          const label = resolveLabel(s.id, proj);
+          const bg = isSel ? color : 'var(--bg)';
+          const col = isSel ? '#fff' : 'var(--text)';
+          const border = isSel ? color : 'var(--border)';
+          const hasCustom = !!(proj.customSettings?.names?.[s.id]) || !!(proj.customSettings?.colors?.[s.id]);
+          const isCustomStitch = !!proj.customSettings?.customStitches?.[s.id];
+          const dotMark = (hasCustom || isCustomStitch) ? '<span style="position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;background:#FACC15;display:inline-block"></span>' : '';
+          const borderStyle = isCustomStitch ? 'border-style:dashed' : '';
+          html += `<button id="setup-btn-${s.id}" class="picker-btn"
+        style="position:relative;background:${bg};color:${col};border:2px solid ${border};${borderStyle}font-size:12px;padding:10px 4px"
+        onclick="toggleSetupStitch('${s.id}')"
+        data-checked="${isSel}"
+        data-color="${color}"
+      >${dotMark}${esc(label)}<br><small style="display:block;line-height:1.4">${s.id}</small><small style="display:block;color:var(--accent);font-size:10px;cursor:pointer;line-height:1.2" onclick="event.stopPropagation();openStitchCustomize('${s.id}')">✎ 自定义</small></button>`;
+        });
+        html += `</div>`;
+      });
+
+      html += `</div>`;
+      html += `<div style="padding:10px 14px 6px;display:flex;gap:8px">
+    <button class="bar-btn" style="flex:1" id="select-all-btn" onclick="toggleSelectAllInSetup()">全选</button>
+    <button class="bar-btn" style="flex:1;color:var(--accent);border-color:var(--accent)" onclick="startImportFromSetup()">📋 导入图解</button>
+  </div>`;
+      html += `<div style="padding:2px 14px 6px">
+    <button class="bar-btn" style="width:100%;border-style:dashed;color:var(--accent);border-color:var(--accent)" onclick="openNewStitchForm()">＋ 新建针法</button>
+  </div>`;
+      html += `<div style="padding:6px 14px 10px;display:flex;gap:8px">
+    <button class="bar-btn" style="flex:1" onclick="closeSetupSheet()">取消</button>
+    <button class="bar-btn primary" style="flex:2" onclick="saveProjectStitches('${mode}')">${mode === 'create' ? '开始钩织' : '更新配置'}</button>
+  </div>`;
+
+      flowState.setupMode = mode;
+      showSheet(html);
+    }
+
+    function toggleSetupStitch(sid) {
+      const btn = document.getElementById(`setup-btn-${sid}`);
+      if (!btn) return;
+      const isChecked = btn.dataset.checked === 'true';
+      const newChecked = !isChecked;
+      btn.dataset.checked = String(newChecked);
+      const color = btn.dataset.color;
+      if (newChecked) {
+        btn.style.background = color;
+        btn.style.color = '#fff';
+        btn.style.borderColor = color;
+      } else {
+        btn.style.background = 'var(--bg)';
+        btn.style.color = 'var(--text)';
+        btn.style.borderColor = 'var(--border)';
+      }
+    }
+
+    // ── 针法自定义面板 ──
+    function openStitchCustomize(sid) {
+      const proj = getProj(curProjId);
+      if (!proj) return;
+
+      // 保存当前勾选状态
+      const selections = {};
+      document.querySelectorAll('[id^="setup-btn-"]').forEach(btn => {
+        const id = btn.id.replace('setup-btn-', '');
+        selections[id] = btn.dataset.checked === 'true';
+      });
+      flowState.setupSelections = selections;
+      flowState.customizingSid = sid;
+
+      const currentLabel = resolveLabel(sid, proj);
+      const currentColor = getProjColor(sid, proj);
+      const s = STITCH_LIB[sid];
+
+      let html = `<div class="sheet-handle"></div>
+      <div class="sheet-title">✎ 自定义 · <span style="font-weight:700">${esc(currentLabel)}</span> <small style="opacity:.5">(${sid})</small></div>
+      <div style="padding:12px 16px">
+        <div style="margin-bottom:14px">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600">名称</div>
+          <input id="custom-name" value="${esc(currentLabel)}" maxlength="20"
+            style="width:100%;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:14px;background:var(--bg);color:var(--text);outline:none;font-family:inherit">
+        </div>
+        <div style="margin-bottom:14px">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600">颜色</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <input type="color" id="custom-color" value="${currentColor}"
+              style="width:38px;height:38px;border:none;border-radius:8px;cursor:pointer;background:none;padding:0">
+            <span style="font-size:12px;color:var(--muted);font-family:monospace" id="color-hex">${currentColor}</span>
+            <button class="bar-btn" style="flex:0;padding:6px 10px;font-size:11px" onclick="resetStitchCustomize('${sid}')">恢复默认</button>
+          </div>
+        </div>
+      </div>
+      ${proj.customSettings?.customStitches?.[sid] ? `
+      <div style="padding:0 16px 8px">
+        <button class="bar-btn" style="width:100%;color:#E07070;border-color:#E07070" onclick="deleteCustomStitch('${sid}')">🗑 删除此针法</button>
+      </div>` : ''}
+      <div style="padding:10px 16px;display:flex;gap:8px">
+        <button class="bar-btn" style="flex:1" onclick="backToSetupGrid()">← 返回</button>
+        <button class="bar-btn primary" style="flex:2" onclick="saveStitchCustomize('${sid}')">✓ 保存</button>
+      </div>`;
+
+      showSheet(html);
+
+      const colorInput = document.getElementById('custom-color');
+      const hexDisplay = document.getElementById('color-hex');
+      if (colorInput && hexDisplay) {
+        colorInput.addEventListener('input', () => { hexDisplay.textContent = colorInput.value; });
+      }
+    }
+
+    function saveStitchCustomize(sid) {
+      const proj = getProj(curProjId);
+      if (!proj) return;
+
+      const nameInput = document.getElementById('custom-name');
+      const colorInput = document.getElementById('custom-color');
+      const defaultLabel = STITCH_LIB[sid]?.label || sid;
+
+      if (nameInput && nameInput.value.trim() && nameInput.value.trim() !== defaultLabel) {
+        proj.customSettings.names[sid] = nameInput.value.trim();
+      } else {
+        delete proj.customSettings.names[sid];
+      }
+
+      if (colorInput) {
+        proj.customSettings.colors[sid] = colorInput.value;
+      }
+
+      saveData();
+      backToSetupGrid();
+    }
+
+    function resetStitchCustomize(sid) {
+      const proj = getProj(curProjId);
+      if (!proj) return;
+
+      delete proj.customSettings.names[sid];
+      delete proj.customSettings.colors[sid];
+      saveData();
+
+      // 刷新编辑面板
+      openStitchCustomize(sid);
+    }
+
+    function backToSetupGrid() {
+      const mode = flowState.setupMode || 'edit';
+      flowState.customizingSid = null;
+      openStitchSetup(mode);
+    }
+
+    // ── 新建自定义针法 ──
+    function openNewStitchForm() {
+      const selections = {};
+      document.querySelectorAll('[id^="setup-btn-"]').forEach(btn => {
+        const id = btn.id.replace('setup-btn-', '');
+        selections[id] = btn.dataset.checked === 'true';
+      });
+      flowState.setupSelections = selections;
+
+      let html = `<div class="sheet-handle"></div>
+      <div class="sheet-title">＋ 新建针法</div>
+      <div style="padding:12px 16px">
+        <div style="margin-bottom:14px">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600">缩写 ID（英文，如 DC3L）</div>
+          <input id="new-stitch-id" placeholder="例如：DC3L" maxlength="10"
+            style="width:100%;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:14px;background:var(--bg);color:var(--text);outline:none;font-family:monospace;text-transform:uppercase"
+            oninput="this.value=this.value.replace(/[^a-zA-Z0-9]/g,'').toUpperCase()">
+        </div>
+        <div style="margin-bottom:14px">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600">名称（中文标签）</div>
+          <input id="new-stitch-label" placeholder="例如：三卷长针" maxlength="16"
+            style="width:100%;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:14px;background:var(--bg);color:var(--text);outline:none;font-family:inherit">
+        </div>
+        <div style="margin-bottom:14px">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600">颜色</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="color" id="new-stitch-color" value="#7DD3FC"
+              style="width:38px;height:38px;border:none;border-radius:8px;cursor:pointer;background:none;padding:0">
+            <span style="font-size:12px;color:var(--muted);font-family:monospace" id="new-color-hex">#7DD3FC</span>
+          </div>
+        </div>
+        <div style="margin-bottom:8px">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600">分类</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            ${[{v:'basic',l:'基础'},{v:'increase',l:'加针'},{v:'decrease',l:'减针'},{v:'special',l:'特殊'}].map(c =>
+              `<label style="font-size:12px;color:var(--text);display:flex;align-items:center;gap:3px;cursor:pointer;padding:4px 8px;border:1px solid var(--border);border-radius:8px">
+                <input type="radio" name="new-stitch-cat" value="${c.v}" ${c.v==='basic'?'checked':''}> ${c.l}
+              </label>`
+            ).join('')}
+          </div>
+        </div>
+      </div>
+      <div style="padding:10px 16px;display:flex;gap:8px">
+        <button class="bar-btn" style="flex:1" onclick="backToSetupGrid()">← 返回</button>
+        <button class="bar-btn primary" style="flex:2" onclick="saveNewStitch()">✓ 创建</button>
+      </div>`;
+
+      showSheet(html);
+
+      const colorInput = document.getElementById('new-stitch-color');
+      const hexDisplay = document.getElementById('new-color-hex');
+      if (colorInput && hexDisplay) {
+        colorInput.addEventListener('input', () => { hexDisplay.textContent = colorInput.value; });
+      }
+    }
+
+    function saveNewStitch() {
+      const proj = getProj(curProjId);
+      if (!proj) return;
+
+      const idInput = document.getElementById('new-stitch-id');
+      const labelInput = document.getElementById('new-stitch-label');
+      const colorInput = document.getElementById('new-stitch-color');
+      const catRadio = document.querySelector('input[name="new-stitch-cat"]:checked');
+
+      const sid = idInput?.value?.trim().toUpperCase();
+      if (!sid) { alert('请输入缩写 ID'); return; }
+      if (STITCH_LIB[sid]) { alert('该 ID 与预设针法冲突，请换一个'); return; }
+      if (proj.customSettings.customStitches[sid]) { alert('该 ID 已存在'); return; }
+
+      const label = labelInput?.value?.trim() || sid;
+      const color = colorInput?.value || '#7DD3FC';
+      const category = catRadio?.value || 'basic';
+
+      if (!proj.customSettings.customStitches) proj.customSettings.customStitches = {};
+      proj.customSettings.customStitches[sid] = { id: sid, label, color, category };
+
+      saveData();
+      backToSetupGrid();
+    }
+
+    function deleteCustomStitch(sid) {
+      const proj = getProj(curProjId);
+      if (!proj) return;
+      showConfirmDialog(`确定要删除自定义针法「${resolveLabel(sid, proj)}」吗？`, (ok) => {
+        if (!ok) return;
+
+        delete proj.customSettings.customStitches[sid];
+        delete proj.customSettings.names[sid];
+        delete proj.customSettings.colors[sid];
+
+        // 从所有 part 的 customPalette 中移除
+        proj.parts.forEach(part => {
+          if (part.customPalette) {
+            part.customPalette = part.customPalette.filter(id => id !== sid);
+          }
+        });
+
+        saveData();
+        backToSetupGrid();
+      });
+    }
+
+    function toggleSelectAllInSetup() {
+      const buttons = document.querySelectorAll('[id^="setup-btn-"]');
+      if (buttons.length === 0) return;
+      const allChecked = Array.from(buttons).every(b => b.dataset.checked === 'true');
+      buttons.forEach(b => {
+        if (allChecked) {
+          b.dataset.checked = 'false';
+          b.style.background = 'var(--bg)';
+          b.style.color = 'var(--text)';
+          b.style.borderColor = 'var(--border)';
+        } else {
+          b.dataset.checked = 'true';
+          const color = b.dataset.color;
+          b.style.background = color;
+          b.style.color = '#fff';
+          b.style.borderColor = color;
+        }
+      });
+      const allBtn = document.getElementById('select-all-btn');
+      if (allBtn) allBtn.textContent = allChecked ? '全选' : '清空';
+    }
+
+    function startImportFromSetup() {
+      document.getElementById("sheet").classList.remove("show");
+      document.getElementById("overlay").classList.remove("show");
+      flowState.importMode = 'create';
+      flowState.setupMode = null;
+      openPatternPasteSheet();
+    }
+
+    function saveProjectStitches(mode) {
+      const proj = getProj(curProjId);
+      if (!proj) return;
+      const part = getActivePart(proj);
+      if (!part) return;
+
+      // 收集用户手动勾选的针法（包含预设 + 自定义）
+      const allIds = [...Object.keys(STITCH_LIB), ...Object.keys(proj.customSettings?.customStitches || {})];
+      const manualIds = allIds.filter(sid => {
+        const btn = document.getElementById(`setup-btn-${sid}`);
+        return btn && btn.dataset.checked === 'true';
+      });
+
+      // 合并图解中解析出的针法
+      const planned = new Set(manualIds);
+      part.rounds.forEach(r => {
+        if (r.instruction) extractStitches(r.instruction).forEach(sid => planned.add(sid));
+      });
+
+      part.customPalette = Array.from(planned);
+      saveData();
+      if (mode === 'create') flowState.newProjectFlow = false;
+      flowState.setupMode = null;
+      closeSheet();
+
+      if (mode === 'create') {
+        renderProject();
+      } else {
+        // DOM 直接更新底部 palette，不刷新整个页面（保留圈数展开状态、选中状态等）
+        const bar = document.getElementById('bottom-bar');
+        const paletteHtml = renderDynamicPalette(proj);
+        const toggleHtml = renderFilterToggle();
+        const barRowHtml = renderBarRow();
+        bar.innerHTML = paletteHtml + toggleHtml + barRowHtml;
+        updateVoiceButton();
+      }
+    }
+
+    function closeSetupSheet() {
+      const mode = flowState.setupMode;
+      flowState.newProjectFlow = false;
+      flowState.setupMode = null;
+      closeSheet();
+      // 新建项目时取消：无配置则保留默认完整针法库，仍需渲染项目
+      if (mode === 'create') {
+        renderProject();
+      }
+    }
+
+    // ═══════════════════════════════════════════
+    //  圈数删除
+    // ═══════════════════════════════════════════
+
+    function deleteRound(roundId) {
+      const proj = getProj(curProjId);
+      if (!proj) return;
+
+      let ownerPart = null;
+      for (const p of proj.parts) {
+        if (p.rounds.find(r => r.id === roundId)) { ownerPart = p; break; }
+      }
+      if (!ownerPart) return;
+
+      showConfirmDialog("确定要删除这一圈吗？", (ok) => {
+        if (!ok) return;
+
+        const idx = ownerPart.rounds.findIndex(r => r.id === roundId);
+        if (idx === -1) return;
+
+        // ── 删除前保存快照 ──
+        _lastDeletedRound = {
+          round: JSON.parse(JSON.stringify(ownerPart.rounds[idx])),
+          partId: ownerPart.id,
+          index: idx,
+          prevActiveRoundId: ownerPart.activeRoundId
+        };
+
+        ownerPart.rounds.splice(idx, 1);
+
+        if (ownerPart.activeRoundId === roundId) {
+          const last = ownerPart.rounds[ownerPart.rounds.length - 1];
+          ownerPart.activeRoundId = last ? last.id : null;
+        }
+
+        if (ownerPart.rounds.length === 0) {
+          const r = { id: uid(), seq: [], instruction: "", isTextCard: false };
+          ownerPart.rounds.push(r);
+          ownerPart.activeRoundId = r.id;
+          // 补底圈时清空快照，因为无法有意义地恢复到空项目
+          _lastDeletedRound = null;
+        }
+
+        normalizeRoundNums(ownerPart.rounds);
+        saveData();
+        renderProject();
+
+        // ── 删除后显示可撤销 toast ──
+        if (_lastDeletedRound) {
+          showToast('已删除一圈', {
+            label: '撤销',
+            onClick: undoDeleteRound
+          }, 5000);
+        }
+      });
+    }
+
+    function undoDeleteRound() {
+      if (!_lastDeletedRound) return;
+      const { round, partId, index, prevActiveRoundId } = _lastDeletedRound;
+      _lastDeletedRound = null;
+
+      const proj = getProj(curProjId);
+      if (!proj) return;
+
+      const part = proj.parts.find(p => p.id === partId);
+      if (!part) return;
+
+      // 恢复圈到原位置
+      part.rounds.splice(index, 0, round);
+
+      // 恢复活跃圈（如果原活跃圈是被删除的那圈，也一并恢复）
+      part.activeRoundId = prevActiveRoundId;
+
+      normalizeRoundNums(part.rounds);
+      saveData();
+      renderProject();
+
+      showToast('已恢复');
+    }
+
+    // ═══════════════════════════════════════════
+    //  图解导入：粘贴 → 解析 → 缓冲确认
+    // ═══════════════════════════════════════════
+
+    function openPatternPasteSheet() {
+      flowState.pendingParsed = null;
+      let html = `<div class="sheet-handle"></div>
+  <div class="sheet-title">📥 导入图解</div>
+  <div style="padding:12px 16px">
+    <textarea id="pattern-input" placeholder="在此粘贴图解文字，或上传图片自动识别...\n例如：\nR1: 6X\nR2: 6V\nR3: [1X, 1V]*6"
+    style="width:100%;height:120px;border:1px solid var(--border);border-radius:10px;padding:12px;font-size:14px;font-family:inherit;resize:none;outline:none;background:var(--bg);color:var(--text)"></textarea>
+  </div>
+  <div style="padding:0 16px 10px;display:flex;gap:8px;align-items:center">
+    <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border:1.5px dashed var(--border);border-radius:10px;background:var(--bg);cursor:pointer;color:var(--muted);font-size:13px;font-weight:600">
+      <input type="file" id="ocr-file" accept="image/*" style="display:none" onchange="handleOCR(this)">
+      📷 识别图片
+    </label>
+    <button class="bar-btn primary" style="flex:2" onclick="handleParsePattern()">🔍 解析预览</button>
+  </div>
+  <div id="ocr-status" style="padding:0 16px 10px;font-size:12px;color:var(--muted);display:none"></div>
+  <button class="sheet-cancel" onclick="cancelPasteSheet()">取消</button>`;
+      showSheet(html);
+      setTimeout(() => document.getElementById('pattern-input').focus(), 100);
+    }
+
+    function cancelPasteSheet() {
+      const wasImport = flowState.importMode === 'create';
+      flowState.importMode = null;
+      closeSheet();
+      if (wasImport) showEntryChoiceSheet();
+    }
+
+    function handleParsePattern() {
+      const text = document.getElementById('pattern-input').value;
+      if (!text.trim()) {
+        alert("请输入图解内容");
+        return;
+      }
+      const parsed = parsePattern(text);
+      if (parsed.length === 0) {
+        alert("未能解析出任何内容，请检查格式");
+        return;
+      }
+      flowState.pendingParsed = parsed;
+      openParseConfirmSheet(parsed);
+    }
+
+    // ── Tesseract.js 懒加载 ──
+    let _tesseractLoaded = false;
+    let _tesseractLoading = false;
+
+    function showLoading(text) {
+      const mask = document.getElementById('loading-mask');
+      const txt = document.getElementById('loading-text');
+      if (txt) txt.textContent = text || '正在加载...';
+      if (mask) mask.classList.add('show');
+    }
+    function hideLoading() {
+      const mask = document.getElementById('loading-mask');
+      if (mask) mask.classList.remove('show');
+    }
+
+    function loadTesseract() {
+      return new Promise((resolve, reject) => {
+        if (_tesseractLoaded) return resolve();
+        if (_tesseractLoading) {
+          const check = () => {
+            if (_tesseractLoaded) resolve();
+            else if (!_tesseractLoading) reject(new Error('Tesseract 加载失败'));
+            else setTimeout(check, 100);
+          };
+          check();
+          return;
+        }
+        _tesseractLoading = true;
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+        script.onload = () => { _tesseractLoaded = true; _tesseractLoading = false; resolve(); };
+        script.onerror = () => { _tesseractLoading = false; reject(new Error('Tesseract 脚本加载失败')); };
+        document.head.appendChild(script);
+      });
+    }
+
+    async function handleOCR(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const status = document.getElementById('ocr-status');
+      const textarea = document.getElementById('pattern-input');
+      if (status) {
+        status.style.display = 'block';
+        status.style.color = 'var(--muted)';
+        status.textContent = '⏳ 正在初始化识别引擎...';
+      }
+
+      try {
+        showLoading('正在加载识别引擎...');
+        await loadTesseract();
+        hideLoading();
+
+        if (status) status.textContent = '⏳ 识别中... 0%';
+
+        const result = await Tesseract.recognize(file, 'chi_sim+eng', {
+          logger: m => {
+            if (m.status === 'recognizing text' && status) {
+              status.textContent = `⏳ 识别中... ${(m.progress * 100).toFixed(0)}%`;
+            }
+          }
+        });
+        const text = result.data.text;
+        if (textarea) textarea.value = text;
+        if (status) {
+          status.textContent = '✅ 识别完成，请检查修正后点击解析';
+          status.style.color = 'var(--accent)';
+        }
+      } catch (err) {
+        hideLoading();
+        console.error('OCR 失败:', err);
+        if (status) {
+          status.textContent = '❌ 识别失败，请手动输入';
+          status.style.color = '#E07070';
+        }
+      }
+    }
+
+    function openParseConfirmSheet(parsed) {
+      const roundCount = parsed.filter(p => p.type === 'round').length;
+      const textCount = parsed.filter(p => p.type === 'text').length;
+
+      let html = `<div class="sheet-handle"></div>
+  <div class="sheet-title">✅ 校验图解（${roundCount} 圈 · ${textCount} 条备注）</div>
+  <div style="max-height:50vh;overflow-y:auto;padding:0 4px">`;
+
+      parsed.forEach((item, idx) => {
+        const badge = item.type === 'round'
+          ? `<span style="display:inline-block;background:var(--accent);color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;margin-right:6px;flex-shrink:0">第${item.roundNum}圈</span>`
+          : `<span style="display:inline-block;background:var(--border);color:var(--muted);font-size:10px;padding:2px 6px;border-radius:4px;margin-right:6px;flex-shrink:0">备注</span>`;
+
+        html += `<div class="sheet-item" style="padding:10px 16px;align-items:flex-start">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px">${badge}</div>
+        <input id="edit-${idx}" value="${esc(item.instruction)}"
+          style="width:100%;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:13px;background:var(--bg);color:var(--text);outline:none;font-family:inherit"
+          onchange="flowState.pendingParsed[${idx}].instruction=this.value.trim()">
+        ${item.seq.length ? `<div style="font-size:11px;color:var(--muted);margin-top:3px">检测到针法：${item.seq.join(' · ')}</div>` : ''}
+      </div>
+      <button onclick="removeParsedItem(${idx})" style="background:none;border:none;color:#D0B0A0;font-size:20px;padding:4px 8px;cursor:pointer;line-height:1;margin-top:20px">×</button>
+    </div>`;
+      });
+
+      html += `</div>`;
+      html += `<div style="padding:10px 16px;display:flex;gap:8px">
+    <button class="bar-btn" style="flex:1" onclick="confirmImport('overwrite')">覆盖当前部件</button>
+    <button class="bar-btn primary" style="flex:2" onclick="confirmImport('newPart')">作为新部件导入</button>
+  </div>`;
+      html += `<button class="sheet-cancel" onclick="openPatternPasteSheet()">← 返回修改</button>`;
+
+      showSheet(html);
+    }
+
+    function removeParsedItem(idx) {
+      if (!flowState.pendingParsed) return;
+      flowState.pendingParsed.splice(idx, 1);
+      if (flowState.pendingParsed.length === 0) {
+        closeSheet();
+        flowState.pendingParsed = null;
+        return;
+      }
+      openParseConfirmSheet(flowState.pendingParsed);
+    }
+
+    function confirmImport(mode) {
+      const parsed = flowState.pendingParsed;
+      if (!parsed || parsed.length === 0) {
+        closeSheet();
+        return;
+      }
+
+      const proj = getProj(curProjId);
+      if (!proj) return;
+
+      let targetPart;
+      if (mode === 'newPart') {
+        // 创建新部件
+        const partId = uid();
+        targetPart = { id: partId, title: '部件 ' + (proj.parts.length + 1), rawPattern: '', rounds: [], activeRoundId: null, customPalette: null };
+        proj.parts.push(targetPart);
+        proj.activePartId = partId;
+      } else {
+        // 覆盖当前部件
+        targetPart = getActivePart(proj);
+        if (!targetPart) return;
+        // 清理默认空圈
+        if (targetPart.rounds.length === 1) {
+          const only = targetPart.rounds[0];
+          if (only.seq.length === 0 && !only.instruction && !only.isTextCard) {
+            targetPart.rounds.pop();
+          }
+        }
+      }
+
+      // 追加解析结果到目标 part
+      parsed.forEach((item, idx) => {
+        const input = document.getElementById(`edit-${idx}`);
+        const instruction = input ? input.value.trim() : item.instruction;
+        targetPart.rounds.push({
+          id: uid(),
+          seq: [],
+          instruction,
+          isTextCard: item.type === 'text',
+          roundNum: item.roundNum
+        });
+      });
+
+      // 将最后一圈设为活跃圈
+      const lastRound = targetPart.rounds[targetPart.rounds.length - 1];
+      targetPart.activeRoundId = lastRound.id;
+      expandedRounds.add(lastRound.id);
+
+      // 自动配置 customPalette 为解析识别出的针法
+      if (flowState.importMode === 'create' || mode === 'newPart' || !targetPart.customPalette || targetPart.customPalette.length === 0) {
+        const detectedIds = new Set();
+        parsed.forEach(item => {
+          if (item.seq) item.seq.forEach(sid => detectedIds.add(sid));
+        });
+        if (detectedIds.size > 0) {
+          targetPart.customPalette = Array.from(detectedIds);
+        }
+      }
+      flowState.importMode = null;
+      flowState.newProjectFlow = false;
+
+      normalizeRoundNums(targetPart.rounds);
+
+      flowState.pendingParsed = null;
+      saveData();
+      closeSheet();
+      renderProject();
+      setTimeout(() => {
+        const el = document.getElementById('round-' + lastRound.id);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 60);
+    }
+
+    // ── render home ──
+    function renderHome() {
+      try {
+        document.getElementById("hdr-back").style.display = "none";
+        document.getElementById("hdr-title").innerHTML = "<span>🧶 钩织计数本</span>";
+        document.getElementById("hdr-sub").textContent = "";
+        document.getElementById("hdr-pdf").style.display = "none";
+        document.getElementById("hdr-settings").style.display = "none";
+
+        const totalProjs = data.projects.length;
+        const totalNeedles = data.projects.reduce((sum, p) =>
+          sum + (p.parts || []).reduce((s, pt) =>
+            s + (pt.rounds || []).reduce((ss, r) => ss + (r.seq?.length || 0), 0), 0), 0);
+
+        let html = `<div class="home-top">
+    <div class="home-heading">我的项目</div>
+    <div style="font-size:12px;color:var(--muted)">${totalProjs} 个项目 · 累计 ${totalNeedles} 针</div>
+  </div>`;
+
+        const activeProjs = data.projects.filter(p => !p.archived);
+        const archivedProjs = data.projects.filter(p => p.archived);
+
+        html += `<div class="proj-list">`;
+        if (activeProjs.length === 0 && archivedProjs.length === 0) {
+          html += `<div style="text-align:center;color:var(--muted);font-size:14px;padding:40px 16px">还没有项目，点击下方创建第一个 🌸</div>`;
+        }
+        activeProjs.forEach(p => {
+          const allRounds = (p.parts || []).reduce((s, pt) => s + (pt.rounds?.length || 0), 0);
+          const allNeedles = (p.parts || []).reduce((s, pt) => s + (pt.rounds || []).reduce((ss, r) => ss + (r.seq?.length || 0), 0), 0);
+          const coverHtml = p.coverImage
+            ? `<img class="proj-cover-img" src="${p.coverImage}" onclick="event.stopPropagation();pickCover('${p.id}')" title="点击更换封面">`
+            : `<div class="proj-icon">🧶</div>`;
+          const removeCoverBtn = p.coverImage
+            ? `<button class="proj-menu-item" onclick="event.stopPropagation();removeProjectCover('${p.id}')">🗑 移除封面</button>`
+            : '';
+          html += `<div class="proj-card" onclick="openProject('${p.id}')">
+    ${coverHtml}
+    <div class="proj-info">
+      <div class="proj-name">${esc(p.name)}</div>
+      <div class="proj-meta">${(p.parts||[]).length} 部件 · ${allRounds} 圈 · ${allNeedles} 针</div>
+    </div>
+    <button class="proj-del" onclick="toggleProjMenu('${p.id}',event)" style="position:relative">⋯</button>
+    <div class="proj-menu${flowState.projMenuId === p.id ? ' show' : ''}" id="proj-menu-${p.id}">
+      <button class="proj-menu-item" onclick="event.stopPropagation();pickCover('${p.id}')">🖼 设置封面</button>
+      ${removeCoverBtn}
+      <button class="proj-menu-item" onclick="event.stopPropagation();archiveProject('${p.id}')">📦 归档</button>
+      <button class="proj-menu-item danger" onclick="event.stopPropagation();deleteProject('${p.id}',event)">🗑 删除</button>
+    </div>
+  </div>`;
+        });
+        html += `</div>`;
+
+        // 已归档项目
+        if (archivedProjs.length > 0) {
+          html += `<div style="padding:16px 12px 4px">
+      <div class="home-heading" style="margin-bottom:8px;opacity:.7">📦 已归档 (${archivedProjs.length})</div>
+    </div>`;
+          html += `<div class="proj-list">`;
+          archivedProjs.forEach(p => {
+            const allRounds = (p.parts || []).reduce((s, pt) => s + (pt.rounds?.length || 0), 0);
+            const allNeedles = (p.parts || []).reduce((s, pt) => s + (pt.rounds || []).reduce((ss, r) => ss + (r.seq?.length || 0), 0), 0);
+            const coverHtmlArc = p.coverImage
+              ? `<img class="proj-cover-img" src="${p.coverImage}" onclick="event.stopPropagation();pickCover('${p.id}')" title="点击更换封面">`
+              : `<div class="proj-icon">📦</div>`;
+            const removeCoverBtnArc = p.coverImage
+              ? `<button class="proj-menu-item" onclick="event.stopPropagation();removeProjectCover('${p.id}')">🗑 移除封面</button>`
+              : '';
+            html += `<div class="proj-card archived" onclick="openProject('${p.id}')">
+      ${coverHtmlArc}
+      <div class="proj-info">
+        <div class="proj-name">${esc(p.name)}</div>
+        <div class="proj-meta">${(p.parts||[]).length} 部件 · ${allRounds} 圈 · ${allNeedles} 针</div>
+      </div>
+      <button class="proj-del" onclick="toggleProjMenu('${p.id}',event)">⋯</button>
+      <div class="proj-menu${flowState.projMenuId === p.id ? ' show' : ''}" id="proj-menu-${p.id}">
+        <button class="proj-menu-item" onclick="event.stopPropagation();pickCover('${p.id}')">🖼 设置封面</button>
+        ${removeCoverBtnArc}
+        <button class="proj-menu-item" onclick="event.stopPropagation();unarchiveProject('${p.id}')">📤 取消归档</button>
+        <button class="proj-menu-item danger" onclick="event.stopPropagation();deleteProject('${p.id}',event)">🗑 删除</button>
+      </div>
+    </div>`;
+          });
+          html += `</div>`;
+        }
+
+        document.getElementById("screen").innerHTML = html;
+        document.getElementById("bottom-bar").style.display = "none";
+        document.getElementById("screen").innerHTML +=
+          `<button class="fab" onclick="showNewProjectDialog()">＋ 新建项目</button>`;
+      } catch (e) {
+        alert('renderHome error: ' + e.message + '\n' + e.stack);
+      }
+    }
+
+    // ── render settings (整页) ──
+    function renderSettings() {
+      document.getElementById("hdr-back").style.display = "none";
+      document.getElementById("hdr-title").innerHTML = "<span>⚙️ 设置</span>";
+      document.getElementById("hdr-sub").textContent = "";
+      document.getElementById("hdr-pdf").style.display = "none";
+      document.getElementById("hdr-settings").style.display = "none";
+      document.getElementById("bottom-bar").style.display = "none";
+
+      const theme = data.settings.theme || "macaron";
+      const voiceOn = data.settings.voiceEnabled;
+      const totalProjs = data.projects.length;
+      const totalNeedles = data.projects.reduce((sum, p) =>
+        sum + (p.parts || []).reduce((s, pt) =>
+          s + (pt.rounds || []).reduce((ss, r) => ss + (r.seq?.length || 0), 0), 0), 0);
+
+      const themes = [
+        { key: "macaron", name: "马卡龙", dots: ["#7DD3FC", "#F9A8D4", "#2bf14f", "#f3da77"] },
+        { key: "ocean",   name: "深海",   dots: ["#5BC0DE", "#48DBFB", "#FF9FF3", "#6C5CE7"] },
+        { key: "forest",  name: "森林",   dots: ["#55E6C1", "#26DE81", "#FD79A8", "#A3CB38"] },
+        { key: "minimal", name: "简约",   dots: ["#636E72", "#95A5A6", "#2ED573", "#FF6B81"] }
+      ];
+
+      let html = `<div style="padding:12px 0">`;
+
+      // 外观
+      html += `<div class="sheet-section">外观</div>`;
+      html += `<div class="settings-theme-grid">`;
+      themes.forEach(t => {
+        const active = theme === t.key ? " active" : "";
+        const dotHtml = t.dots.map(c => `<span class="settings-theme-dot" style="background:${c}"></span>`).join("");
+        html += `<div class="settings-theme-item${active}" onclick="changeTheme('${t.key}')">
+    <div class="settings-theme-dots">${dotHtml}</div>
+    <div class="settings-theme-name">${t.name}</div>
+  </div>`;
+      });
+      html += `</div>`;
+
+      // 语音
+      html += `<div class="sheet-section">语音</div>`;
+      html += `<div class="settings-item" onclick="toggleVoiceDefault()">
+    <div>
+      <div class="settings-item-label">进入项目默认开启语音</div>
+    </div>
+    <span class="settings-toggle${voiceOn ? ' on' : ''}" id="settings-voice-toggle"><span class="settings-toggle-knob"></span></span>
+  </div>`;
+
+      // 数据管理
+      html += `<div class="sheet-section">数据管理</div>`;
+      html += `<div class="settings-stat">${totalProjs} 个项目 · 累计 ${totalNeedles} 针</div>`;
+      html += `<div class="settings-btn-row">
+    <button class="settings-btn settings-btn-secondary" onclick="exportData()">📤 导出备份</button>
+    <label class="settings-btn settings-btn-secondary" style="display:block;text-align:center">
+      📥 导入备份
+      <input type="file" accept="application/json,.json" style="display:none" onchange="importData(this)">
+    </label>
+    <button class="settings-btn settings-btn-danger" onclick="clearAllData()">🗑 清空所有数据</button>
+  </div>`;
+
+      // 安装
+      html += `<div class="sheet-section">安装</div>`;
+      html += `<div class="settings-btn-row">
+    <button class="settings-btn settings-btn-primary" onclick="showPwaTutorial()">📲 安装到主屏幕</button>
+  </div>`;
+
+      // 关于
+      html += `<div class="sheet-section">关于</div>`;
+      html += `<div class="settings-btn-row">
+    <div style="text-align:center;padding:12px;color:var(--muted);font-size:13px">钩织计数本 v0.1</div>
+  </div>`;
+
+      html += `</div>`;
+
+      document.getElementById("screen").innerHTML = html;
+    }
+
+    // ── render project ──
+    function renderProject() {
+      // 恢复在 blur 之前捕获的编辑状态
+      editingPartId = flowState.captureEdit || editingPartId;
+      flowState.captureEdit = null;
+
+      const proj = getProj(curProjId);
+      if (!proj) return goHome();
+      const part = getActivePart(proj);
+
+      document.getElementById("hdr-back").style.display = "flex";
+      document.getElementById("hdr-settings").style.display = "none";
+      document.getElementById("tab-nav").style.display = "none";
+      document.getElementById("hdr-title").innerHTML =
+        `<span id="proj-name-edit" contenteditable="true" onblur="renameProject(this.textContent.trim())"
+    style="outline:none;min-width:40px;display:inline-block" title="点击编辑名称">${esc(proj.name)}</span>
+    <span onclick="document.getElementById('proj-name-edit').focus()" style="font-size:12px;color:var(--accent);cursor:pointer;margin-left:3px;opacity:.7" title="点击编辑项目名">✎</span>`;
+
+      // 全项目统计
+      const allRounds = (proj.parts || []).reduce((s, pt) => s + (pt.rounds?.length || 0), 0);
+      const allNeedles = (proj.parts || []).reduce((s, pt) => s + (pt.rounds || []).reduce((ss, r) => ss + (r.seq?.length || 0), 0), 0);
+      document.getElementById("hdr-sub").textContent = `${(proj.parts||[]).length} 部件 · ${allRounds} 圈 · ${allNeedles} 针`;
+
+      // 活跃圈 id：以 activeRoundId 为准，找不到则 fallback 到最后一圈
+      const activeRid = part && part.rounds.length ? (part.rounds.find(r => r.id === part.activeRoundId)?.id || part.rounds[part.rounds.length - 1].id) : null;
+
+      let html = "";
+
+      // ── 部件选项卡 ──
+      html += `<div class="part-tabs-wrap" id="part-tabs-wrap">
+      <div class="part-tabs-scroll" onmousedown="flowState.captureEdit=getEditingPartId()">`;
+      (proj.parts || []).forEach(pt => {
+        const isActive = pt.id === (part?.id || proj.activePartId);
+        const isEditing = pt.id === editingPartId;
+        html += `<button class="part-tab${isActive ? " active" : ""}"
+      onclick="switchPart('${pt.id}')"
+      title="${esc(pt.title)}">
+      <span class="part-name-text" style="${isEditing ? 'display:none' : ''}">${esc(pt.title)}</span>
+      <input class="part-name-input" value="${esc(pt.title)}"
+        style="${isEditing ? '' : 'display:none'}"
+        onclick="event.stopPropagation()"
+        onfocus="this.setSelectionRange(this.value.length, this.value.length)"
+        onblur="partNameBlur(this, '${pt.id}')"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">
+      <span class="part-tab-edit-icon" onclick="${isEditing ? 'event.stopPropagation();this.previousElementSibling.blur()' : `event.stopPropagation();startEditPartName(this, '${pt.id}')`}" style="font-size:11px;cursor:pointer;opacity:.6;margin-left:2px" title="${isEditing ? '完成编辑' : '编辑名称'}">${isEditing ? '✔' : '✎'}</span>
+      ${(proj.parts||[]).length > 1 ? `<span class="part-tab-del" onclick="event.stopPropagation();deletePart('${pt.id}')" title="删除部件">×</span>` : ''}
+    </button>`;
+      });
+      html += `<button class="part-tab part-tab-add" onclick="addPart()" title="新增部件">＋</button>
+      </div></div>`;
+
+      html += renderTaskSlide(proj);
+
+      html += `<div class="rounds-wrap">`;
+      if (part) part.rounds.forEach((r, i) => {
+        const isActive = r.id === activeRid;
+        const exp = expandedRounds.has(r.id) || isActive;
+        const total = r.seq.length;
+        const dots = r.seq.slice(-8).map(sid => `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${getProjColor(sid, proj)};margin-right:2px"></span>`).join("");
+
+        html += `<div class="round-card" id="round-${r.id}">
+    <div class="round-hdr" onclick="toggleRound('${r.id}')">
+      <div class="round-badge${isActive ? " active" : ""}" onclick="event.stopPropagation();setActiveRound(null,'${r.id}')" style="cursor:pointer" title="点击设为当前圈">${r.isTextCard ? "文" : (r.roundNum === 0 ? "起" : (r.roundNum != null ? r.roundNum : i + 1))}</div>
+      <div class="round-info">
+        <div class="round-label">${r.isTextCard ? (r.instruction || "备注") : (r.roundNum === 0 ? "起针" : `第 ${r.roundNum != null ? r.roundNum : i + 1} 圈`)}${isActive ? " <span style='font-size:10px;background:var(--accent);color:#fff;border-radius:4px;padding:1px 5px;margin-left:4px'>编辑中</span>" : ""}</div>
+        <div class="round-count">${total} 针 ${dots}</div>
+      </div>
+      <button class="round-del" onclick="event.stopPropagation();deleteRound('${r.id}')" title="删除这一圈">×</button>
+      <span class="round-chev${exp ? " open" : ""}">›</span>
+    </div>
+    <div class="round-body${exp ? " open" : ""}">`;
+
+        html += `<div class="seq-wrap">`;
+        if (r.seq.length === 0) {
+          html += `<span class="seq-empty">暂无记录，点击下方针法按钮添加</span>`;
+        } else {
+          r.seq.forEach((sid, idx) => {
+            html += renderSpillHTML(sid, idx, r, proj);
+          });
+        }
+        html += `</div>`;
+        html += `</div></div>`;
+      });
+
+      html += `</div>`;
+      document.getElementById("screen").innerHTML = html;
+
+      const bar = document.getElementById("bottom-bar");
+      bar.style.display = "block";
+      let bhtml = renderDynamicPalette(proj);
+      bhtml += renderFilterToggle();
+      bhtml += renderBarRow();
+      bar.innerHTML = bhtml;
+      updateVoiceButton();
+    }
+
+    function addPart() {
+      const proj = getProj(curProjId);
+      if (!proj) return;
+      const prevPart = getActivePart(proj);
+      const r = { id: uid(), roundNum: 0, instruction: '', seq: [], isTextCard: false };
+      const part = {
+        id: uid(),
+        title: `部件 ${(proj.parts || []).length + 1}`,
+        rawPattern: '',
+        rounds: [r],
+        activeRoundId: r.id,
+        customPalette: prevPart?.customPalette ? [...prevPart.customPalette] : null
+      };
+      proj.parts = proj.parts || [];
+      proj.parts.push(part);
+      proj.activePartId = part.id;
+      saveData();
+      renderProject();
+    }
+
+    function switchPart(partId) {
+      const proj = getProj(curProjId);
+      if (!proj) return;
+      proj.activePartId = partId;
+      saveData();
+      renderProject();
+    }
+
+    function getEditingPartId() { return editingPartId; }
+    function startEditPartName(icon, partId) {
+      editingPartId = partId;
+      const input = icon.previousElementSibling;
+      const span = input.previousElementSibling;
+      span.style.display = 'none';
+      input.style.display = '';
+      input.focus();
+      icon.textContent = '✔';
+    }
+    function partNameBlur(input, partId) {
+      renamePart(partId, input.value.trim());
+      editingPartId = null;
+      input.style.display = 'none';
+      input.previousElementSibling.style.display = '';
+      input.nextElementSibling.textContent = '✎';
+    }
+    function renamePart(partId, name) {
+      if (!name || !curProjId) return;
+      const proj = getProj(curProjId);
+      if (!proj) return;
+      const pt = (proj.parts || []).find(p => p.id === partId);
+      if (pt) { pt.title = name; saveData(); }
+    }
+
+    function deletePart(partId) {
+      const proj = getProj(curProjId);
+      if (!proj) return;
+      if (!proj.parts || proj.parts.length <= 1) return;
+      showConfirmDialog("确定删除这个部件及其中所有记录？此操作不可撤销。", (ok) => {
+        if (!ok) return;
+        proj.parts = proj.parts.filter(pt => pt.id !== partId);
+        if (proj.activePartId === partId) proj.activePartId = proj.parts[0].id;
+        saveData();
+        renderProject();
+      });
+    }
+
+    function renameProject(name) {
+      if (!name || !curProjId) return;
+      const proj = getProj(curProjId);
+      if (proj) { proj.name = name; saveData(); }
+    }
+
+    function esc(s) {
+      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    // ── audio feedback ──
+    let _audioCtx = null;
+    function _getAudioCtx() {
+      if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (_audioCtx.state === 'suspended') _audioCtx.resume();
+      return _audioCtx;
+    }
+
+/**
+     * 压缩图片：最长边压缩到 maxSize px，输出 jpeg base64
+     * @param {File} file
+     * @param {number} [maxSize=300]
+     * @returns {Promise<string>}
+     */
+    function compressImage(file, maxSize = 300) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          let { width, height } = img;
+          const scale = Math.min(maxSize / width, maxSize / height, 1);
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.8));
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error('图片加载失败'));
+        };
+        img.src = url;
+      });
+    }
+
+    function setProjectCover(projectId, input) {
+      const file = input.files?.[0];
+      if (!file) return;
+      compressImage(file).then(dataUrl => {
+        const proj = getProj(projectId);
+        if (!proj) return;
+        proj.coverImage = dataUrl;
+        saveData();
+        renderHome();
+        showToast('封面已更新');
+      }).catch(() => showToast('图片处理失败'));
+      input.value = '';
+    }
+
+    function removeProjectCover(projectId) {
+      const proj = getProj(projectId);
+      if (!proj) return;
+      proj.coverImage = null;
+      saveData();
+      renderHome();
+      showToast('封面已移除');
+    }
+
+    function pickCover(projectId) {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = () => setProjectCover(projectId, input);
+      input.click();
+    }
+
+/**
+     * 显示底部 toast，支持一个可选操作按钮
+     * @param {string} message
+     * @param {{ label: string, onClick: function }} [action]
+     * @param {number} [duration=4000]
+     */
+    function showToast(message, action, duration = 4000) {
+      const existing = document.getElementById('app-toast');
+      if (existing) existing.remove();
+
+      const toast = document.createElement('div');
+      toast.id = 'app-toast';
+      toast.style.cssText = `
+        position: fixed;
+        bottom: 90px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #2D1E10;
+        color: #fff;
+        padding: 10px 16px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        z-index: 9999;
+        box-shadow: 0 4px 16px rgba(0,0,0,.25);
+        max-width: 320px;
+        animation: toast-in .2s ease;
+      `;
+
+      const style = document.createElement('style');
+      style.textContent = `@keyframes toast-in { from { opacity:0; transform:translateX(-50%) translateY(8px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }`;
+      document.head.appendChild(style);
+
+      toast.textContent = message;
+
+      if (action) {
+        const btn = document.createElement('button');
+        btn.textContent = action.label;
+        btn.style.cssText = `
+          background: var(--accent);
+          border: none;
+          border-radius: 6px;
+          color: #fff;
+          font-size: 12px;
+          font-weight: 700;
+          padding: 4px 10px;
+          cursor: pointer;
+          white-space: nowrap;
+          font-family: inherit;
+        `;
+        btn.onclick = () => { toast.remove(); action.onClick(); };
+        toast.appendChild(btn);
+      }
+
+      document.body.appendChild(toast);
+      setTimeout(() => {
+        if (document.getElementById('app-toast') === toast) {
+          toast.style.transition = 'opacity .3s';
+          toast.style.opacity = '0';
+          setTimeout(() => toast.remove(), 300);
+        }
+      }, duration);
+    }
+
+    function playSound(type) {
+      try {
+        const ctx = _getAudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+
+        const now = ctx.currentTime;
+        const dur = 0.18;
+        const vol = 0.25;
+
+        if (type === 'enter') {
+          osc.frequency.setValueAtTime(440, now);
+          osc.frequency.linearRampToValueAtTime(880, now + dur);
+        } else {
+          osc.frequency.setValueAtTime(880, now);
+          osc.frequency.linearRampToValueAtTime(440, now + dur);
+        }
+
+        gain.gain.setValueAtTime(vol, now);
+        gain.gain.linearRampToValueAtTime(0.001, now + dur + 0.02);
+
+        osc.start(now);
+        osc.stop(now + dur + 0.02);
+      } catch (_) { /* audio is non-critical */ }
+    }
+
+    // ═══════════════════════════════════════════
+    //  Voice mode
+    // ═══════════════════════════════════════════
+    function initRecognition() {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) return null;
+      const r = new SR();
+      r.lang = 'zh-CN';
+      r.continuous = true;
+      r.interimResults = false;
+
+      r.onresult = (e) => {
+        const transcript = e.results[e.results.length - 1][0].transcript.trim();
+
+        // 撤销命令
+        if (transcript === '撤销' || transcript === '撤回' || transcript === '后退' || transcript === '返回' || transcript === '取消') {
+          undoStitch();
+          triggerEdgeGlow(null);
+          return;
+        }
+
+        const num = NUMBER_MAP[transcript];
+        if (num == null) return;
+
+        const palBtns = document.querySelectorAll('#bottom-bar .pal-btn[data-sid]');
+        const target = palBtns[num - 1];
+        if (!target) return;
+
+        const sid = target.dataset.sid;
+        pushStitch(sid);
+        triggerEdgeGlow(sid);
+      };
+
+      r.onend = () => {
+        if (voiceMode) r.start();
+      };
+
+      r.onerror = (e) => {
+        if (e.error === 'not-allowed') {
+          voiceMode = false;
+          recognition = null;
+          updateVoiceButton();
+          playSound('exit');
+          setVoicePulse(false);
+          alert('麦克风权限被拒绝，请在浏览器设置中允许');
+        } else {
+          voiceMode = false;
+          recognition = null;
+          updateVoiceButton();
+          playSound('exit');
+          setVoicePulse(false);
+        }
+      };
+
+      return r;
+    }
+
+    function toggleVoiceMode() {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) {
+        alert('您的浏览器不支持语音识别，请使用 Chrome 或 Safari');
+        return;
+      }
+
+      voiceMode = !voiceMode;
+
+      if (voiceMode) {
+        recognition = initRecognition();
+        recognition.start();
+        playSound('enter');
+        setVoicePulse(true);
+      } else {
+        if (recognition) {
+          recognition.onend = null;
+          recognition.stop();
+          recognition = null;
+        }
+        playSound('exit');
+        setVoicePulse(false);
+      }
+
+      // 语音模式切换时需要重渲 palette（按钮显示内容会变）
+      const proj = getProj(curProjId);
+      if (proj) {
+        const bar = document.getElementById('bottom-bar');
+        bar.innerHTML = renderDynamicPalette(proj) + renderFilterToggle() + renderBarRow();
+      }
+      updateVoiceButton();
+    }
+
+    function setVoicePulse(active) {
+      const el = document.getElementById('voice-pulse');
+      if (!el) return;
+      if (active) {
+        el.style.opacity = '0.3';
+        el.classList.add('active');
+      } else {
+        el.classList.remove('active');
+        el.style.opacity = '0';
+      }
+    }
+
+    function updateVoiceButton() {
+      const btn = document.getElementById('voice-mode-btn');
+      if (!btn) return;
+      if (voiceMode) {
+        btn.textContent = '🎙 语音中';
+        btn.style.background = '#EF4444';
+        btn.style.color = '#fff';
+        btn.style.borderColor = '#EF4444';
+      } else {
+        btn.textContent = '🎙 语音';
+        btn.style.background = '';
+        btn.style.color = '';
+        btn.style.borderColor = '';
+      }
+      btn.style.animation = voiceMode ? 'btn-pulse 1.8s ease-in-out infinite' : '';
+    }
+
+    function triggerEdgeGlow(sid) {
+      const color = sid ? getProjColor(sid, getProj(curProjId)) : '#9E8A74';
+      const el = document.getElementById('edge-glow');
+      if (!el) return;
+
+      el.style.boxShadow = `inset 0 0 0 10px ${color}`;
+      el.style.opacity = '1';
+
+      clearTimeout(flowState.glowTimer);
+      flowState.glowTimer = setTimeout(() => {
+        el.style.transition = 'opacity 0.35s ease-out';
+        el.style.opacity = '0';
+        setTimeout(() => {
+          el.style.transition = 'opacity 0.08s ease-in';
+        }, 400);
+      }, 120);
+    }
+
+    // ═══════════════════════════════════════════
+    //  Settings
+    // ═══════════════════════════════════════════
+    function openSettings() {
+      const theme = data.settings.theme || "macaron";
+      const voiceOn = data.settings.voiceEnabled;
+      const totalProjs = data.projects.length;
+      const totalNeedles = data.projects.reduce((sum, p) =>
+        sum + (p.parts || []).reduce((s, pt) =>
+          s + (pt.rounds || []).reduce((ss, r) => ss + (r.seq?.length || 0), 0), 0), 0);
+
+      const themes = [
+        { key: "macaron", name: "马卡龙", dots: ["#7DD3FC", "#F9A8D4", "#2bf14f", "#f3da77"] },
+        { key: "ocean",   name: "深海",   dots: ["#5BC0DE", "#48DBFB", "#FF9FF3", "#6C5CE7"] },
+        { key: "forest",  name: "森林",   dots: ["#55E6C1", "#26DE81", "#FD79A8", "#A3CB38"] },
+        { key: "minimal", name: "简约",   dots: ["#636E72", "#95A5A6", "#2ED573", "#FF6B81"] }
+      ];
+
+      let html = `<div class="sheet-handle"></div>
+  <div class="sheet-title">⚙️ 设置</div>
+
+  <div class="sheet-section">外观</div>
+  <div class="settings-theme-grid">`;
+      themes.forEach(t => {
+        const active = theme === t.key ? " active" : "";
+        const dotHtml = t.dots.map(c => `<span class="settings-theme-dot" style="background:${c}"></span>`).join("");
+        html += `<div class="settings-theme-item${active}" onclick="changeTheme('${t.key}')">
+    <div class="settings-theme-dots">${dotHtml}</div>
+    <div class="settings-theme-name">${t.name}</div>
+  </div>`;
+      });
+      html += `</div>`;
+
+      html += `
+  <div class="sheet-section">语音</div>
+  <div class="settings-item" onclick="toggleVoiceDefault()">
+    <div>
+      <div class="settings-item-label">进入项目默认开启语音</div>
+    </div>
+    <span class="settings-toggle${voiceOn ? ' on' : ''}" id="settings-voice-toggle"><span class="settings-toggle-knob"></span></span>
+  </div>`;
+
+      html += `
+  <div class="sheet-section">数据管理</div>
+  <div class="settings-stat">当前 ${totalProjs} 个项目 · 累计 ${totalNeedles} 针</div>
+  <div class="settings-btn-row">
+    <button class="settings-btn settings-btn-secondary" onclick="exportData()">📤 导出备份</button>
+    <label class="settings-btn settings-btn-secondary" style="display:block;text-align:center">
+      📥 导入备份
+      <input type="file" accept="application/json,.json" style="display:none" onchange="importData(this)">
+    </label>
+    <button class="settings-btn settings-btn-danger" onclick="clearAllData()">🗑 清空所有数据</button>
+  </div>`;
+
+      html += `
+  <div class="sheet-section">安装</div>
+  <div class="settings-btn-row">
+    <button class="settings-btn settings-btn-primary" onclick="showPwaTutorial()">📲 安装到主屏幕</button>
+  </div>`;
+
+      html += `<button class="sheet-cancel" onclick="closeSheet()">关闭</button>`;
+
+      document.getElementById("sheet").innerHTML = html;
+      document.getElementById("sheet").classList.add("show");
+      document.getElementById("overlay").classList.add("show");
+    }
+
+    function changeTheme(themeKey) {
+      data.settings.theme = themeKey;
+      saveData();
+      // 更新 sheet 中的选中态
+      document.querySelectorAll('.settings-theme-item').forEach(el => el.classList.remove('active'));
+      const idx = { macaron: 0, ocean: 1, forest: 2, minimal: 3 }[themeKey];
+      const items = document.querySelectorAll('.settings-theme-item');
+      if (items[idx]) items[idx].classList.add('active');
+      // 如果在项目页，只刷新底部调色板
+      if (curProjId) {
+        const proj = getProj(curProjId);
+        if (proj) {
+          const bar = document.getElementById("bottom-bar");
+          if (bar) {
+            let bhtml = renderDynamicPalette(proj);
+            bhtml += renderFilterToggle();
+            bhtml += renderBarRow();
+            bar.innerHTML = bhtml;
+            updateVoiceButton();
+          }
+        }
+      }
+    }
+
+    function toggleVoiceDefault() {
+      data.settings.voiceEnabled = !data.settings.voiceEnabled;
+      saveData();
+      const el = document.getElementById('settings-voice-toggle');
+      if (el) el.classList.toggle('on');
+    }
+
+    function clearAllData() {
+      showConfirmDialog("确定要清空所有数据吗？此操作不可恢复。", (ok) => {
+        if (!ok) return;
+        data.projects = [];
+        saveData();
+        if (curProjId) {
+          goHome();
+        } else {
+          renderHome();
+        }
+        showToast("所有数据已清空");
+      });
+    }
+
+    // ═══════════════════════════════════════════
+    //  暴露全局函数（供 HTML onclick 使用）
+    // ═══════════════════════════════════════════
+    const _globals = {
+      goHome, openProject, exportPDF, exportData, exportSingleProject, importData,
+      showNewProjectDialog, showConfirmDialog, confirmDialog, closeDialog, deleteProject,
+      addRound, toggleRound, deleteRound, undoDeleteRound, setActiveRound,
+      pushStitch, undoStitch, stitchTap,
+      changeStitch, deleteStitch, startInsert, doInsert,
+      closeSheet, openPatternPasteSheet,
+      handleParsePattern, handleOCR, removeParsedItem, confirmImport,
+      renameProject,
+      openStitchSetup, toggleSetupStitch, saveProjectStitches, closeSetupSheet,
+      showEntryChoiceSheet, startImportFlow, startManualFlow, dismissEntryChoice,
+      toggleSelectAllInSetup, startImportFromSetup, cancelPasteSheet,
+      toggleFilterByRound,
+      openStitchCustomize, saveStitchCustomize, resetStitchCustomize, backToSetupGrid,
+      openNewStitchForm, saveNewStitch, deleteCustomStitch,
+      addPart, switchPart, renamePart, deletePart,
+      startEditPartName, partNameBlur, getEditingPartId,
+      toggleProjMenu, archiveProject, showArchiveSuccessSheet, handlePwaHintOptOut, showPwaTutorial, unarchiveProject,
+      toggleVoiceMode, updateVoiceButton,
+      openSettings, changeTheme, toggleVoiceDefault, clearAllData,
+      switchTab, renderSettings, updateTabNav,
+      editExpectedCount,
+      pickCover, setProjectCover, removeProjectCover
+    };
+    Object.entries(_globals).forEach(([k, v]) => { window[k] = v; });
+
+    // 点击空白处关闭项目菜单
+    document.addEventListener('click', (e) => {
+      if (flowState.projMenuId === null) return;
+      const menu = document.getElementById(`proj-menu-${flowState.projMenuId}`);
+      if (menu && menu.contains(e.target)) return;
+      if (e.target.closest('.proj-del')) return;
+      flowState.projMenuId = null;
+      if (menu) menu.classList.remove('show');
+    });
+
+    document.getElementById("tab-nav").style.display = "flex";
+    loadData();
+    renderHome();
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch((err) => {
+        console.warn('SW 注册失败:', err);
+      });
+    }
+  </script>
+</body>
+
+</html>
