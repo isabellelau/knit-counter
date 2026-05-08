@@ -3866,20 +3866,22 @@
       };
 
       r.onerror = (e) => {
+        console.log('语音错误:', e.error, e.message);
+        alert('语音错误：' + e.error);  // 临时，确认问题后删除
         voiceMode = false;
         recognition = null;
         updateVoiceButton();
         playSound('exit');
         setVoicePulse(false);
         if (e.error === 'not-allowed') {
-          alert('麦克风权限被拒绝，请在浏览器设置中允许');
+          showToast('麦克风权限被拒绝，请在浏览器设置中允许');
         }
       };
 
       return r;
     }
 
-    function toggleVoiceMode() {
+    async function toggleVoiceMode() {
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SR) {
         alert('您的浏览器不支持语音识别，请使用 Chrome 或 Safari');
@@ -3889,7 +3891,17 @@
       voiceMode = !voiceMode;
 
       if (voiceMode) {
+        try {
+          await navigator.mediaDevices.getUserMedia({ audio: true });
+        } catch (err) {
+          showToast('请允许麦克风权限后重试');
+          voiceMode = false;
+          updateVoiceButton();
+          return;
+        }
         recognition = initRecognition();
+        console.log('尝试启动语音，SR:', SR);
+        console.log('recognition 对象:', recognition);
         try {
           recognition.start();
         } catch (err) {
