@@ -3238,29 +3238,24 @@
 
       html += `</div>`;
       const proj = getProj(curProjId);
-      let currentPart = proj ? getActivePart(proj) : null;
-      let isEmpty = isPartEmpty(currentPart);
-
-      // 状态自愈：当前 part 有数据但项目中存在空 part 时，自动切换到空 part
-      if (!isEmpty && proj && proj.parts) {
-        const emptyPart = proj.parts.find(p => isPartEmpty(p));
-        if (emptyPart) {
-          proj.activePartId = emptyPart.id;
-          saveData();
-          currentPart = emptyPart;
-          isEmpty = true;
-        }
-      }
+      const currentPart = proj ? getActivePart(proj) : null;
+      const isEmpty = isPartEmpty(currentPart);
 
       if (isEmpty) {
         html += `<div style="padding:10px 16px">
-    <button class="bar-btn primary" style="width:100%;animation:scale-in 0.25s ease-out" onclick="confirmImport('overwrite')">填入此处</button>
-    <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:6px">内容将自动填入当前空白部件</div>
+    <button class="bar-btn primary" style="width:100%;animation:scale-in 0.25s ease-out" onclick="updateCurrentPart()">确认导入并开始</button>
+    <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:6px">内容将直接填入当前空白部件</div>
   </div>`;
       } else {
         html += `<div style="padding:10px 16px;display:flex;gap:8px">
-    <button class="bar-btn" style="flex:1" onclick="confirmImport('overwrite')">覆盖当前部件</button>
-    <button class="bar-btn primary" style="flex:2;animation:scale-in 0.25s ease-out" onclick="confirmImport('newPart')">作为新部件导入</button>
+    <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+      <button class="bar-btn" style="width:100%" onclick="updateCurrentPart()">覆盖当前部件</button>
+      <span style="font-size:10px;color:var(--muted);text-align:center">原有进度将被清除</span>
+    </div>
+    <div style="flex:2;display:flex;flex-direction:column;gap:4px">
+      <button class="bar-btn primary" style="width:100%;animation:scale-in 0.25s ease-out" onclick="addNewPart()">作为新部件导入</button>
+      <span style="font-size:10px;color:var(--muted);text-align:center">保留当前进度，创建新分类</span>
+    </div>
   </div>`;
       }
       html += `<button class="sheet-cancel" onclick="openPatternPasteSheet()">← 返回修改</button>`;
@@ -3351,6 +3346,13 @@
         const el = document.getElementById('round-' + lastRound.id);
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 60);
+    }
+
+    function updateCurrentPart() {
+      confirmImport('overwrite');
+    }
+    function addNewPart() {
+      confirmImport('newPart');
     }
 
     // ── render home ──
@@ -4177,7 +4179,7 @@
       pushStitch, undoStitch, stitchTap,
       changeStitch, deleteStitch, startInsert, doInsert,
       closeSheet, openPatternPasteSheet,
-      handleParsePattern, handleOCR, removeParsedItem, confirmImport,
+      handleParsePattern, handleOCR, removeParsedItem, confirmImport, updateCurrentPart, addNewPart,
       renameProject,
       openStitchSetup, toggleSetupStitch, saveProjectStitches, closeSetupSheet,
       showEntryChoiceSheet, startImportFlow, startManualFlow, dismissEntryChoice,
