@@ -62,9 +62,13 @@ self.addEventListener('fetch', (e) => {
     e.respondWith(
       fetch(request, { cache: 'no-cache' })
         .then((resp) => {
-          if (resp.ok) {
-            const clone = resp.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          if (resp.ok && !resp.bodyUsed) {
+            try {
+              const clone = resp.clone();
+              caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+            } catch (err) {
+              console.warn('[SW] skip caching HTML:', err.message);
+            }
           }
           return resp;
         })
@@ -78,9 +82,13 @@ self.addEventListener('fetch', (e) => {
     caches.match(request).then((cached) => {
       const networkFetch = fetch(request)
         .then((resp) => {
-          if (resp.ok && resp.type === 'basic') {
-            const clone = resp.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          if (resp.ok && resp.type === 'basic' && !resp.bodyUsed) {
+            try {
+              const clone = resp.clone();
+              caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+            } catch (err) {
+              console.warn('[SW] skip caching asset:', err.message);
+            }
           }
           return resp;
         })

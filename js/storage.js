@@ -12,13 +12,46 @@ export function loadData() {
   console.log('[loadData] localStorage keys:', allKeys);
   console.log('[loadData] data-related keys:', dataKeys);
 
-  try {
-    const d = localStorage.getItem("crochet_v3_fixed") || localStorage.getItem("crochet_v3");
-    console.log('[loadData] primary key found:', d ? 'yes (' + d.substring(0, 60) + '...)' : 'no');
-    if (d) state.data = JSON.parse(d);
-  } catch (e) {
-    console.error('[loadData] parse error:', e);
+  // 智能读取：优先找有项目数据的 key
+  let d = null;
+  let sourceKey = null;
+  const candidates = [
+    { key: 'crochet_v3_fixed', check: (v) => v && v.projects && v.projects.length > 0 },
+    { key: 'crochet_v3', check: (v) => v && v.projects && v.projects.length > 0 }
+  ];
+
+  for (const { key, check } of candidates) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (check(parsed)) {
+          d = parsed;
+          sourceKey = key;
+          console.log(`[loadData] found data with projects in ${key}:`, parsed.projects.length);
+          break;
+        }
+      }
+    } catch (e) { /* ignore */ }
   }
+
+  // 如果没有找到有项目的数据，回退到第一个存在的 key（哪怕为空）
+  if (!d) {
+    for (const key of ['crochet_v3_fixed', 'crochet_v3']) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          d = JSON.parse(raw);
+          sourceKey = key;
+          console.log(`[loadData] fallback to ${key}, projects:`, d.projects?.length || 0);
+          break;
+        }
+      } catch (e) { /* ignore */ }
+    }
+  }
+
+  if (d) state.data = d;
+  if (!sourceKey) console.log('[loadData] no localStorage data found at all');
 
   // 保底结构
   if (!state.data || typeof state.data !== "object") {
