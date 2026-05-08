@@ -1434,7 +1434,8 @@
       return hasNoRounds || hasOnlyEmptyRound;
     }
     function getUnitLabel(proj) {
-      return proj && proj.useRowTerms ? '行' : '圈';
+      const p = proj || getProj(curProjId);
+      return p && p.useRowTerms ? '行' : '圈';
     }
     function toggleRowTerms() {
       const proj = getProj(curProjId);
@@ -2613,8 +2614,7 @@
     function renderFilterToggle() {
       const dotBg = filterByRound ? 'var(--accent)' : 'var(--border)';
       const dotPos = filterByRound ? '18px' : '2px';
-      const proj = getProj(curProjId);
-      const unit = getUnitLabel(proj);
+      const unit = getUnitLabel();
       return `<div style="display:flex;align-items:center;justify-content:flex-end;padding:2px 4px 6px;gap:6px;cursor:pointer" onclick="toggleFilterByRound()">
       <span style="font-size:10px;color:var(--muted);user-select:none">仅显示本${unit}针法</span>
       <span style="display:inline-block;width:34px;height:20px;border-radius:10px;background:${dotBg};position:relative;transition:background .2s;flex-shrink:0">
@@ -2624,8 +2624,7 @@
     }
 
     function renderBarRow() {
-      const proj = getProj(curProjId);
-      const unit = getUnitLabel(proj);
+      const unit = getUnitLabel();
       const hint = voiceMode
         ? `<div style="text-align:center;font-size:11px;color:#EF4444;padding:2px 0 4px;opacity:.8">🎙 说数字 1-9 添加针法 · 说"撤销"删除上一针</div>`
         : '';
