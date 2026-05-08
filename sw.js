@@ -1,4 +1,4 @@
-const HTML_PATH = './针织计数-v2.html';
+const HTML_PATH = './index.html';
 
 const PRECACHE = [
   HTML_PATH,

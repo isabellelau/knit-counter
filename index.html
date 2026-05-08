@@ -7,7 +7,7 @@
   <title>钩织计数本 - 专业版</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#C07A45">
-  <meta name="version" content="v2">
+  <meta name="version" content="v3">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <style>
@@ -3894,13 +3894,22 @@
 
       if (voiceMode) {
         recognition = initRecognition();
-        recognition.start();
+        try {
+          recognition.start();
+        } catch (err) {
+          voiceMode = false;
+          recognition = null;
+          showToast('麦克风启动失败，请检查权限');
+          setVoicePulse(false);
+          updateVoiceButton();
+          return;
+        }
         playSound('enter');
         setVoicePulse(true);
       } else {
         if (recognition) {
           recognition.onend = null;
-          recognition.stop();
+          try { recognition.stop(); } catch (_) { /* ignore */ }
           recognition = null;
         }
         playSound('exit');
