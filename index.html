@@ -8,6 +8,7 @@
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#C07A45">
   <meta name="version" content="v3">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <style>
@@ -348,6 +349,7 @@
       margin: 0 -4px;
       border-radius: 4px;
       pointer-events: auto;
+      z-index: 999;
       box-shadow: 0 0 0 0 transparent;
       transition: box-shadow .15s;
     }
@@ -383,6 +385,8 @@
     .part-tab-del:hover { opacity: 1; }
     .part-tab-edit-icon { pointer-events: auto; }
     .part-tab-del { pointer-events: auto; }
+    .part-tab-edit-icon:active { transform: scale(0.85); }
+    .part-tab-del:active { transform: scale(0.85); }
     .part-tab-add {
       padding: 6px 10px;
       font-size: 16px;
@@ -1294,7 +1298,7 @@
     let dlgCallback = null;
     let confirmCallback = null;
     let filterByRound = true;
-    let editingPartId = null;
+    window.window.editingPartId = null;
     let currentTab = 'projects';
     let voiceMode = false;
     let recognition = null;
@@ -3535,8 +3539,11 @@
 
     // ── render project ──
     function renderProject() {
+      // 编辑模式下禁止 DOM 重构，避免打断输入焦点
+      if (window.editingPartId !== null) return;
+
       // 恢复在 blur 之前捕获的编辑状态
-      editingPartId = flowState.captureEdit || editingPartId;
+      window.editingPartId = flowState.captureEdit || window.editingPartId;
       flowState.captureEdit = null;
 
       const proj = getProj(curProjId);
@@ -3566,7 +3573,7 @@
       <div class="part-tabs-scroll" onmousedown="flowState.captureEdit=getEditingPartId()">`;
       (proj.parts || []).forEach(pt => {
         const isActive = pt.id === (part?.id || proj.activePartId);
-        const isEditing = pt.id === editingPartId;
+        const isEditing = pt.id === window.editingPartId;
         html += `<button class="part-tab${isActive ? " active" : ""}"
       onclick="switchPart('${pt.id}')"
       title="${esc(pt.title)}">
@@ -3654,16 +3661,19 @@
     function switchPart(partId) {
       const proj = getProj(curProjId);
       if (!proj) return;
+      if (window.editingPartId !== null && window.editingPartId !== partId) {
+        window.editingPartId = null;
+      }
       proj.activePartId = partId;
       saveData();
       renderProject();
     }
 
-    function getEditingPartId() { return editingPartId; }
+    function getEditingPartId() { return window.editingPartId; }
     function handleEditBtnClick(event, partId, el) {
       event.preventDefault();
       event.stopPropagation();
-      if (editingPartId === partId) {
+      if (window.editingPartId === partId) {
         el.previousElementSibling.blur();
       } else {
         startEditPartName(el, partId);
@@ -3677,17 +3687,18 @@
 
     function startEditPartName(icon, partId) {
       console.log('Action Triggered: startEditPartName', partId);
-      editingPartId = partId;
+      window.editingPartId = partId;
       const input = icon.previousElementSibling;
       const span = input.previousElementSibling;
       span.style.display = 'none';
       input.style.display = '';
       input.focus();
-      renderProject();
+      // 编辑模式下禁止调用 renderProject，避免 DOM 重构丢失焦点
     }
     function partNameBlur(input, partId) {
+      console.log('Action Triggered: partNameBlur', partId, input.value.trim());
       renamePart(partId, input.value.trim());
-      editingPartId = null;
+      window.editingPartId = null;
       renderProject();
     }
     function renamePart(partId, name) {
