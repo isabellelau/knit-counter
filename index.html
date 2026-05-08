@@ -1250,7 +1250,7 @@
   <div id="voice-pulse" style="
     position: fixed;
     right: 16px;
-    bottom: 100px;
+    bottom: calc(var(--bottom-bar-h, 160px) + 16px);
     width: 12px;
     height: 12px;
     border-radius: 50%;
@@ -3580,6 +3580,8 @@
       bhtml += renderFilterToggle();
       bhtml += renderBarRow();
       bar.innerHTML = bhtml;
+      const barH = document.getElementById('bottom-bar').offsetHeight;
+      document.documentElement.style.setProperty('--bottom-bar-h', barH + 'px');
       updateVoiceButton();
     }
 
