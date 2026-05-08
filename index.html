@@ -1414,13 +1414,12 @@
     }
     function isPartEmpty(part) {
       if (!part) return true;
-      const isDefaultTitle = /^部件 \d+$/.test(part.title);
       const hasNoRounds = part.rounds.length === 0;
       const hasOnlyEmptyRound = part.rounds.length === 1 &&
         part.rounds[0].seq.length === 0 &&
         !part.rounds[0].instruction &&
         !part.rounds[0].isTextCard;
-      return isDefaultTitle && !part.rawPattern && (hasNoRounds || hasOnlyEmptyRound);
+      return hasNoRounds || hasOnlyEmptyRound;
     }
     function findRound(proj, roundId) {
       if (!proj || !proj.parts) return null;
@@ -3239,11 +3238,24 @@
 
       html += `</div>`;
       const proj = getProj(curProjId);
-      const currentPart = proj ? getActivePart(proj) : null;
-      const isEmpty = isPartEmpty(currentPart);
+      let currentPart = proj ? getActivePart(proj) : null;
+      let isEmpty = isPartEmpty(currentPart);
+
+      // 状态自愈：当前 part 有数据但项目中存在空 part 时，自动切换到空 part
+      if (!isEmpty && proj && proj.parts) {
+        const emptyPart = proj.parts.find(p => isPartEmpty(p));
+        if (emptyPart) {
+          proj.activePartId = emptyPart.id;
+          saveData();
+          currentPart = emptyPart;
+          isEmpty = true;
+        }
+      }
+
       if (isEmpty) {
-        html += `<div style="padding:10px 16px;display:flex;gap:8px">
-    <button class="bar-btn primary" style="flex:1;animation:scale-in 0.25s ease-out" onclick="confirmImport('overwrite')">确认导入并开始</button>
+        html += `<div style="padding:10px 16px">
+    <button class="bar-btn primary" style="width:100%;animation:scale-in 0.25s ease-out" onclick="confirmImport('overwrite')">填入此处</button>
+    <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:6px">内容将自动填入当前空白部件</div>
   </div>`;
       } else {
         html += `<div style="padding:10px 16px;display:flex;gap:8px">
@@ -3334,6 +3346,7 @@
       saveData();
       closeSheet();
       renderProject();
+      showToast('图解已同步至 ' + targetPart.title);
       setTimeout(() => {
         const el = document.getElementById('round-' + lastRound.id);
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
