@@ -3355,7 +3355,8 @@
       renderProject();
       showToast('图解已同步至 ' + targetPart.title);
       setTimeout(() => {
-        const el = document.getElementById('round-' + lastRound.id);
+        const firstRound = targetPart.rounds[0];
+        const el = document.getElementById('round-' + firstRound.id);
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 60);
     }
