@@ -1298,7 +1298,7 @@
     let dlgCallback = null;
     let confirmCallback = null;
     let filterByRound = true;
-    window.window.editingPartId = null;
+    window.editingPartId = null;
     let currentTab = 'projects';
     let voiceMode = false;
     let recognition = null;
@@ -3269,7 +3269,6 @@
       });
 
       html += `</div>`;
-      const proj = getProj(curProjId);
       const currentPart = proj ? getActivePart(proj) : null;
       const isEmpty = isPartEmpty(currentPart);
 
