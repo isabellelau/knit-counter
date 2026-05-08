@@ -3866,21 +3866,24 @@
       };
 
       r.onerror = (e) => {
-        const fatal = ['not-allowed', 'service-not-allowed'];
-        if (fatal.includes(e.error)) {
+        const permanent = ['not-allowed'];
+        const retryable = ['service-not-allowed', 'network', 'audio-capture'];
+
+        if (permanent.includes(e.error)) {
           voiceMode = false;
           recognition = null;
           flowState.voiceStarting = false;
           setVoicePulse(false);
           updateVoiceButton();
-          const proj = getProj(curProjId);
-          if (proj) {
-            const bar = document.getElementById('bottom-bar');
-            bar.innerHTML = renderDynamicPalette(proj) + renderFilterToggle() + renderBarRow();
-          }
-          showToast('语音启动失败，请检查麦克风权限');
+          showToast('麦克风权限被拒绝，请在设置里允许');
+        } else if (retryable.includes(e.error)) {
+          setTimeout(() => {
+            if (voiceMode && recognition) {
+              try { recognition.start(); } catch (_) {}
+            }
+          }, 300);
         }
-        // 非致命错误：静默，由 onend 自动重启
+        // onend 的自动重启逻辑保持不变，双重保险
       };
 
       return r;
@@ -3890,6 +3893,7 @@
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         stream.getTracks().forEach(t => t.stop());
+        await new Promise(resolve => setTimeout(resolve, 300));
         flowState.micPermission = 'granted';
       } catch (err) {
         flowState.micPermission = 'denied';
