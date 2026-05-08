@@ -1170,6 +1170,10 @@
       0%, 100% { opacity: 1; }
       50% { opacity: 0.7; }
     }
+    @keyframes scale-in {
+      from { opacity: 0; transform: scale(0.92); }
+      to { opacity: 1; transform: scale(1); }
+    }
     #voice-pulse.active {
       animation: voice-breathing 1.8s ease-in-out infinite;
     }
@@ -1407,6 +1411,16 @@
     function getActivePart(proj) {
       if (!proj || !proj.parts || !proj.parts.length) return null;
       return proj.parts.find(p => p.id === proj.activePartId) || proj.parts[0];
+    }
+    function isPartEmpty(part) {
+      if (!part) return true;
+      const isDefaultTitle = /^部件 \d+$/.test(part.title);
+      const hasNoRounds = part.rounds.length === 0;
+      const hasOnlyEmptyRound = part.rounds.length === 1 &&
+        part.rounds[0].seq.length === 0 &&
+        !part.rounds[0].instruction &&
+        !part.rounds[0].isTextCard;
+      return isDefaultTitle && !part.rawPattern && (hasNoRounds || hasOnlyEmptyRound);
     }
     function findRound(proj, roundId) {
       if (!proj || !proj.parts) return null;
@@ -3224,10 +3238,19 @@
       });
 
       html += `</div>`;
-      html += `<div style="padding:10px 16px;display:flex;gap:8px">
-    <button class="bar-btn" style="flex:1" onclick="confirmImport('overwrite')">覆盖当前部件</button>
-    <button class="bar-btn primary" style="flex:2" onclick="confirmImport('newPart')">作为新部件导入</button>
+      const proj = getProj(curProjId);
+      const currentPart = proj ? getActivePart(proj) : null;
+      const isEmpty = isPartEmpty(currentPart);
+      if (isEmpty) {
+        html += `<div style="padding:10px 16px;display:flex;gap:8px">
+    <button class="bar-btn primary" style="flex:1;animation:scale-in 0.25s ease-out" onclick="confirmImport('overwrite')">确认导入并开始</button>
   </div>`;
+      } else {
+        html += `<div style="padding:10px 16px;display:flex;gap:8px">
+    <button class="bar-btn" style="flex:1" onclick="confirmImport('overwrite')">覆盖当前部件</button>
+    <button class="bar-btn primary" style="flex:2;animation:scale-in 0.25s ease-out" onclick="confirmImport('newPart')">作为新部件导入</button>
+  </div>`;
+      }
       html += `<button class="sheet-cancel" onclick="openPatternPasteSheet()">← 返回修改</button>`;
 
       showSheet(html);
