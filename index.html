@@ -3866,92 +3866,97 @@
       };
 
       r.onerror = (e) => {
-        const permanent = ['not-allowed'];
-        const retryable = ['service-not-allowed', 'network', 'audio-capture'];
-
-        if (permanent.includes(e.error)) {
+        if (e.error === 'not-allowed') {
+          flowState.voiceState = 'off';
           voiceMode = false;
           recognition = null;
-          flowState.voiceStarting = false;
           setVoicePulse(false);
           updateVoiceButton();
-          showToast('麦克风权限被拒绝，请在设置里允许');
-        } else if (retryable.includes(e.error)) {
-          setTimeout(() => {
-            if (voiceMode && recognition) {
-              try { recognition.start(); } catch (_) {}
-            }
-          }, 300);
+          showToast('麦克风权限被拒绝');
         }
-        // onend 的自动重启逻辑保持不变，双重保险
+        // 其他错误静默，onend 会自动重启
       };
 
       return r;
     }
 
-    async function requestMicPermission() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        stream.getTracks().forEach(t => t.stop());
-        await new Promise(resolve => setTimeout(resolve, 300));
-        flowState.micPermission = 'granted';
-      } catch (err) {
-        flowState.micPermission = 'denied';
-      }
-    }
-
     async function toggleVoiceMode() {
-      if (flowState.voiceStarting) return;
-      flowState.voiceStarting = true;
-
-      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SR) {
-        alert('您的浏览器不支持语音识别，请使用 Chrome 或 Safari');
-        flowState.voiceStarting = false;
+      // 启动中时点击 = 取消，直接重置
+      if (flowState.voiceState === 'starting') {
+        flowState.voiceState = 'off';
+        if (recognition) {
+          recognition.onend = null;
+          try { recognition.stop(); } catch(_) {}
+          recognition = null;
+        }
+        voiceMode = false;
+        setVoicePulse(false);
+        updateVoiceButton();
         return;
       }
 
-      voiceMode = !voiceMode;
-
-      if (voiceMode) {
-        if (flowState.micPermission === undefined) {
-          await requestMicPermission();
-        }
-        if (flowState.micPermission === 'denied') {
-          showToast('请在浏览器设置里允许麦克风权限');
-          voiceMode = false;
-          flowState.voiceStarting = false;
-          updateVoiceButton();
-          return;
-        }
-        recognition = initRecognition();
-        console.log('尝试启动语音，SR:', SR);
-        console.log('recognition 对象:', recognition);
-        try {
-          recognition.start();
-        } catch (err) {
-          voiceMode = false;
-          recognition = null;
-          showToast('麦克风启动失败，请检查权限');
-          setVoicePulse(false);
-          updateVoiceButton();
-          flowState.voiceStarting = false;
-          return;
-        }
-        playSound('enter');
-        setVoicePulse(true);
-        flowState.voiceStarting = false;
-      } else {
+      // 已开启时点击 = 关闭
+      if (flowState.voiceState === 'on') {
+        flowState.voiceState = 'off';
+        voiceMode = false;
         if (recognition) {
           recognition.onend = null;
-          try { recognition.stop(); } catch (_) { /* ignore */ }
+          try { recognition.stop(); } catch(_) {}
           recognition = null;
         }
         playSound('exit');
         setVoicePulse(false);
+        updateVoiceButton();
+        const proj = getProj(curProjId);
+        if (proj) {
+          const bar = document.getElementById('bottom-bar');
+          bar.innerHTML = renderDynamicPalette(proj) + renderFilterToggle() + renderBarRow();
+        }
+        return;
       }
 
-      // 语音模式切换时需要重渲 palette（按钮显示内容会变）
+      // 关闭状态点击 = 开启，进入 starting
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) {
+        showToast('当前浏览器不支持语音识别');
+        return;
+      }
+
+      flowState.voiceState = 'starting';
+      updateVoiceButton(); // 立即显示"启动中..."
+
+      // 请求权限
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach(t => t.stop());
+        await new Promise(r => setTimeout(r, 300));
+      } catch(err) {
+        flowState.voiceState = 'off';
+        updateVoiceButton();
+        showToast('麦克风权限被拒绝，请在浏览器设置里允许');
+        return;
+      }
+
+      // 权限拿到，但用户可能在等待期间又点了取消
+      if (flowState.voiceState !== 'starting') return;
+
+      // 正式启动
+      flowState.voiceState = 'on';
+      voiceMode = true;
+      recognition = initRecognition();
+      try {
+        recognition.start();
+      } catch(err) {
+        flowState.voiceState = 'off';
+        voiceMode = false;
+        recognition = null;
+        updateVoiceButton();
+        showToast('语音启动失败，请重试');
+        return;
+      }
+
+      playSound('enter');
+      setVoicePulse(true);
       const proj = getProj(curProjId);
       if (proj) {
         const bar = document.getElementById('bottom-bar');
@@ -3975,18 +3980,25 @@
     function updateVoiceButton() {
       const btn = document.getElementById('voice-mode-btn');
       if (!btn) return;
-      if (voiceMode) {
+      if (flowState.voiceState === 'starting') {
+        btn.textContent = '🎙 启动中';
+        btn.style.background = '#F59E0B';
+        btn.style.color = '#fff';
+        btn.style.borderColor = '#F59E0B';
+        btn.style.animation = 'btn-pulse 1s ease-in-out infinite';
+      } else if (flowState.voiceState === 'on') {
         btn.textContent = '🎙 语音中';
         btn.style.background = '#EF4444';
         btn.style.color = '#fff';
         btn.style.borderColor = '#EF4444';
+        btn.style.animation = 'btn-pulse 1.8s ease-in-out infinite';
       } else {
         btn.textContent = '🎙 语音';
         btn.style.background = '';
         btn.style.color = '';
         btn.style.borderColor = '';
+        btn.style.animation = '';
       }
-      btn.style.animation = voiceMode ? 'btn-pulse 1.8s ease-in-out infinite' : '';
     }
 
     function triggerEdgeGlow(sid) {
