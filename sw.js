@@ -10,7 +10,7 @@ async function getVersionFromHtml() {
   try {
     const resp = await fetch(HTML_PATH, { cache: 'no-cache' });
     const text = await resp.text();
-    const match = text.match(<meta\s+name=["']version["']\s+content=["']([^"']+)["']\s*>/i);
+    const match = text.match(/<meta\s+name=["']version["']\s+content=["']([^"']+)["']\s*>/i);
     return match ? match[1] : 'v1';
   } catch {
     return 'v1';
