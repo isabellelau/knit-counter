@@ -7,7 +7,7 @@
   <title>钩织计数本</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#C07A45">
-  <meta name="version" content="v4">
+  <meta name="version" content="1.43">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -1262,6 +1262,7 @@
     <div class="hdr-sub" id="hdr-sub"></div>
     <div class="hdr-actions">
       <button class="hdr-btn" id="hdr-settings" style="display:none" onclick="openSettings()" title="设置">⚙️</button>
+      <button class="hdr-btn" id="hdr-stitch" style="display:none" onclick="openStitchSetup('edit')" title="针法配置">🧶</button>
       <button class="hdr-btn" id="hdr-pdf" style="display:none" onclick="exportPDF()" title="导出PDF">📄</button>
     </div>
   </div>
@@ -1354,9 +1355,51 @@
       }).catch((err) => {
         console.warn('SW 注册失败:', err);
       });
+
+      navigator.serviceWorker.addEventListener('message', e => {
+        if (e.data?.type === 'SW_UPDATED') {
+          showUpdateToast();
+        }
+      });
     }
   </script>
   <script>
+    function showUpdateToast() {
+      if (document.getElementById('update-toast')) return;
+
+      const el = document.createElement('div');
+      el.id = 'update-toast';
+      el.style.cssText = `
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        background: var(--accent);
+        color: #fff;
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 14px;
+        font-weight: 600;
+        z-index: 9999;
+        safe-area: env(safe-area-inset-top);
+      `;
+      el.innerHTML = `
+        <span>✨ 发现新版本</span>
+        <button onclick="location.reload()" style="
+          background: #fff;
+          color: var(--accent);
+          border: none;
+          border-radius: 6px;
+          padding: 4px 12px;
+          font-size: 13px;
+          font-weight: 700;
+          cursor: pointer;
+          font-family: inherit;
+        ">立即刷新</button>
+      `;
+      document.body.prepend(el);
+    }
+
     (function() {
       function syncHeader() {
         const hdrBack = document.getElementById('hdr-back');
