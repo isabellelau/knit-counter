@@ -435,51 +435,6 @@
       align-self: center
     }
 
-    .round-instruction {
-      margin-top: 8px;
-      padding: 8px 10px;
-      border-radius: 8px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      min-height: 36px;
-      line-height: 1.5;
-      font-size: 13px;
-      gap: 8px
-    }
-
-    .round-instruction:hover {
-      background: var(--bg)
-    }
-
-    .round-instruction-text {
-      flex: 1;
-      white-space: pre-wrap;
-      word-break: break-word
-    }
-
-    .round-instruction-edit {
-      color: var(--muted);
-      font-size: 12px;
-      flex-shrink: 0;
-      opacity: .6
-    }
-
-    .round-instruction-input {
-      width: 100%;
-      border: 1px solid var(--accent);
-      border-radius: 8px;
-      padding: 8px 10px;
-      font-size: 13px;
-      font-family: inherit;
-      color: var(--text);
-      background: var(--card);
-      outline: none;
-      resize: vertical;
-      line-height: 1.5
-    }
-
     .spill {
       display: inline-flex;
       align-items: center;

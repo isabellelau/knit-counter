@@ -104,58 +104,49 @@ export function findRound(proj, roundId) {
   return null;
 }
 
-export function editRoundInstruction(roundId) {
+export function openInstructionEdit(roundId) {
   const proj = getProj(state.curProjId);
   const r = findRound(proj, roundId);
   if (!r) return;
 
-  const container = document.getElementById(`round-instruction-${roundId}`);
-  if (!container) return;
+  const html = `<div class="sheet-handle"></div>
+<div class="sheet-title">编辑图解</div>
+<div style="padding:0 16px 12px">
+  <textarea id="instruction-edit-area"
+    style="width:100%;min-height:120px;
+    border:1px solid var(--accent);border-radius:8px;
+    padding:10px;font-size:14px;font-family:inherit;
+    resize:vertical;box-sizing:border-box"
+    placeholder="例：R4: 10(X,V,X)">${esc(r.instruction || '')}</textarea>
+</div>
+<button class="sheet-cancel" style="background:var(--accent);color:#fff"
+  onclick="saveRoundInstruction('${roundId}')">保存</button>
+<button class="sheet-cancel" onclick="closeSheet()">取消</button>`;
 
-  const textarea = document.createElement('textarea');
-  textarea.value = r.instruction || '';
-  textarea.className = 'round-instruction-input';
-  textarea.rows = Math.max(2, (r.instruction || '').split('\n').length);
+  showSheet(html);
+}
 
-  const save = () => {
-    const newValue = textarea.value.trim();
-    const oldValue = r.instruction || '';
+export function saveRoundInstruction(roundId) {
+  const proj = getProj(state.curProjId);
+  const r = findRound(proj, roundId);
+  if (!r) return;
 
-    if (newValue !== oldValue) {
-      r.instruction = newValue;
-      saveData();
+  const textarea = document.getElementById('instruction-edit-area');
+  if (!textarea) return;
 
-      const part = getActivePart(proj);
-      if (part && part.activeRoundId === roundId) {
-        const slide = document.getElementById('task-slide');
-        if (slide) slide.outerHTML = renderTaskSlide(proj);
-      }
-    }
+  const newValue = textarea.value.trim();
+  r.instruction = newValue;
+  r.expectedCount = null;
+  saveData();
+  closeSheet();
 
-    const textEl = document.getElementById(`round-instruction-text-${roundId}`);
-    if (textEl) {
-      textEl.textContent = newValue || '+ 添加图解备注';
-      textEl.style.color = newValue ? '' : 'var(--muted)';
-    }
-    container.innerHTML = `
-      <span class="round-instruction-text" style="${newValue ? '' : 'color:var(--muted)'}" id="round-instruction-text-${roundId}">${newValue || '+ 添加图解备注'}</span>
-      <span class="round-instruction-edit">✏️</span>
-    `;
-    container.onclick = () => editRoundInstruction(roundId);
-  };
+  const part = getActivePart(proj);
+  if (part && part.activeRoundId === roundId) {
+    const slide = document.getElementById('task-slide');
+    if (slide) slide.outerHTML = renderTaskSlide(proj);
+  }
 
-  textarea.onblur = save;
-  textarea.onkeydown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      textarea.blur();
-    }
-  };
-
-  container.innerHTML = '';
-  container.onclick = null;
-  container.appendChild(textarea);
-  textarea.focus();
+  window.renderProject();
 }
 
 export function getRoundStitches(round) {

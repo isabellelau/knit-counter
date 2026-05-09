@@ -19,7 +19,7 @@ import {
   startInsert, doInsert, openStitchSetup, toggleSetupStitch, openStitchCustomize,
   saveStitchCustomize, resetStitchCustomize, backToSetupGrid, openNewStitchForm,
   saveNewStitch, deleteCustomStitch, saveProjectStitches, closeSetupSheet,
-  triggerEdgeGlow, editRoundInstruction
+  triggerEdgeGlow, openInstructionEdit, saveRoundInstruction
 } from './stitch.js';
 import {
   addRound, toggleRound, deleteRound, undoDeleteRound, setActiveRound
@@ -104,7 +104,7 @@ const _globals = {
   toggleProjMenu, archiveProject, showArchiveSuccessSheet, handlePwaHintOptOut, showPwaTutorial, unarchiveProject,
   toggleVoiceMode, updateVoiceButton, setVoicePulse, playSound,
   openVoiceTutorial, dismissVoiceHint,
-  renderDynamicPalette, renderFilterToggle, renderBarRow, triggerEdgeGlow, editRoundInstruction,
+  renderDynamicPalette, renderFilterToggle, renderBarRow, triggerEdgeGlow, openInstructionEdit, saveRoundInstruction,
   openSettings, changeTheme, toggleVoiceDefault, toggleVoiceSound, clearAllData,
   switchTab, renderSettings, updateTabNav,
   editExpectedCount,

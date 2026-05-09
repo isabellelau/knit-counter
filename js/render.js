@@ -177,6 +177,7 @@ export function renderProject() {
         <div class="round-label">${r.isTextCard ? (r.instruction || "备注") : (r.roundNum === 0 ? "起针" : `第 ${r.roundNum != null ? r.roundNum : i + 1} ${unit}`)}${isActive ? " <span style='font-size:10px;background:var(--accent);color:#fff;border-radius:4px;padding:1px 5px;margin-left:4px'>编辑中</span>" : ""}</div>
         <div class="round-count">${total} 针 ${dots}</div>
       </div>
+      <button class="round-edit-btn" onclick="event.stopPropagation();openInstructionEdit('${r.id}')" title="编辑图解" style="font-size:14px;color:var(--muted);background:none;border:none;cursor:pointer;padding:2px 6px;opacity:${r.instruction && r.instruction.trim() ? '1' : '0.4'}">${r.instruction && r.instruction.trim() ? '✏️' : '⊕'}</button>
       <button class="round-del" onclick="event.stopPropagation();deleteRound('${r.id}')" title="删除这一${unit}">×</button>
       <span class="round-chev${exp ? " open" : ""}">›</span>
     </div>
@@ -191,13 +192,6 @@ export function renderProject() {
       });
     }
     html += `</div>`;
-
-    const hasInstr = r.instruction && r.instruction.trim();
-    html += `<div class="round-instruction" id="round-instruction-${r.id}" onclick="editRoundInstruction('${r.id}')">
-      <span class="round-instruction-text" style="${hasInstr ? '' : 'color:var(--muted)'}" id="round-instruction-text-${r.id}">${hasInstr ? esc(r.instruction) : '+ 添加图解备注'}</span>
-      <span class="round-instruction-edit">✏️</span>
-    </div>`;
-
     html += `</div></div>`;
   });
 
