@@ -71,6 +71,7 @@ export function renderSettings() {
   document.getElementById("hdr-title").innerHTML = "<span>⚙️ 设置</span>";
   document.getElementById("hdr-sub").textContent = "";
   document.getElementById("hdr-pdf").style.display = "none";
+  document.getElementById("hdr-stitch").style.display = "none";
   document.getElementById("hdr-settings").style.display = "none";
   document.getElementById("bottom-bar").style.display = "none";
 
