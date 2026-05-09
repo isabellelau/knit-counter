@@ -7,7 +7,8 @@ export const state = {
     settings: {
       theme: "macaron",
       customColors: {},
-      voiceEnabled: false
+      voiceEnabled: false,
+      voiceSoundEnabled: false
     }
   },
   curProjId: null,

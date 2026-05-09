@@ -111,6 +111,21 @@ export function renderSettings() {
     </div>
     <span class="settings-toggle${voiceOn ? ' on' : ''}" id="settings-voice-toggle"><span class="settings-toggle-knob"></span></span>
   </div>`;
+  const soundOn = state.data.settings.voiceSoundEnabled;
+  html += `<div class="settings-item" onclick="toggleVoiceSound()">
+    <div>
+      <div class="settings-item-label">语音模式音效</div>
+    </div>
+    <span class="settings-toggle${soundOn ? ' on' : ''}" id="settings-voice-sound-toggle"><span class="settings-toggle-knob"></span></span>
+  </div>`;
+  html += `<div class="sheet-item" onclick="openVoiceTutorial()">
+    <div class="sheet-item-icon" style="background:#FEF3C7;font-size:16px">🎙</div>
+    <div>
+      <div class="sheet-item-label">语音模式使用说明</div>
+      <div class="sheet-item-sub">了解如何用语音解放双手</div>
+    </div>
+    <span style="color:var(--muted);font-size:16px;flex-shrink:0">›</span>
+  </div>`;
 
   // 数据管理
   html += `<div class="sheet-section">数据管理</div>`;
@@ -169,6 +184,13 @@ export function toggleVoiceDefault() {
   state.data.settings.voiceEnabled = !state.data.settings.voiceEnabled;
   saveData();
   const el = document.getElementById('settings-voice-toggle');
+  if (el) el.classList.toggle('on');
+}
+
+export function toggleVoiceSound() {
+  state.data.settings.voiceSoundEnabled = !state.data.settings.voiceSoundEnabled;
+  saveData();
+  const el = document.getElementById('settings-voice-sound-toggle');
   if (el) el.classList.toggle('on');
 }
 

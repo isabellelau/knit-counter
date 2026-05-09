@@ -19,15 +19,24 @@ export function playSound(type) {
     osc.type = 'sine';
 
     const now = ctx.currentTime;
-    const dur = 0.18;
-    const vol = 0.25;
+    let dur = 0.18;
+    let vol = 0.25;
+    let freqStart = 880;
+    let freqEnd = 440;
 
     if (type === 'enter') {
-      osc.frequency.setValueAtTime(440, now);
-      osc.frequency.linearRampToValueAtTime(880, now + dur);
-    } else {
-      osc.frequency.setValueAtTime(880, now);
-      osc.frequency.linearRampToValueAtTime(440, now + dur);
+      freqStart = 440;
+      freqEnd = 880;
+    } else if (type === 'stitch') {
+      dur = 0.08;
+      vol = 0.15;
+      freqStart = 600;
+      freqEnd = 600;
+    }
+
+    osc.frequency.setValueAtTime(freqStart, now);
+    if (freqStart !== freqEnd) {
+      osc.frequency.linearRampToValueAtTime(freqEnd, now + dur);
     }
 
     gain.gain.setValueAtTime(vol, now);
@@ -69,6 +78,9 @@ export function initRecognition() {
     const sid = target.dataset.sid;
     window.pushStitch(sid);
     window.triggerEdgeGlow(sid);
+    if (state.data.settings.voiceSoundEnabled) {
+      playSound('stitch');
+    }
   };
 
   r.onend = () => {
@@ -209,4 +221,40 @@ export function updateVoiceButton() {
     btn.style.borderColor = '';
     btn.style.animation = '';
   }
+}
+
+export function dismissVoiceHint() {
+  localStorage.setItem('voice_hint_shown', 'true');
+  const banner = document.getElementById('voice-hint-banner');
+  if (banner) banner.remove();
+}
+
+export function openVoiceTutorial() {
+  const content = `<div class="sheet-handle"></div>
+  <div class="sheet-title">🎙 语音模式使用说明</div>
+  <div style="padding:14px 16px;font-size:14px;line-height:1.8;color:var(--text)">
+    <div style="background:#FEF3C7;border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:#92400E;line-height:1.6">
+      💡 追求快速记录针数的用户优先推荐手动模式。Web 端语音识别存在不可避免的延迟，适合对节奏要求不高的场景。
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div>
+        <div style="font-weight:700;margin-bottom:4px">① 开启语音模式</div>
+        <div style="color:var(--muted);font-size:13px">点击底部"🎙 语音"按钮，按钮变红即为开启。首次使用需要允许麦克风权限。</div>
+      </div>
+      <div>
+        <div style="font-weight:700;margin-bottom:4px">② 说数字添加针法</div>
+        <div style="color:var(--muted);font-size:13px">说"一"到"九"，对应底部针法按钮的顺序（从左到右）。开启语音模式后按钮上会显示对应数字。</div>
+      </div>
+      <div>
+        <div style="font-weight:700;margin-bottom:4px">③ 说"撤销"删除上一针</div>
+        <div style="color:var(--muted);font-size:13px">识别到"撤销""撤回""取消"均可触发撤销。</div>
+      </div>
+      <div>
+        <div style="font-weight:700;margin-bottom:4px">④ 音效反馈（推荐打开）</div>
+        <div style="color:var(--muted);font-size:13px">可在设置里开启"语音模式音效"，每针成功添加时播放短促提示音。</div>
+      </div>
+    </div>
+  </div>
+  <button class="sheet-cancel" onclick="closeSheet()">知道了</button>`;
+  window.showSheet(content);
 }

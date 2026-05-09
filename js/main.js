@@ -2,8 +2,8 @@ import { STITCH_LIB, COLOR_THEMES, OLD_ID_MAP, ALIAS_TO_ID, STITCHES, SM, parseP
 import { state, NUMBER_MAP, uid, getProj, getActivePart, isPartEmpty, getEditingPartId } from './state.js';
 import { saveData, loadData, migrateData, exportPDF, exportData, exportSingleProject } from './storage.js';
 import { esc, showToast, showSheet, closeSheet, showEntryChoiceSheet, showConfirmDialog, confirmDialog, closeDialog } from './ui.js';
-import { playSound, initRecognition, toggleVoiceMode, setVoicePulse, updateVoiceButton } from './voice.js';
-import { openSettings, renderSettings, changeTheme, toggleVoiceDefault, clearAllData } from './settings.js';
+import { playSound, initRecognition, toggleVoiceMode, setVoicePulse, updateVoiceButton, openVoiceTutorial, dismissVoiceHint } from './voice.js';
+import { openSettings, renderSettings, changeTheme, toggleVoiceDefault, toggleVoiceSound, clearAllData } from './settings.js';
 import {
   startImportFlow, startManualFlow, dismissEntryChoice,
   toggleSelectAllInSetup, startImportFromSetup,
@@ -102,8 +102,9 @@ const _globals = {
   startEditPartName, partNameBlur, getEditingPartId, handleEditBtnClick, handleDeleteBtnClick,
   toggleProjMenu, archiveProject, showArchiveSuccessSheet, handlePwaHintOptOut, showPwaTutorial, unarchiveProject,
   toggleVoiceMode, updateVoiceButton, setVoicePulse, playSound,
+  openVoiceTutorial, dismissVoiceHint,
   renderDynamicPalette, renderFilterToggle, renderBarRow, triggerEdgeGlow,
-  openSettings, changeTheme, toggleVoiceDefault, clearAllData,
+  openSettings, changeTheme, toggleVoiceDefault, toggleVoiceSound, clearAllData,
   switchTab, renderSettings, updateTabNav,
   editExpectedCount,
   pickCover, setProjectCover, removeProjectCover
