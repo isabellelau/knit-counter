@@ -119,14 +119,9 @@ export function renderProject() {
   document.getElementById("tab-nav").style.display = "none";
   document.getElementById("hdr-title").innerHTML =
     `<span id="proj-name-edit" contenteditable="true" onblur="renameProject(this.textContent.trim())"
-    style="outline:none;min-width:40px;display:inline-block" title="点击编辑名称">${esc(proj.name)}</span>
-    <span onclick="document.getElementById('proj-name-edit').focus()" style="font-size:12px;color:var(--accent);cursor:pointer;margin-left:3px;opacity:.7" title="点击编辑项目名">✎</span>`;
+    style="outline:none;min-width:40px;display:inline-block;font-size:18px;font-weight:700" title="点击编辑名称">${esc(proj.name)}</span>`;
 
-  // 全项目统计
-  const allRounds = (proj.parts || []).reduce((s, pt) => s + (pt.rounds?.length || 0), 0);
-  const allNeedles = (proj.parts || []).reduce((s, pt) => s + (pt.rounds || []).reduce((ss, r) => ss + (r.seq?.length || 0), 0), 0);
-  const unit = getUnitLabel(proj);
-  document.getElementById("hdr-sub").textContent = `${(proj.parts||[]).length} 部件 · ${allRounds} ${unit} · ${allNeedles} 针`;
+  document.getElementById("hdr-sub").textContent = "";
 
   // 活跃圈 id：以 activeRoundId 为准，找不到则 fallback 到最后一圈
   const activeRid = part && part.rounds.length ? (part.rounds.find(r => r.id === part.activeRoundId)?.id || part.rounds[part.rounds.length - 1].id) : null;
@@ -177,7 +172,7 @@ export function renderProject() {
         <div class="round-label">${r.isTextCard ? (r.instruction || "备注") : (r.roundNum === 0 ? "起针" : `第 ${r.roundNum != null ? r.roundNum : i + 1} ${unit}`)}${isActive ? " <span style='font-size:10px;background:var(--accent);color:#fff;border-radius:4px;padding:1px 5px;margin-left:4px'>编辑中</span>" : ""}</div>
         <div class="round-count">${total} 针 ${dots}</div>
       </div>
-      <button class="round-edit-btn" onclick="event.stopPropagation();openInstructionEdit('${r.id}')" title="编辑图解" style="font-size:14px;color:var(--muted);background:none;border:none;cursor:pointer;padding:2px 6px;opacity:${r.instruction && r.instruction.trim() ? '1' : '0.4'}">${r.instruction && r.instruction.trim() ? '✏️' : '⊕'}</button>
+      <button class="round-edit-btn" onclick="event.stopPropagation();openInstructionEdit('${r.id}')" title="编辑图解" style="font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer;padding:2px 6px;white-space:nowrap">编辑图解</button>
       <button class="round-del" onclick="event.stopPropagation();deleteRound('${r.id}')" title="删除这一${unit}">×</button>
       <span class="round-chev${exp ? " open" : ""}">›</span>
     </div>
