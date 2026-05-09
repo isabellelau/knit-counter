@@ -50,7 +50,10 @@ export function loadData() {
     }
   }
 
-  if (d) state.data = d;
+  if (d) {
+    Object.keys(state.data).forEach(k => delete state.data[k]);
+    Object.assign(state.data, d);
+  }
   if (!sourceKey) console.log('[loadData] no localStorage data found at all');
 
   // 保底结构
