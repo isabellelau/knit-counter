@@ -41,7 +41,8 @@ export function importData(input) {
 
       showConfirmDialog(`确定导入备份？\n共有 ${imported.projects.length} 个项目\n当前 ${state.data.projects.length} 个项目将被覆盖`, (ok) => {
         if (!ok) return;
-        state.data = imported;
+        Object.keys(state.data).forEach(k => delete state.data[k]);
+        Object.assign(state.data, imported);
         migrateData(state.data);
         saveData();
         window.renderHome();

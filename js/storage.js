@@ -59,7 +59,7 @@ export function loadData() {
   // 保底结构
   if (!state.data || typeof state.data !== "object") {
     console.warn('[loadData] state.data invalid, resetting');
-    state.data = {};
+    Object.keys(state.data).forEach(k => delete state.data[k]);
   }
   if (!Array.isArray(state.data.projects)) {
     console.warn('[loadData] state.data.projects not array, resetting');
