@@ -11,6 +11,7 @@ export function renderHome() {
     document.getElementById("hdr-title").innerHTML = "<span>🧶 钩织计数本</span>";
     document.getElementById("hdr-sub").textContent = "";
     document.getElementById("hdr-pdf").style.display = "none";
+    document.getElementById("hdr-stitch").style.display = "none";
     document.getElementById("hdr-settings").style.display = "none";
 
     const totalProjs = state.data.projects.length;

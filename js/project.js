@@ -16,6 +16,7 @@ export function openProject(id) {
     }
   }
   document.getElementById("hdr-pdf").style.display = "block";
+  document.getElementById("hdr-stitch").style.display = "block";
   document.getElementById("hdr-settings").style.display = "none";
   document.getElementById("tab-nav").style.display = "none";
   document.getElementById("bottom-bar").style.display = "block";
@@ -79,6 +80,7 @@ export function showNewProjectDialog() {
     state.expandedRounds.clear();
     state.selectedStitch = null;
     document.getElementById("hdr-pdf").style.display = "block";
+    document.getElementById("hdr-stitch").style.display = "block";
     document.getElementById("hdr-settings").style.display = "none";
     state.flowState.newProjectFlow = true;
     showEntryChoiceSheet();
