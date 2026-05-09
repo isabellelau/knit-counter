@@ -89,36 +89,61 @@
       gap: 10px;
       position: sticky;
       top: 0;
-      z-index: 30
+      z-index: 30;
+      transition: min-height .2s ease
+    }
+
+    body.project-view .hdr {
+      min-height: 100px;
+      max-height: 25vh;
+      padding-top: 10px;
+      padding-bottom: 10px
     }
 
     .hdr-back {
-      width: 32px;
-      height: 32px;
+      width: 28px;
+      height: 28px;
       border: none;
       background: none;
-      font-size: 20px;
+      font-size: 18px;
       color: var(--muted);
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       border-radius: 8px;
-      flex-shrink: 0
+      flex-shrink: 0;
+      opacity: .6
     }
 
     .hdr-back:active {
       background: var(--bg)
     }
 
-    .hdr-title {
+    .hdr-center {
       flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 2px;
+      min-width: 0
+    }
+
+    .hdr-title {
       font-size: 16px;
       font-weight: 700;
       color: var(--text);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis
+    }
+
+    body.project-view .hdr-title {
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--muted)
     }
 
     .hdr-title input {
@@ -130,17 +155,44 @@
       outline: none
     }
 
+    .hdr-round {
+      font-size: 48px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.1
+    }
+
+    .hdr-round:empty {
+      display: none
+    }
+
     .hdr-sub {
       font-size: 11px;
       color: var(--muted)
     }
 
+    body.project-view .hdr-sub {
+      display: none
+    }
+
+    .hdr-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0
+    }
+
     .hdr-btn {
       background: none;
       border: none;
-      font-size: 18px;
+      font-size: 16px;
       cursor: pointer;
-      padding: 4px
+      padding: 4px;
+      opacity: .5
+    }
+
+    body.project-view .task-slide {
+      top: 110px
     }
 
     /* ── project list ── */
@@ -1201,12 +1253,17 @@
   <!-- Header -->
   <div class="hdr" id="hdr">
     <button class="hdr-back" id="hdr-back" style="display:none" onclick="goHome()">‹</button>
-    <div class="hdr-title" id="hdr-title">
-      <span>🧶 钩织计数本</span>
+    <div class="hdr-center">
+      <div class="hdr-title" id="hdr-title">
+        <span>🧶 钩织计数本</span>
+      </div>
+      <div class="hdr-round" id="hdr-round"></div>
     </div>
     <div class="hdr-sub" id="hdr-sub"></div>
-    <button class="hdr-btn" id="hdr-settings" style="display:none" onclick="openSettings()" title="设置">⚙️</button>
-    <button class="hdr-btn" id="hdr-pdf" style="display:none" onclick="exportPDF()" title="导出PDF">📄</button>
+    <div class="hdr-actions">
+      <button class="hdr-btn" id="hdr-settings" style="display:none" onclick="openSettings()" title="设置">⚙️</button>
+      <button class="hdr-btn" id="hdr-pdf" style="display:none" onclick="exportPDF()" title="导出PDF">📄</button>
+    </div>
   </div>
 
   <!-- Main screen -->
@@ -1298,6 +1355,35 @@
         console.warn('SW 注册失败:', err);
       });
     }
+  </script>
+  <script>
+    (function() {
+      function syncHeader() {
+        const hdrBack = document.getElementById('hdr-back');
+        const hdrRound = document.getElementById('hdr-round');
+        const isProjectView = hdrBack && window.getComputedStyle(hdrBack).display !== 'none';
+
+        if (isProjectView) {
+          document.body.classList.add('project-view');
+          const activeBadge = document.querySelector('.round-badge.active');
+          if (hdrRound && activeBadge) {
+            hdrRound.textContent = activeBadge.textContent;
+          }
+        } else {
+          document.body.classList.remove('project-view');
+          if (hdrRound) hdrRound.textContent = '';
+        }
+      }
+
+      const observer = new MutationObserver(syncHeader);
+      const screen = document.getElementById('screen');
+      if (screen) observer.observe(screen, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+
+      const hdrBack = document.getElementById('hdr-back');
+      if (hdrBack) observer.observe(hdrBack, { attributes: true, attributeFilter: ['style'] });
+
+      syncHeader();
+    })();
   </script>
 </body>
 
