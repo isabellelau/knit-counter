@@ -48,6 +48,7 @@ export function initRecognition() {
 
   r.onresult = (e) => {
     const transcript = e.results[e.results.length - 1][0].transcript.trim();
+    console.log('[voice] 识别到：', transcript);
 
     if (transcript === '撤销' || transcript === '撤回' || transcript === '后退' || transcript === '返回' || transcript === '取消') {
       window.undoStitch();
@@ -55,10 +56,13 @@ export function initRecognition() {
       return;
     }
 
+    const palBtns = document.querySelectorAll('#bottom-bar .pal-btn[data-sid]');
+    console.log('[voice] 找到按钮数量：', palBtns.length);
+    console.log('[voice] NUMBER_MAP 查询结果：', NUMBER_MAP[transcript]);
+
     const num = NUMBER_MAP[transcript];
     if (num == null) return;
 
-    const palBtns = document.querySelectorAll('#bottom-bar .pal-btn[data-sid]');
     const target = palBtns[num - 1];
     if (!target) return;
 
