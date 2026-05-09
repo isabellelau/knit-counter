@@ -86,7 +86,7 @@ const _globals = {
   addRound, toggleRound, deleteRound, undoDeleteRound, setActiveRound,
   pushStitch, undoStitch, stitchTap,
   changeStitch, deleteStitch, startInsert, doInsert,
-  closeSheet, openPatternPasteSheet,
+  showSheet, closeSheet, openPatternPasteSheet,
   handleParsePattern, handleOCR, removeParsedItem, confirmImport, updateCurrentPart, addNewPart,
   showLoading, hideLoading, loadTesseract,
   startImportFlow, startManualFlow, dismissEntryChoice,
