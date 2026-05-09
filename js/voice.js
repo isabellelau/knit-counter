@@ -112,12 +112,12 @@ export async function toggleVoiceMode() {
     }
     playSound('exit');
     setVoicePulse(false);
-    updateVoiceButton();
     const proj = getProj(state.curProjId);
     if (proj) {
       const bar = document.getElementById('bottom-bar');
       bar.innerHTML = window.renderDynamicPalette(proj) + window.renderFilterToggle() + window.renderBarRow();
     }
+    updateVoiceButton();
     return;
   }
 

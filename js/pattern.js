@@ -280,10 +280,11 @@ export function confirmImport(mode) {
     });
   });
 
-  // 将最后一圈设为活跃圈
+  // 将第一圈设为活跃圈
+  const firstRound = targetPart.rounds[0];
   const lastRound = targetPart.rounds[targetPart.rounds.length - 1];
-  targetPart.activeRoundId = lastRound.id;
-  state.expandedRounds.add(lastRound.id);
+  targetPart.activeRoundId = firstRound.id;
+  state.expandedRounds.add(firstRound.id);
 
   // 自动配置 customPalette 为解析识别出的针法
   if (state.flowState.importMode === 'create' || mode === 'newPart' || !targetPart.customPalette || targetPart.customPalette.length === 0) {

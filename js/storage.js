@@ -9,8 +9,7 @@ export function loadData() {
   // 诊断：列出 localStorage 中所有 key
   const allKeys = Object.keys(localStorage);
   const dataKeys = allKeys.filter(k => k.includes('crochet') || k.includes('knit'));
-  console.log('[loadData] localStorage keys:', allKeys);
-  console.log('[loadData] data-related keys:', dataKeys);
+  // localStorage keys checked silently
 
   // 智能读取：优先找有项目数据的 key
   let d = null;
@@ -28,7 +27,6 @@ export function loadData() {
         if (check(parsed)) {
           d = parsed;
           sourceKey = key;
-          console.log(`[loadData] found data with projects in ${key}:`, parsed.projects.length);
           break;
         }
       }
@@ -43,7 +41,6 @@ export function loadData() {
         if (raw) {
           d = JSON.parse(raw);
           sourceKey = key;
-          console.log(`[loadData] fallback to ${key}, projects:`, d.projects?.length || 0);
           break;
         }
       } catch (e) { /* ignore */ }
@@ -54,8 +51,6 @@ export function loadData() {
     Object.keys(state.data).forEach(k => delete state.data[k]);
     Object.assign(state.data, d);
   }
-  if (!sourceKey) console.log('[loadData] no localStorage data found at all');
-
   // 保底结构
   if (!state.data || typeof state.data !== "object") {
     console.warn('[loadData] state.data invalid, resetting');
@@ -72,7 +67,6 @@ export function loadData() {
   // 迁移旧数据
   migrateData(state.data);
   saveData();
-  console.log('[loadData] done, projects:', state.data.projects.length);
 }
 
 // ── 数据迁移：兼容旧版格式 ──
