@@ -191,6 +191,13 @@ export function renderProject() {
       });
     }
     html += `</div>`;
+
+    const hasInstr = r.instruction && r.instruction.trim();
+    html += `<div class="round-instruction" id="round-instruction-${r.id}" onclick="editRoundInstruction('${r.id}')">
+      <span class="round-instruction-text" style="${hasInstr ? '' : 'color:var(--muted)'}" id="round-instruction-text-${r.id}">${hasInstr ? esc(r.instruction) : '+ 添加图解备注'}</span>
+      <span class="round-instruction-edit">✏️</span>
+    </div>`;
+
     html += `</div></div>`;
   });
 

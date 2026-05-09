@@ -104,6 +104,60 @@ export function findRound(proj, roundId) {
   return null;
 }
 
+export function editRoundInstruction(roundId) {
+  const proj = getProj(state.curProjId);
+  const r = findRound(proj, roundId);
+  if (!r) return;
+
+  const container = document.getElementById(`round-instruction-${roundId}`);
+  if (!container) return;
+
+  const textarea = document.createElement('textarea');
+  textarea.value = r.instruction || '';
+  textarea.className = 'round-instruction-input';
+  textarea.rows = Math.max(2, (r.instruction || '').split('\n').length);
+
+  const save = () => {
+    const newValue = textarea.value.trim();
+    const oldValue = r.instruction || '';
+
+    if (newValue !== oldValue) {
+      r.instruction = newValue;
+      saveData();
+
+      const part = getActivePart(proj);
+      if (part && part.activeRoundId === roundId) {
+        const slide = document.getElementById('task-slide');
+        if (slide) slide.outerHTML = renderTaskSlide(proj);
+      }
+    }
+
+    const textEl = document.getElementById(`round-instruction-text-${roundId}`);
+    if (textEl) {
+      textEl.textContent = newValue || '+ 添加图解备注';
+      textEl.style.color = newValue ? '' : 'var(--muted)';
+    }
+    container.innerHTML = `
+      <span class="round-instruction-text" style="${newValue ? '' : 'color:var(--muted)'}" id="round-instruction-text-${roundId}">${newValue || '+ 添加图解备注'}</span>
+      <span class="round-instruction-edit">✏️</span>
+    `;
+    container.onclick = () => editRoundInstruction(roundId);
+  };
+
+  textarea.onblur = save;
+  textarea.onkeydown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      textarea.blur();
+    }
+  };
+
+  container.innerHTML = '';
+  container.onclick = null;
+  container.appendChild(textarea);
+  textarea.focus();
+}
+
 export function getRoundStitches(round) {
   if (!round || !round.instruction || !round.instruction.trim()) return [];
   return [...new Set(extractStitches(round.instruction))];
