@@ -1,5 +1,4 @@
-import * as state from './state.js';
-import { getProj, getActivePart, getEditingPartId } from './state.js';
+import { state, getProj, getActivePart, getEditingPartId } from './state.js';
 import { esc } from './ui.js';
 import { renderTaskSlide, renderDynamicPalette,
          renderFilterToggle, renderBarRow,
