@@ -31,8 +31,9 @@ import {
 import {
   showNewProjectDialog, openProject, renameProject, deleteProject, toggleProjMenu,
   archiveProject, showArchiveSuccessSheet, unarchiveProject, importData,
-  handlePwaHintOptOut, showPwaTutorial, pickCover, setProjectCover, removeProjectCover
+  handlePwaHintOptOut, showPwaTutorial
 } from './project.js';
+import { pickCover, setProjectCover, removeProjectCover } from './image.js';
 import { renderHome, renderProject } from './render.js';
 
 window.state = state;

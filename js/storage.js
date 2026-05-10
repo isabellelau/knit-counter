@@ -1,8 +1,35 @@
 import { state, uid } from './state.js';
 import { STITCH_LIB, OLD_ID_MAP } from '../stitches.js';
 
+const storageAdapter = {
+  get(key) {
+    try {
+      return localStorage.getItem(key);
+    } catch(e) {
+      console.warn('storage.get failed:', e);
+      return null;
+    }
+  },
+  set(key, value) {
+    try {
+      localStorage.setItem(key, value);
+      return true;
+    } catch(e) {
+      console.warn('storage.set failed:', e);
+      return false;
+    }
+  },
+  remove(key) {
+    try {
+      localStorage.removeItem(key);
+    } catch(e) {
+      console.warn('storage.remove failed:', e);
+    }
+  }
+};
+
 export function saveData() {
-  localStorage.setItem("crochet_v3_fixed", JSON.stringify(state.data));
+  storageAdapter.set("crochet_v3_fixed", JSON.stringify(state.data));
 }
 
 export function loadData() {
@@ -21,7 +48,7 @@ export function loadData() {
 
   for (const { key, check } of candidates) {
     try {
-      const raw = localStorage.getItem(key);
+      const raw = storageAdapter.get(key);
       if (raw) {
         const parsed = JSON.parse(raw);
         if (check(parsed)) {
@@ -37,7 +64,7 @@ export function loadData() {
   if (!d) {
     for (const key of ['crochet_v3_fixed', 'crochet_v3']) {
       try {
-        const raw = localStorage.getItem(key);
+        const raw = storageAdapter.get(key);
         if (raw) {
           d = JSON.parse(raw);
           sourceKey = key;
