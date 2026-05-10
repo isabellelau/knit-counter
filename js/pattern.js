@@ -273,7 +273,7 @@ export function confirmImport(mode) {
     const instruction = input ? input.value.trim() : item.instruction;
     targetPart.rounds.push({
       id: uid(),
-      seq: [],
+      seq: item.seq ? [...item.seq] : [],
       instruction,
       isTextCard: item.type === 'text',
       roundNum: item.roundNum
