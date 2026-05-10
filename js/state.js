@@ -3,6 +3,7 @@
 // ═══════════════════════════════════════════
 export const state = {
   data: {
+    schemaVersion: 1,
     projects: [],
     settings: {
       theme: "macaron",

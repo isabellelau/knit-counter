@@ -1,9 +1,7 @@
-import { getProj } from './state.js';
-import { saveData } from './storage.js';
 import { showToast } from './ui.js';
 import { renderHome } from './render.js';
 
-export function compressImage(file, maxSize = 300) {
+export function compressImage(file, maxSize = 200) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
@@ -19,7 +17,7 @@ export function compressImage(file, maxSize = 300) {
       canvas.height = height;
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL('image/jpeg', 0.8));
+      resolve(canvas.toDataURL('image/jpeg', 0.72));
     };
     img.onerror = () => {
       URL.revokeObjectURL(url);
@@ -30,24 +28,28 @@ export function compressImage(file, maxSize = 300) {
 }
 
 export function saveProjImage(projId, base64) {
-  const proj = getProj(projId);
-  if (!proj) return;
-  proj.coverImage = base64;
-  saveData();
+  try {
+    localStorage.setItem('img_' + projId, base64);
+  } catch(e) {
+    if (e.name === 'QuotaExceededError') {
+      showToast('⚠️ 封面图片太大，存储失败，请选择更小的图片');
+    }
+  }
 }
 
 export function getProjImage(projId) {
-  return getProj(projId)?.coverImage || null;
+  try {
+    return localStorage.getItem('img_' + projId) || null;
+  } catch(e) {
+    return null;
+  }
 }
 
 export function setProjectCover(projectId, input) {
   const file = input.files?.[0];
   if (!file) return;
   compressImage(file).then(dataUrl => {
-    const proj = getProj(projectId);
-    if (!proj) return;
-    proj.coverImage = dataUrl;
-    saveData();
+    saveProjImage(projectId, dataUrl);
     window.renderHome();
     showToast('封面已更新');
   }).catch(() => showToast('图片处理失败'));
@@ -55,10 +57,11 @@ export function setProjectCover(projectId, input) {
 }
 
 export function removeProjectCover(projectId) {
-  const proj = getProj(projectId);
-  if (!proj) return;
-  proj.coverImage = null;
-  saveData();
+  try {
+    localStorage.removeItem('img_' + projectId);
+  } catch(e) {
+    console.warn('removeProjectCover failed:', e);
+  }
   window.renderHome();
   showToast('封面已移除');
 }

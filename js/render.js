@@ -4,6 +4,7 @@ import { renderTaskSlide, renderDynamicPalette,
          renderFilterToggle, renderBarRow,
          renderSpillHTML, getProjColor, getUnitLabel } from './stitch.js';
 import { updateVoiceButton } from './voice.js';
+import { getProjImage } from './image.js';
 
 export function renderHome() {
   try {
@@ -35,10 +36,11 @@ export function renderHome() {
     activeProjs.forEach(p => {
       const allRounds = (p.parts || []).reduce((s, pt) => s + (pt.rounds?.length || 0), 0);
       const allNeedles = (p.parts || []).reduce((s, pt) => s + (pt.rounds || []).reduce((ss, r) => ss + (r.seq?.length || 0), 0), 0);
-      const coverHtml = p.coverImage
-        ? `<img class="proj-cover-img" src="${p.coverImage}" onclick="event.stopPropagation();pickCover('${p.id}')" title="点击更换封面">`
+      const coverImg = getProjImage(p.id);
+      const coverHtml = coverImg
+        ? `<img class="proj-cover-img" src="${coverImg}" onclick="event.stopPropagation();pickCover('${p.id}')" title="点击更换封面">`
         : `<div class="proj-icon">🧶</div>`;
-      const removeCoverBtn = p.coverImage
+      const removeCoverBtn = coverImg
         ? `<button class="proj-menu-item" onclick="event.stopPropagation();removeProjectCover('${p.id}')">🗑 移除封面</button>`
         : '';
       const unit = getUnitLabel(p);
@@ -68,10 +70,11 @@ export function renderHome() {
       archivedProjs.forEach(p => {
         const allRounds = (p.parts || []).reduce((s, pt) => s + (pt.rounds?.length || 0), 0);
         const allNeedles = (p.parts || []).reduce((s, pt) => s + (pt.rounds || []).reduce((ss, r) => ss + (r.seq?.length || 0), 0), 0);
-        const coverHtmlArc = p.coverImage
-          ? `<img class="proj-cover-img" src="${p.coverImage}" onclick="event.stopPropagation();pickCover('${p.id}')" title="点击更换封面">`
+        const coverImgArc = getProjImage(p.id);
+        const coverHtmlArc = coverImgArc
+          ? `<img class="proj-cover-img" src="${coverImgArc}" onclick="event.stopPropagation();pickCover('${p.id}')" title="点击更换封面">`
           : `<div class="proj-icon">📦</div>`;
-        const removeCoverBtnArc = p.coverImage
+        const removeCoverBtnArc = coverImgArc
           ? `<button class="proj-menu-item" onclick="event.stopPropagation();removeProjectCover('${p.id}')">🗑 移除封面</button>`
           : '';
         const unitArc = getUnitLabel(p);
