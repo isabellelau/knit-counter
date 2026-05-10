@@ -273,7 +273,7 @@ export function confirmImport(mode) {
     const instruction = input ? input.value.trim() : item.instruction;
     targetPart.rounds.push({
       id: uid(),
-      seq: item.seq ? [...item.seq] : [],
+      seq: [],
       instruction,
       isTextCard: item.type === 'text',
       roundNum: item.roundNum
@@ -287,14 +287,12 @@ export function confirmImport(mode) {
   state.expandedRounds.add(firstRound.id);
 
   // 自动配置 customPalette 为解析识别出的针法
-  if (state.flowState.importMode === 'create' || mode === 'newPart' || !targetPart.customPalette || targetPart.customPalette.length === 0) {
-    const detectedIds = new Set();
-    parsed.forEach(item => {
-      if (item.seq) item.seq.forEach(sid => detectedIds.add(sid));
-    });
-    if (detectedIds.size > 0) {
-      targetPart.customPalette = Array.from(detectedIds);
-    }
+  const detectedIds = new Set();
+  parsed.forEach(item => {
+    if (item.seq) item.seq.forEach(sid => detectedIds.add(sid));
+  });
+  if (detectedIds.size > 0) {
+    targetPart.customPalette = Array.from(detectedIds);
   }
   state.flowState.importMode = null;
   state.flowState.newProjectFlow = false;
