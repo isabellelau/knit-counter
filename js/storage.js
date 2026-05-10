@@ -124,7 +124,7 @@ export function loadData() {
     state.data.projects = [];
   }
   if (!state.data.settings || typeof state.data.settings !== "object") {
-    state.data.settings = { theme: "macaron", customColors: {}, voiceEnabled: false };
+    state.data.settings = { theme: "morandi", customColors: {}, voiceEnabled: false };
   }
 
   // 迁移旧数据

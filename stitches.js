@@ -51,39 +51,16 @@ Object.entries(STITCH_LIB).forEach(([id, s]) => {
   ALIAS_TO_ID[id.toUpperCase()] = id;
 });
 
-// 主题色彩（为所有新针法补全马卡龙色系）
+// 主题色彩 — morandi 按动作功能配色
 export const COLOR_THEMES = {
-  macaron: {
-    // 基础类 (蓝色/绿色系)
-    X: "#7DD3FC", // 短针 - 天蓝
-    T: "#f3da77", // 中长针 - 亮黄
-    F: "#2bf14f", // 长针 - 翠绿
-    E: "#b43eb4", // 长长针 - 紫罗兰色
-    
-    // 加针类 (橙色/暖色系 - 警示增加)
-    V: "#3c9ffb", // 加针 - 蓝
-    W: "#164ff9", // 加加针 - 深蓝
-    TV: "#d5b721", // 中长针加针 - 深黄
-    TW: "#f5b623", // 中长针加加针 - 橙色
-    FV: "#06e55c", // 长针加针 - 深绿
-    FW: "#0b3c1e", // 长针加加针 - 暗绿
-    EV: "#592348", // 长长针加针 - 深紫色
-    
-    // 减针类 (粉色/红色系 - 警示减少)
-    A: "#F9A8D4", // 减针 - 粉色
-    M: "#f7a5b3", // 减减针 - 裸粉
-    TA: "#f28484", // 中长针减针 - 浅红
-    TM: "#f9c87f", // 中长针减减针 - 浅橙
-    FA: "#81f593", // 长针减针 - 浅绿
-    FM: "#b8eec0", // 长针减减针 - 薄荷绿
-    EA: "#db64eb", // 长长针减针 - 淡紫色
-    
-    // 功能与特殊 (大地色/中性色)
-    CH: "#a72424", // 锁针 - 深红色
-    SL: "#A8A29E", // 引拔 - 暖灰
-    SK: "#D6D3D1", // 空针 - 石灰
-    G: "#FB7185", // 爆米花 - 珊瑚红
-    Q: "#818CF8"  // 枣形针 - 靛蓝
+  morandi: {
+    X: "#C4A882", T: "#B8956A", F: "#A6845C", E: "#8E6E4A",
+    V: "#F4A460", W: "#E07B3E", TV: "#FFB88C", TW: "#D9703A",
+    FV: "#FFCC99", FW: "#CC7740", EV: "#FF9F5C",
+    A: "#9B8EC4", M: "#7B6DA8", TA: "#B5ABD8", TM: "#66578D",
+    FA: "#C8BFE8", FM: "#8A7DBF", EA: "#A89AD0",
+    CH: "#9B8E7E", SL: "#B8A99A", SK: "#D4CBC0",
+    G: "#E0705C", Q: "#8B5E7D"
   }
 };
 
@@ -92,7 +69,7 @@ export const STITCHES = Object.values(STITCH_LIB).map(s => ({
   id: s.id,
   label: s.label,
   abbr: s.abbr,
-  color: COLOR_THEMES.macaron[s.id] || "#ccc"
+  color: COLOR_THEMES.morandi[s.id] || "#ccc"
 }));
 export const SM = Object.fromEntries(STITCHES.map(s => [s.id, s]));
 
@@ -220,7 +197,7 @@ export function resolveColor(id, settings, projCustom) {
   // 全局自定义颜色
   if (settings?.customColors?.[id]) return settings.customColors[id];
   // 主题默认色
-  const themeKey = settings?.theme || "macaron";
-  const theme = COLOR_THEMES[themeKey] || COLOR_THEMES.macaron;
+  const themeKey = settings?.theme || "morandi";
+  const theme = COLOR_THEMES[themeKey] || COLOR_THEMES.morandi;
   return theme[id] || "#ccc";
 }

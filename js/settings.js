@@ -3,7 +3,7 @@ import { showConfirmDialog, showToast, closeSheet } from './ui.js';
 import { saveData } from './storage.js';
 
 export function openSettings() {
-  const theme = state.data.settings.theme || "macaron";
+  const theme = state.data.settings.theme || "morandi";
   const voiceOn = state.data.settings.voiceEnabled;
   const totalProjs = state.data.projects.length;
   const totalNeedles = state.data.projects.reduce((sum, p) =>
@@ -11,10 +11,8 @@ export function openSettings() {
       s + (pt.rounds || []).reduce((ss, r) => ss + (r.seq?.length || 0), 0), 0), 0);
 
   const themes = [
-    { key: "macaron", name: "马卡龙", dots: ["#7DD3FC", "#F9A8D4", "#2bf14f", "#f3da77"] },
-    { key: "ocean",   name: "深海",   dots: ["#5BC0DE", "#48DBFB", "#FF9FF3", "#6C5CE7"] },
-    { key: "forest",  name: "森林",   dots: ["#55E6C1", "#26DE81", "#FD79A8", "#A3CB38"] },
-    { key: "minimal", name: "简约",   dots: ["#636E72", "#95A5A6", "#2ED573", "#FF6B81"] }
+    { key: "morandi", name: "莫兰迪", dots: ["#C4A882", "#F4A460", "#9B8EC4", "#9B8E7E"] },
+    { key: "night",   name: "夜色",   dots: ["#5F85B2", "#45628A", "#8AA4C4", "#94A3B8"] }
   ];
 
   let html = `<div class="sheet-handle"></div>
@@ -69,7 +67,7 @@ export function openSettings() {
 export function renderSettings() {
   document.getElementById("bottom-bar")?.style.setProperty("display", "none");
 
-  const theme = state.data.settings.theme || "macaron";
+  const theme = state.data.settings.theme || "morandi";
   const voiceOn = state.data.settings.voiceEnabled;
   const totalProjs = state.data.projects.length;
   const totalNeedles = state.data.projects.reduce((sum, p) =>
@@ -77,10 +75,8 @@ export function renderSettings() {
       s + (pt.rounds || []).reduce((ss, r) => ss + (r.seq?.length || 0), 0), 0), 0);
 
   const themes = [
-    { key: "macaron", name: "马卡龙", dots: ["#7DD3FC", "#F9A8D4", "#2bf14f", "#f3da77"] },
-    { key: "ocean",   name: "深海",   dots: ["#5BC0DE", "#48DBFB", "#FF9FF3", "#6C5CE7"] },
-    { key: "forest",  name: "森林",   dots: ["#55E6C1", "#26DE81", "#FD79A8", "#A3CB38"] },
-    { key: "minimal", name: "简约",   dots: ["#636E72", "#95A5A6", "#2ED573", "#FF6B81"] }
+    { key: "morandi", name: "莫兰迪", dots: ["#C4A882", "#F4A460", "#9B8EC4", "#9B8E7E"] },
+    { key: "night",   name: "夜色",   dots: ["#5F85B2", "#45628A", "#8AA4C4", "#94A3B8"] }
   ];
 
   let html = `<div style="padding:12px 0">`;
@@ -156,7 +152,7 @@ export function changeTheme(themeKey) {
   saveData();
   // 更新 sheet 中的选中态
   document.querySelectorAll('.settings-theme-item').forEach(el => el.classList.remove('active'));
-  const idx = { macaron: 0, ocean: 1, forest: 2, minimal: 3 }[themeKey];
+  const idx = { morandi: 0, night: 1 }[themeKey];
   const items = document.querySelectorAll('.settings-theme-item');
   if (items[idx]) items[idx].classList.add('active');
   // 如果在项目页，只刷新底部调色板

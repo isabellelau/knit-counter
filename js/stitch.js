@@ -24,35 +24,20 @@ function resolveLabel(sid, proj) {
 }
 
 const ALL_THEMES = {
-  macaron: null,
-  ocean: {
-    X: "#5BC0DE", T: "#7ED6DF", F: "#2980B9", E: "#6C5CE7",
-    V: "#48DBFB", W: "#0ABDE3", TV: "#54A0FF", TW: "#2E86DE",
-    FV: "#0984E3", FW: "#0652DD", EV: "#4834D4",
-    A: "#FF9FF3", M: "#F368E0", TA: "#FF6B6B", TM: "#EE5A24",
-    FA: "#FDA7DF", FM: "#D980FA", EA: "#B53471",
-    CH: "#C23616", SL: "#95A5A6", SK: "#BDC3C7", G: "#E84393", Q: "#A29BFE"
-  },
-  forest: {
-    X: "#55E6C1", T: "#A3CB38", F: "#218C74", E: "#6A89CC",
-    V: "#58B19F", W: "#1B9A59", TV: "#82CCDD", TW: "#B8E994",
-    FV: "#26DE81", FW: "#20BF6B", EV: "#3B3B98",
-    A: "#FD79A8", M: "#E84393", TA: "#E66767", TM: "#F97F51",
-    FA: "#F8A5C2", FM: "#C4E538", EA: "#B33771",
-    CH: "#C44569", SL: "#A4B0BE", SK: "#CED6E0", G: "#FF6B81", Q: "#778BEB"
-  },
-  minimal: {
-    X: "#636E72", T: "#95A5A6", F: "#7F8C8D", E: "#57606F",
-    V: "#2ED573", W: "#1E90FF", TV: "#26DE81", TW: "#10AC84",
-    FV: "#45AAF2", FW: "#2E86DE", EV: "#5F27CD",
-    A: "#FF6B81", M: "#FF4757", TA: "#FFA502", TM: "#Eccc68",
-    FA: "#FF6348", FM: "#FF9F43", EA: "#EE5A24",
-    CH: "#C44569", SL: "#A4B0BE", SK: "#CED6E0", G: "#FD79A8", Q: "#778BEB"
+  morandi: null,
+  night: {
+    X: "#5F85B2", T: "#8E7CA3", F: "#6B8E83", E: "#A67C65",
+    V: "#45628A", W: "#2F425C", TV: "#6B5D7B", TW: "#4A4055",
+    FV: "#4F6B62", FW: "#354742", EV: "#C9A38E",
+    A: "#8AA4C4", M: "#B4C4D7", TA: "#A99BB9", TM: "#C4BBCF",
+    FA: "#8AA79D", FM: "#A9C0B7", EA: "#523D32",
+    CH: "#94A3B8", SL: "#64748B", SK: "#475569",
+    G: "#CAB382", Q: "#B3A08B"
   }
 };
 
 export function getProjColor(sid, proj) {
-  const themeKey = state.data?.settings?.theme || "macaron";
+  const themeKey = state.data?.settings?.theme || "morandi";
   const ext = ALL_THEMES[themeKey];
   if (ext && ext[sid]) return ext[sid];
   const color = resolveColor(sid, state.data.settings, proj?.customSettings);

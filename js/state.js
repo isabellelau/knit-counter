@@ -6,7 +6,7 @@ export const state = {
     schemaVersion: 1,
     projects: [],
     settings: {
-      theme: "macaron",
+      theme: "morandi",
       customColors: {},
       voiceEnabled: false,
       voiceSoundEnabled: false
