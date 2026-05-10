@@ -194,7 +194,7 @@ export function openParseConfirmSheet(parsed) {
         <input id="edit-${idx}" value="${esc(item.instruction)}"
           style="width:100%;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:13px;background:var(--bg);color:var(--text);outline:none;font-family:inherit"
           onchange="state.flowState.pendingParsed[${idx}].instruction=this.value.trim()">
-        ${item.seq.length ? `<div style="font-size:11px;color:var(--muted);margin-top:3px">检测到针法：${item.seq.join(' · ')}</div>` : ''}
+        ${item.seq.length ? `<div style="font-size:11px;color:var(--muted);margin-top:3px">检测到针法：${[...new Set(item.seq)].join(' · ')}</div>` : ''}
       </div>
       <button onclick="removeParsedItem(${idx})" style="background:none;border:none;color:#D0B0A0;font-size:20px;padding:4px 8px;cursor:pointer;line-height:1;margin-top:20px">×</button>
     </div>`;

@@ -67,13 +67,7 @@ export function openSettings() {
 }
 
 export function renderSettings() {
-  document.getElementById("hdr-back").style.display = "none";
-  document.getElementById("hdr-title").innerHTML = "<span>⚙️ 设置</span>";
-  document.getElementById("hdr-sub").textContent = "";
-  document.getElementById("hdr-pdf").style.display = "none";
-  document.getElementById("hdr-stitch").style.display = "none";
-  document.getElementById("hdr-settings").style.display = "none";
-  document.getElementById("bottom-bar").style.display = "none";
+  document.getElementById("bottom-bar")?.style.setProperty("display", "none");
 
   const theme = state.data.settings.theme || "macaron";
   const voiceOn = state.data.settings.voiceEnabled;
@@ -154,7 +148,7 @@ export function renderSettings() {
 
   html += `</div>`;
 
-  document.getElementById("screen").innerHTML = html;
+  document.getElementById("screen-content").innerHTML = html;
 }
 
 export function changeTheme(themeKey) {

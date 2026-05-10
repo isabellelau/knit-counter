@@ -41,11 +41,8 @@ window.state = state;
 function goHome() {
   state.curProjId = null; state.expandedRounds.clear(); state.selectedStitch = null;
   state.flowState.projMenuId = null;
-  document.getElementById("bottom-bar").style.display = "none";
-  document.getElementById("hdr-pdf").style.display = "none";
-  document.getElementById("hdr-stitch").style.display = "none";
-  document.getElementById("hdr-settings").style.display = "none";
-  document.getElementById("tab-nav").style.display = "flex";
+  document.getElementById("bottom-bar")?.style.setProperty("display", "none");
+  document.getElementById("tab-nav")?.style.setProperty("display", "flex");
   state.currentTab = 'projects';
   updateTabNav();
   const screen = document.getElementById("screen");
@@ -69,6 +66,48 @@ function updateTabNav() {
   const setBtn = document.getElementById('tab-settings');
   if (projBtn) projBtn.classList.toggle('active', state.currentTab === 'projects');
   if (setBtn) setBtn.classList.toggle('active', state.currentTab === 'settings');
+}
+
+function initScrollBehavior() {
+  const screen   = document.getElementById('screen');
+  const navBar   = document.getElementById('nav-bar');
+  const navSmall = document.getElementById('nav-small-title');
+  const largeTitleWrap = document.getElementById('large-title-wrap');
+
+  // 大标题消失时显示小标题（首页用）
+  if (largeTitleWrap && navSmall) {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          navSmall.classList.remove('visible');
+        } else {
+          navSmall.classList.add('visible');
+        }
+      },
+      { root: screen, threshold: 0 }
+    );
+    observer.observe(largeTitleWrap);
+  }
+
+  // 项目页：向下滚隐藏 nav-bar，向上滚显示
+  let lastY = 0;
+  if (screen) {
+    screen.addEventListener('scroll', () => {
+      // 只在项目页生效（nav-back visible 说明在项目页）
+      const navBack = document.getElementById('nav-back');
+      if (!navBack || !navBack.classList.contains('visible')) {
+        lastY = screen.scrollTop;
+        return;
+      }
+      const currentY = screen.scrollTop;
+      if (currentY > lastY + 4) {
+        navBar.classList.add('hidden');
+      } else if (currentY < lastY - 4) {
+        navBar.classList.remove('hidden');
+      }
+      lastY = currentY;
+    }, { passive: true });
+  }
 }
 
 document.getElementById("dlg-input").addEventListener("keydown", e => {
@@ -123,6 +162,8 @@ document.addEventListener('click', (e) => {
   if (menu) menu.classList.remove('show');
 });
 
-document.getElementById("tab-nav").style.display = "flex";
+document.getElementById("tab-nav")?.style.setProperty("display", "flex");
 loadData();
+initScrollBehavior();
 renderHome();
+

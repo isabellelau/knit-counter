@@ -1,5 +1,6 @@
 import { state, getProj, getActivePart, getEditingPartId } from './state.js';
 import { esc } from './ui.js';
+import { saveData } from './storage.js';
 import { renderTaskSlide, renderDynamicPalette,
          renderFilterToggle, renderBarRow,
          renderSpillHTML, getProjColor, getUnitLabel } from './stitch.js';
@@ -8,23 +9,38 @@ import { getProjImage } from './image.js';
 
 export function renderHome() {
   try {
-    document.getElementById("hdr-back").style.display = "none";
-    document.getElementById("hdr-title").innerHTML = "<span>🧶 钩织计数本</span>";
-    document.getElementById("hdr-sub").textContent = "";
-    document.getElementById("hdr-pdf").style.display = "none";
-    document.getElementById("hdr-stitch").style.display = "none";
-    document.getElementById("hdr-settings").style.display = "none";
-    document.getElementById("tab-nav").style.display = "flex";
+    // --- Nav Bar：首页状态 ---
+    const navBar       = document.getElementById('nav-bar');
+    const navBack      = document.getElementById('nav-back');
+    const navSmall     = document.getElementById('nav-small-title');
+    const navActions   = document.getElementById('nav-actions');
+    const largeTitleEl = document.getElementById('large-title-text');
+    const largeSubEl   = document.getElementById('large-title-sub');
+
+    if (navBack)    navBack.classList.remove('visible');
+    if (navBar)     navBar.classList.remove('hidden');
+    if (navSmall)   { navSmall.textContent = '我的项目'; navSmall.classList.remove('visible'); navSmall.onclick = null; }
+    if (navActions) navActions.innerHTML = '';
+
+    if (largeTitleEl) largeTitleEl.textContent = '我的项目';
+    if (largeTitleEl) largeTitleEl.contentEditable = 'false';
+    if (largeSubEl)   largeSubEl.textContent   = '';
+
+    document.getElementById("tab-nav")?.style.setProperty("display", "flex");
 
     const totalProjs = state.data.projects.length;
     const totalNeedles = state.data.projects.reduce((sum, p) =>
       sum + (p.parts || []).reduce((s, pt) =>
         s + (pt.rounds || []).reduce((ss, r) => ss + (r.seq?.length || 0), 0), 0), 0);
 
-    let html = `<div class="home-top">
-    <div class="home-heading">我的项目</div>
-    <div style="font-size:12px;color:var(--muted)">${totalProjs} 个项目 · 累计 ${totalNeedles} 针</div>
-  </div>`;
+    if (largeSubEl) {
+      largeSubEl.textContent = `${totalProjs} 个项目 · 累计 ${totalNeedles.toLocaleString()} 针`;
+    }
+
+    const largeTitleWrap = document.getElementById('large-title-wrap');
+    if (largeTitleWrap) largeTitleWrap.style.display = '';
+
+    let html = '';
 
     const activeProjs = state.data.projects.filter(p => !p.archived);
     const archivedProjs = state.data.projects.filter(p => p.archived);
@@ -96,9 +112,9 @@ export function renderHome() {
       html += `</div>`;
     }
 
-    document.getElementById("screen").innerHTML = html;
-    document.getElementById("bottom-bar").style.display = "none";
-    document.getElementById("screen").innerHTML +=
+    document.getElementById("screen-content").innerHTML = html;
+    document.getElementById("bottom-bar")?.style.setProperty("display", "none");
+    document.getElementById("screen-content").innerHTML +=
       `<button class="fab" onclick="showNewProjectDialog()">＋ 新建项目</button>`;
   } catch (e) {
     alert('renderHome error: ' + e.message + '\n' + e.stack);
@@ -114,29 +130,67 @@ export function renderProject() {
   window.editingPartId = state.flowState.captureEdit || window.editingPartId;
   state.flowState.captureEdit = null;
 
-  const proj = getProj(state.curProjId);
+  // --- Nav Bar：项目页状态 ---
+  const navBar       = document.getElementById('nav-bar');
+  const navBack      = document.getElementById('nav-back');
+  const navSmall     = document.getElementById('nav-small-title');
+  const navActions   = document.getElementById('nav-actions');
+  const largeTitleEl = document.getElementById('large-title-text');
+  const largeSubEl   = document.getElementById('large-title-sub');
+  const proj         = getProj(state.curProjId);
+
+  if (navBack)  navBack.classList.add('visible');
+  if (navBar)   navBar.classList.remove('hidden');
+  if (navSmall) {
+    navSmall.textContent = proj ? proj.name : '';
+    navSmall.classList.remove('visible');
+    navSmall.onclick = () => {
+      if (!proj) return;
+      document.getElementById('dlg-title').textContent = '重命名项目';
+      document.getElementById('dlg-input').value = proj.name;
+      document.getElementById('dlg-input').style.display = '';
+      document.getElementById('dlg-msg').style.display = 'none';
+      state.dlgCallback = (newName) => {
+        const trimmed = newName.trim();
+        if (trimmed) {
+          proj.name = trimmed;
+          saveData();
+          navSmall.textContent = trimmed;
+          const lt = document.getElementById('large-title-text');
+          if (lt) lt.textContent = trimmed;
+        }
+      };
+      state.confirmCallback = null;
+      document.getElementById('dialog').classList.add('show');
+      setTimeout(() => document.getElementById('dlg-input').focus(), 100);
+    };
+    navSmall.style.cursor = 'pointer';
+  }
+  if (largeSubEl) largeSubEl.textContent = '';
+
+  const largeTitleWrap = document.getElementById('large-title-wrap');
+  if (largeTitleWrap) largeTitleWrap.style.display = 'none';
+
   if (!proj) return window.goHome();
   const part = getActivePart(proj);
   const unit = getUnitLabel(proj);
 
-  document.getElementById("hdr-back").style.display = "flex";
-  document.getElementById("hdr-settings").style.display = "none";
-  document.getElementById("tab-nav").style.display = "none";
-  document.getElementById("hdr-title").innerHTML =
-    `<span id="proj-name-edit" contenteditable="true" onblur="renameProject(this.textContent.trim())"
-    style="outline:none;min-width:40px;display:inline-block;font-size:18px;font-weight:700" title="点击编辑名称">${esc(proj.name)}</span>`;
+  if (navActions) {
+    navActions.innerHTML = `
+      <button class="nav-btn nav-btn--pill" onclick="toggleRowTerms()" aria-label="切换圈行">
+        ${unit}
+      </button>
+      <button class="nav-btn" onclick="openSettings()" aria-label="设置">⚙️</button>
+      <button class="nav-btn" onclick="exportPDF()" aria-label="导出PDF">📄</button>
+    `;
+  }
 
-  document.getElementById("hdr-sub").textContent = "";
+  document.getElementById("tab-nav")?.style.setProperty("display", "none");
 
   // 活跃圈 id：以 activeRoundId 为准，找不到则 fallback 到最后一圈
   const activeRid = part && part.rounds.length ? (part.rounds.find(r => r.id === part.activeRoundId)?.id || part.rounds[part.rounds.length - 1].id) : null;
 
   let html = "";
-
-  // 圈/行切换
-  html += `<div style="display:flex;justify-content:flex-end;padding:4px 16px 0">
-        <span style="font-size:10px;color:var(--muted);cursor:pointer;border:1px solid var(--border);border-radius:10px;padding:2px 8px;background:var(--card)" onclick="toggleRowTerms()">显示：${unit} ▾</span>
-      </div>`;
 
   // ── 部件选项卡 ──
   html += `<div class="part-tabs-wrap" id="part-tabs-wrap">
@@ -196,10 +250,10 @@ export function renderProject() {
   });
 
   html += `</div>`;
-  document.getElementById("screen").innerHTML = html;
+  document.getElementById("screen-content").innerHTML = html;
 
   const bar = document.getElementById("bottom-bar");
-  bar.style.display = "block";
+  if (bar) bar.style.display = "block";
   let bhtml = renderDynamicPalette(proj);
   bhtml += renderFilterToggle();
   bhtml += renderBarRow();
@@ -222,8 +276,8 @@ export function renderProject() {
     </div>`;
   }
 
-  bar.innerHTML = bhtml;
-  const barH = document.getElementById('bottom-bar').offsetHeight;
-  document.documentElement.style.setProperty('--bottom-bar-h', barH + 'px');
+  if (bar) bar.innerHTML = bhtml;
+  const barH = bar ? bar.offsetHeight : 0;
+  if (barH) document.documentElement.style.setProperty('--bottom-bar-h', barH + 'px');
   updateVoiceButton();
 }

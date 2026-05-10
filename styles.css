@@ -240,6 +240,17 @@
   cursor: pointer;
 }
 
+.nav-btn--pill {
+  width: auto;
+  padding: 0 10px;
+  font-size: var(--text-caption1);
+  font-weight: var(--weight-medium);
+  color: var(--text-secondary);
+  border: 0.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+}
+
 /* ===== Large Title ===== */
 .large-title-wrap {
   padding: 8px 20px 12px;

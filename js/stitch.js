@@ -184,9 +184,9 @@ export function updateRoundHeader(r, proj) {
 export function updateHeaderStats(proj) {
   const allRounds = (proj.parts || []).reduce((s, pt) => s + (pt.rounds?.length || 0), 0);
   const allNeedles = (proj.parts || []).reduce((s, pt) => s + (pt.rounds || []).reduce((ss, r) => ss + (r.seq?.length || 0), 0), 0);
-  const hdrSub = document.getElementById("hdr-sub");
+  const largeTitleSub = document.getElementById("large-title-sub");
   const unit = getUnitLabel(proj);
-  if (hdrSub) hdrSub.textContent = `${(proj.parts||[]).length} 部件 · ${allRounds} ${unit} · ${allNeedles} 针`;
+  if (largeTitleSub) largeTitleSub.textContent = `${(proj.parts||[]).length} 部件 · ${allRounds} ${unit} · ${allNeedles} 针`;
 }
 
 function updateTaskSlideProgress(r) {
