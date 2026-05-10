@@ -36,6 +36,9 @@ import {
 import { pickCover, setProjectCover, removeProjectCover } from './image.js';
 import { renderHome, renderProject } from './render.js';
 
+let _onboardStep = 0;
+const ONBOARD_KEY = 'knit_onboarded_v1';
+
 window.state = state;
 // ── navigation ──
 function goHome() {
@@ -148,13 +151,52 @@ const _globals = {
   openSettings, changeTheme, toggleVoiceDefault, toggleVoiceSound, clearAllData,
   switchTab, renderSettings, updateTabNav,
   editExpectedCount,
-  pickCover, setProjectCover, removeProjectCover
+  pickCover, setProjectCover, removeProjectCover,
+  onboardNext
 };
 Object.entries(_globals).forEach(([k, v]) => { window[k] = v; });
 
 
 document.getElementById("tab-nav")?.style.setProperty("display", "flex");
+initOnboarding();
 loadData();
 initScrollBehavior();
 renderHome();
+
+// ===== Onboarding =====
+
+function onboardNext() {
+  const total = 3;
+  _onboardStep++;
+
+  if (_onboardStep >= total) {
+    localStorage.setItem(ONBOARD_KEY, '1');
+    const el = document.getElementById('onboarding');
+    if (el) el.classList.add('done');
+    return;
+  }
+
+  const slides = document.getElementById('onboard-slides');
+  if (slides) {
+    slides.style.transform = `translateX(-${_onboardStep * (100/3)}%)`;
+  }
+
+  const dots = document.querySelectorAll('.onboard-dot');
+  dots.forEach((d, i) => {
+    d.classList.toggle('onboard-dot--active', i === _onboardStep);
+  });
+
+  if (_onboardStep === total - 1) {
+    const btn = document.getElementById('onboard-btn');
+    if (btn) btn.textContent = '开始使用';
+  }
+}
+
+function initOnboarding() {
+  const el = document.getElementById('onboarding');
+  if (!el) return;
+  if (localStorage.getItem(ONBOARD_KEY)) {
+    el.classList.add('done');
+  }
+}
 

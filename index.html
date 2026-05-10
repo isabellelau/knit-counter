@@ -16,6 +16,88 @@
 
 <body>
 
+  <div id="onboarding" class="onboarding">
+    <div class="onboard-slides" id="onboard-slides">
+
+      <!-- 卡片 1：项目管理 -->
+      <div class="onboard-slide">
+        <div class="onboard-visual">
+          <div class="onboard-mock-list">
+            <div class="onboard-mock-card">
+              <div class="onboard-mock-thumb" style="background:#EAD8DA"></div>
+              <div class="onboard-mock-lines">
+                <div class="onboard-mock-line onboard-mock-line--title"></div>
+                <div class="onboard-mock-line onboard-mock-line--sub"></div>
+              </div>
+            </div>
+            <div class="onboard-mock-card">
+              <div class="onboard-mock-thumb" style="background:#D8D0DA"></div>
+              <div class="onboard-mock-lines">
+                <div class="onboard-mock-line onboard-mock-line--title"></div>
+                <div class="onboard-mock-line onboard-mock-line--sub"></div>
+              </div>
+            </div>
+            <div class="onboard-mock-card">
+              <div class="onboard-mock-thumb" style="background:#D3D9D1"></div>
+              <div class="onboard-mock-lines">
+                <div class="onboard-mock-line onboard-mock-line--title"></div>
+                <div class="onboard-mock-line onboard-mock-line--sub"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="onboard-text">
+          <h2 class="onboard-title">为每件作品建立项目</h2>
+          <p class="onboard-desc">围巾、毛衣、袜子……每个作品独立记录，支持封面图片和多个部件分区管理</p>
+        </div>
+      </div>
+
+      <!-- 卡片 2：智能计数 -->
+      <div class="onboard-slide">
+        <div class="onboard-visual">
+          <div class="onboard-mock-seq">
+            <div class="onboard-mock-pill" style="background:#EAD8DA;color:#7A5860">X</div>
+            <div class="onboard-mock-pill" style="background:#D8D0DA;color:#5C4870">V</div>
+            <div class="onboard-mock-pill" style="background:#D3D9D1;color:#3D5445">A</div>
+            <div class="onboard-mock-pill" style="background:#EAD8DA;color:#7A5860">X</div>
+            <div class="onboard-mock-pill" style="background:#E6D7CF;color:#6B4F3A">F</div>
+            <div class="onboard-mock-pill" style="background:#D8D0DA;color:#5C4870">V</div>
+          </div>
+          <div class="onboard-mock-count">已记录 24 针</div>
+        </div>
+        <div class="onboard-text">
+          <h2 class="onboard-title">精准记录每一针</h2>
+          <p class="onboard-desc">按圈记录针法序列，针数自动统计，支持图解导入和 OCR 文字识别</p>
+        </div>
+      </div>
+
+      <!-- 卡片 3：开始 -->
+      <div class="onboard-slide">
+        <div class="onboard-visual">
+          <div class="onboard-app-icon">
+            <div class="onboard-icon-inner">🧶</div>
+          </div>
+          <div class="onboard-app-name">钩织计数本</div>
+        </div>
+        <div class="onboard-text">
+          <h2 class="onboard-title">开始你的第一个项目</h2>
+          <p class="onboard-desc">一切准备就绪，马上开始记录你的钩织作品</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 底部导航 -->
+    <div class="onboard-footer">
+      <div class="onboard-dots" id="onboard-dots">
+        <span class="onboard-dot onboard-dot--active"></span>
+        <span class="onboard-dot"></span>
+        <span class="onboard-dot"></span>
+      </div>
+      <button class="onboard-btn" id="onboard-btn" onclick="onboardNext()">下一步</button>
+    </div>
+  </div>
+
   <!-- Header -->
   <header class="nav-bar" id="nav-bar">
     <button class="nav-back" id="nav-back" onclick="goHome()">
