@@ -15,6 +15,7 @@ export function addRound() {
   state.expandedRounds.add(r.id);
   saveData();
   setActiveRound(proj, r.id);
+  window.renderProject();
   setTimeout(() => {
     const el = document.getElementById("round-" + r.id);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });

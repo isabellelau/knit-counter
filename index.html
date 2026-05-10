@@ -7,7 +7,7 @@
   <title>钩织计数本</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#C07A45">
-  <meta name="version" content="1.53">
+  <meta name="version" content="1.54">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -93,13 +93,6 @@
       transition: min-height .2s ease
     }
 
-    body.project-view .hdr {
-      min-height: 100px;
-      max-height: 25vh;
-      padding-top: 10px;
-      padding-bottom: 10px
-    }
-
     .hdr-back {
       width: 28px;
       height: 28px;
@@ -140,12 +133,6 @@
       text-overflow: ellipsis
     }
 
-    body.project-view .hdr-title {
-      font-size: 13px;
-      font-weight: 400;
-      color: var(--muted)
-    }
-
     .hdr-title input {
       width: 100%;
       border: none;
@@ -155,24 +142,9 @@
       outline: none
     }
 
-    .hdr-round {
-      font-size: 48px;
-      font-weight: 700;
-      color: var(--text);
-      line-height: 1.1
-    }
-
-    .hdr-round:empty {
-      display: none
-    }
-
     .hdr-sub {
       font-size: 11px;
       color: var(--muted)
-    }
-
-    body.project-view .hdr-sub {
-      display: none
     }
 
     .hdr-actions {
@@ -189,10 +161,6 @@
       cursor: pointer;
       padding: 4px;
       opacity: .5
-    }
-
-    body.project-view .task-slide {
-      top: 110px
     }
 
     /* ── project list ── */
@@ -1257,7 +1225,6 @@
       <div class="hdr-title" id="hdr-title">
         <span>🧶 钩织计数本</span>
       </div>
-      <div class="hdr-round" id="hdr-round"></div>
     </div>
     <div class="hdr-sub" id="hdr-sub"></div>
     <div class="hdr-actions">
@@ -1400,33 +1367,6 @@
       document.body.prepend(el);
     }
 
-    (function() {
-      function syncHeader() {
-        const hdrBack = document.getElementById('hdr-back');
-        const hdrRound = document.getElementById('hdr-round');
-        const isProjectView = hdrBack && window.getComputedStyle(hdrBack).display !== 'none';
-
-        if (isProjectView) {
-          document.body.classList.add('project-view');
-          const activeBadge = document.querySelector('.round-badge.active');
-          if (hdrRound && activeBadge) {
-            hdrRound.textContent = activeBadge.textContent;
-          }
-        } else {
-          document.body.classList.remove('project-view');
-          if (hdrRound) hdrRound.textContent = '';
-        }
-      }
-
-      const observer = new MutationObserver(syncHeader);
-      const screen = document.getElementById('screen');
-      if (screen) observer.observe(screen, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
-
-      const hdrBack = document.getElementById('hdr-back');
-      if (hdrBack) observer.observe(hdrBack, { attributes: true, attributeFilter: ['style'] });
-
-      syncHeader();
-    })();
   </script>
 </body>
 
