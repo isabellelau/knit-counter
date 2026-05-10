@@ -68,6 +68,9 @@
   --leading-tight:     1.15;
   --leading-normal:    1.4;
   --leading-loose:     1.6;
+
+  /* 导航高度（含刘海补偿） */
+  --nav-h: calc(44px + env(safe-area-inset-top));
 }
 
 /* 深色模式 · 跟随系统 */
@@ -151,8 +154,8 @@
   z-index: 30;
   display: flex;
   align-items: center;
-  height: 44px;
-  padding: 0 8px;
+  height: calc(44px + env(safe-area-inset-top));
+  padding: env(safe-area-inset-top) 8px 0;
   background: var(--glass-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -255,6 +258,7 @@
 /* ===== Large Title ===== */
 .large-title-wrap {
   padding: 8px 20px 12px;
+  padding-top: max(8px, calc(env(safe-area-inset-top) + 8px));
   transition: opacity 0.2s ease;
 }
 
