@@ -58,7 +58,7 @@ export function getProjColor(sid, proj) {
   const color = resolveColor(sid, state.data.settings, proj?.customSettings);
   if (color !== '#ccc') return color;
   const cs = proj?.customSettings?.customStitches?.[sid];
-  return cs?.color || color;
+  return cs?.color || (color !== '#ccc' ? color : '#A8A29E');
 }
 
 export function getStitchInfo(sid, proj) {

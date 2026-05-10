@@ -34,8 +34,6 @@ export const STITCH_LIB = {
   SK: { id: "SK", label: "空针", abbr: "SK", description: "跳过不钩", category: "basic", aliases: ["SK", "空针", "SKIP"] },
 
   // --- 特殊/针目构造 (Specialty) ---
-  BLO: { id: "BLO", label: "内半针", abbr: "BLO", description: "远离自己的半针", category: "special", aliases: ["BLO", "后半针"] },
-  FLO: { id: "FLO", label: "外半针", abbr: "FLO", description: "靠近自己的半针", category: "special", aliases: ["FLO", "前半针"] },
   G: { id: "G", label: "爆米花针", abbr: "G", description: "5针长针的爆米花", category: "special", aliases: ["G", "爆米花针"] },
   Q: { id: "Q", label: "枣形针", abbr: "Q", description: "3针中长针的未完成针", category: "special", aliases: ["Q", "枣形针", "枣针"] },
 };
