@@ -245,10 +245,10 @@ export function renderProject() {
     <div class="round-hdr" onclick="toggleRound('${r.id}')">
       <div class="round-badge${isActive ? " active" : ""}" onclick="event.stopPropagation();setActiveRound(null,'${r.id}')" style="cursor:pointer" title="点击设为当前${unit}">${r.isTextCard ? "文" : (r.roundNum === 0 ? "起" : (r.roundNum != null ? r.roundNum : i + 1))}</div>
       <div class="round-info">
-        <div class="round-label">${r.isTextCard ? (r.instruction || "备注") : (r.roundNum === 0 ? "起针" : `第 ${r.roundNum != null ? r.roundNum : i + 1} ${unit}`)}${isActive ? " <span style='font-size:10px;background:var(--accent);color:#fff;border-radius:4px;padding:1px 5px;margin-left:4px'>编辑中</span>" : ""}</div>
+        <div class="round-label">${r.isTextCard ? (r.instruction || "备注") : (r.roundNum === 0 ? "起针" : `第 ${r.roundNum != null ? r.roundNum : i + 1} ${unit}`)}${isActive ? " <span style='font-size:11px;font-weight:var(--weight-semibold);background:var(--accent);color:#fff;border-radius:6px;padding:2px 7px;margin-left:6px'>编辑中</span>" : ""}</div>
         <div class="round-count">${total} 针 ${dots}</div>
       </div>
-      <button class="round-edit-btn" onclick="event.stopPropagation();openInstructionEdit('${r.id}')" title="编辑图解" style="font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer;padding:2px 6px;white-space:nowrap">编辑图解</button>
+      <button class="round-edit-btn" onclick="event.stopPropagation();openInstructionEdit('${r.id}')" title="编辑图解" style="font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer;padding:2px 6px;white-space:nowrap"><span style="font-size:13px;color:var(--muted);letter-spacing:1px;">编辑</span></button>
       <button class="round-del" onclick="event.stopPropagation();deleteRound('${r.id}')" title="删除这一${unit}">×</button>
       <span class="round-chev${exp ? " open" : ""}">›</span>
     </div>

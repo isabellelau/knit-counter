@@ -152,15 +152,6 @@ const _globals = {
 };
 Object.entries(_globals).forEach(([k, v]) => { window[k] = v; });
 
-// 点击空白处关闭项目菜单
-document.addEventListener('click', (e) => {
-  if (state.flowState.projMenuId === null) return;
-  const menu = document.getElementById(`proj-menu-${state.flowState.projMenuId}`);
-  if (menu && menu.contains(e.target)) return;
-  if (e.target.closest('.proj-del')) return;
-  state.flowState.projMenuId = null;
-  if (menu) menu.classList.remove('show');
-});
 
 document.getElementById("tab-nav")?.style.setProperty("display", "flex");
 loadData();

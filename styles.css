@@ -196,6 +196,7 @@
 
 .nav-back-label {
   font-size: var(--text-body);
+  display: none;
 }
 
 .nav-small-title {
@@ -613,7 +614,7 @@
 
     /* ── bottom palette ── */
     .bottom-bar {
-      background: var(--card);
+      background: var(--bg-secondary);
       border-top: 1px solid var(--border);
       padding: 8px 10px;
       padding-bottom: calc(8px + env(safe-area-inset-bottom));
@@ -851,11 +852,15 @@
 
     .sheet-item {
       display: flex;
+      width: 100%;
       align-items: center;
       gap: 12px;
       padding: 13px 16px;
       cursor: pointer;
-      border-bottom: 1px solid var(--border)
+      box-sizing: border-box;
+      background: var(--card);
+      border: none;
+      text-align: left;
     }
 
     .sheet-item:last-child {
@@ -904,6 +909,21 @@
 
     .sheet-del {
       color: var(--danger)
+    }
+
+    .sheet-divider {
+      width: calc(100% - 28px);
+      height: 1px;
+      background: var(--border);
+      margin: 8px auto;
+    }
+
+    .sheet-item--danger {
+      color: var(--danger);
+    }
+
+    .sheet-item--danger .sheet-item-icon {
+      background: var(--danger-bg);
     }
 
     .picker-grid {

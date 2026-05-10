@@ -1,6 +1,6 @@
 import { state, uid, getProj, getActivePart } from './state.js';
 import { showSheet, esc, showConfirmDialog, showEntryChoiceSheet } from './ui.js';
-import { pickCover, setProjectCover, removeProjectCover } from './image.js';
+import { pickCover, setProjectCover, removeProjectCover, getProjImage } from './image.js';
 import { saveData, migrateData, exportSingleProject } from './storage.js';
 import { getUnitLabel } from './stitch.js';
 
@@ -91,12 +91,45 @@ export function showNewProjectDialog() {
 
 export function toggleProjMenu(id, e) {
   e.stopPropagation();
-  if (state.flowState.projMenuId === id) {
-    state.flowState.projMenuId = null;
-  } else {
-    state.flowState.projMenuId = id;
-  }
-  window.renderHome();
+  const proj = state.data.projects.find(p => String(p.id) === String(id));
+  if (!proj) return;
+
+  const coverImg = getProjImage(id);
+  const isArchived = proj.archived;
+
+  const coverActions = `
+    <button class="sheet-item" onclick="pickCover('${id}');closeSheet()">
+      <span class="sheet-item-icon">🖼️</span> 设置封面
+    </button>
+    ${coverImg ? `
+    <button class="sheet-item" onclick="removeProjectCover('${id}');closeSheet()">
+      <span class="sheet-item-icon">🗑️</span> 移除封面
+    </button>` : ''}
+  `;
+
+  const archiveAction = isArchived
+    ? `<button class="sheet-item" onclick="unarchiveProject('${id}');closeSheet()">
+         <span class="sheet-item-icon">📤</span> 取消归档
+       </button>`
+    : `<button class="sheet-item" onclick="archiveProject('${id}');closeSheet()">
+         <span class="sheet-item-icon">📦</span> 归档
+       </button>`;
+
+  const deleteAction = `
+    <button class="sheet-item sheet-item--danger"
+            onclick="deleteProject('${id}', event);closeSheet()">
+      <span class="sheet-item-icon">🗑️</span> 删除项目
+    </button>
+  `;
+
+  showSheet(`
+    <div class="sheet-title">${proj.name}</div>
+    ${coverActions}
+    ${archiveAction}
+    <div class="sheet-divider"></div>
+    ${deleteAction}
+    <button class="sheet-cancel" onclick="closeSheet()">取消</button>
+  `);
 }
 
 export function archiveProject(id) {
