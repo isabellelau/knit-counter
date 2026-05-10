@@ -23,7 +23,7 @@ function resolveLabel(sid, proj) {
   return s ? s.label : sid;
 }
 
-const ALL_THEMES = {
+export const ALL_THEMES = {
   morandi: null,
   night: {
     X: "#5F85B2", T: "#8E7CA3", F: "#6B8E83", E: "#A67C65",

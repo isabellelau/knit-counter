@@ -158,6 +158,15 @@ Object.entries(_globals).forEach(([k, v]) => { window[k] = v; });
 
 
 document.getElementById("tab-nav")?.style.setProperty("display", "flex");
+// 恢复上次的主题设置
+const savedTheme = state.data?.settings?.theme || 'morandi';
+const html = document.documentElement;
+html.classList.remove('theme-light', 'theme-dark');
+if (savedTheme === 'morandi') {
+  html.classList.add('theme-light');
+} else if (savedTheme === 'night') {
+  html.classList.add('theme-dark');
+}
 initOnboarding();
 loadData();
 initScrollBehavior();

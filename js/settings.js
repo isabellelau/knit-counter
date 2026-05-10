@@ -1,6 +1,8 @@
 import { state, getProj } from './state.js';
 import { showConfirmDialog, showToast, closeSheet } from './ui.js';
 import { saveData } from './storage.js';
+import { getProjColor, ALL_THEMES } from './stitch.js';
+import { COLOR_THEMES } from '../stitches.js';
 
 export function openSettings() {
   const theme = state.data.settings.theme || "morandi";
@@ -11,8 +13,8 @@ export function openSettings() {
       s + (pt.rounds || []).reduce((ss, r) => ss + (r.seq?.length || 0), 0), 0), 0);
 
   const themes = [
-    { key: "morandi", name: "莫兰迪", dots: ["#C4A882", "#F4A460", "#9B8EC4", "#9B8E7E"] },
-    { key: "night",   name: "夜色",   dots: ["#5F85B2", "#45628A", "#8AA4C4", "#94A3B8"] }
+    { key: "morandi", name: "莫兰迪" },
+    { key: "night",   name: "夜色" }
   ];
 
   let html = `<div class="sheet-handle"></div>
@@ -22,7 +24,14 @@ export function openSettings() {
   <div class="settings-theme-grid">`;
   themes.forEach(t => {
     const active = theme === t.key ? " active" : "";
-    const dotHtml = t.dots.map(c => `<span class="settings-theme-dot" style="background:${c}"></span>`).join("");
+    const previewIds = ['X', 'V', 'A', 'CH'];
+    const dotHtml = previewIds.map(sid => {
+      const themeColors = ALL_THEMES[t.key];
+      const color = themeColors?.[sid]
+        || COLOR_THEMES.morandi?.[sid]
+        || '#A8A29E';
+      return `<span class="settings-theme-dot" style="background:${color}"></span>`;
+    }).join("");
     html += `<div class="settings-theme-item${active}" onclick="changeTheme('${t.key}')">
     <div class="settings-theme-dots">${dotHtml}</div>
     <div class="settings-theme-name">${t.name}</div>
@@ -75,8 +84,8 @@ export function renderSettings() {
       s + (pt.rounds || []).reduce((ss, r) => ss + (r.seq?.length || 0), 0), 0), 0);
 
   const themes = [
-    { key: "morandi", name: "莫兰迪", dots: ["#C4A882", "#F4A460", "#9B8EC4", "#9B8E7E"] },
-    { key: "night",   name: "夜色",   dots: ["#5F85B2", "#45628A", "#8AA4C4", "#94A3B8"] }
+    { key: "morandi", name: "莫兰迪" },
+    { key: "night",   name: "夜色" }
   ];
 
   let html = `<div style="padding:12px 0">`;
@@ -86,7 +95,14 @@ export function renderSettings() {
   html += `<div class="settings-theme-grid">`;
   themes.forEach(t => {
     const active = theme === t.key ? " active" : "";
-    const dotHtml = t.dots.map(c => `<span class="settings-theme-dot" style="background:${c}"></span>`).join("");
+    const previewIds = ['X', 'V', 'A', 'CH'];
+    const dotHtml = previewIds.map(sid => {
+      const themeColors = ALL_THEMES[t.key];
+      const color = themeColors?.[sid]
+        || COLOR_THEMES.morandi?.[sid]
+        || '#A8A29E';
+      return `<span class="settings-theme-dot" style="background:${color}"></span>`;
+    }).join("");
     html += `<div class="settings-theme-item${active}" onclick="changeTheme('${t.key}')">
     <div class="settings-theme-dots">${dotHtml}</div>
     <div class="settings-theme-name">${t.name}</div>
@@ -149,12 +165,21 @@ export function renderSettings() {
 
 export function changeTheme(themeKey) {
   state.data.settings.theme = themeKey;
+  const html = document.documentElement;
+  html.classList.remove('theme-light', 'theme-dark');
+  if (themeKey === 'morandi') {
+    html.classList.add('theme-light');
+  } else if (themeKey === 'night') {
+    html.classList.add('theme-dark');
+  }
   saveData();
   // 更新 sheet 中的选中态
-  document.querySelectorAll('.settings-theme-item').forEach(el => el.classList.remove('active'));
-  const idx = { morandi: 0, night: 1 }[themeKey];
-  const items = document.querySelectorAll('.settings-theme-item');
-  if (items[idx]) items[idx].classList.add('active');
+  setTimeout(() => {
+    document.querySelectorAll('.settings-theme-item').forEach(el => el.classList.remove('active'));
+    const idx = { morandi: 0, night: 1 }[themeKey];
+    const items = document.querySelectorAll('.settings-theme-item');
+    if (items[idx]) items[idx].classList.add('active');
+  }, 0);
   // 如果在项目页，只刷新底部调色板
   if (state.curProjId) {
     const proj = getProj(state.curProjId);
@@ -168,6 +193,12 @@ export function changeTheme(themeKey) {
         window.updateVoiceButton();
       }
     }
+  }
+  // 如果在设置页，重新渲染以更新色点
+  if (state.currentTab === 'settings') {
+    console.log('calling renderSettings, theme:', state.data.settings.theme);
+    renderSettings();
+    console.log('renderSettings done, active:', document.querySelectorAll('.settings-theme-item.active').length);
   }
 }
 

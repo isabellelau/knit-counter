@@ -97,6 +97,39 @@
     --glass-bg:      rgba(42, 33, 35, 0.85);
   }
 }
+html.theme-light {
+  --bg:            #FAF5F5;
+  --bg-secondary:  #F5EEEF;
+  --card:          #FFFFFF;
+  --border:        #EAD8DA;
+  --border-strong: #D4B0B5;
+  --text:          #2D1E20;
+  --text-secondary:#7A6065;
+  --muted:         #B09A9E;
+  --accent:        #C9969F;
+  --accent-dark:   #A07078;
+  --accent-bg:     #F5E6E8;
+  --danger:        #D4756B;
+  --danger-bg:     #FAECE9;
+  --glass-bg:      rgba(250, 245, 245, 0.80);
+}
+
+html.theme-dark {
+  --bg:            #2A2123;
+  --bg-secondary:  #332528;
+  --card:          #3D2D30;
+  --border:        #4A3538;
+  --border-strong: #6A4A4F;
+  --text:          #F2E8E9;
+  --text-secondary:#C4A8AC;
+  --muted:         #8A6A6E;
+  --accent:        #C4909A;
+  --accent-dark:   #D4A8B0;
+  --accent-bg:     #4A2D32;
+  --danger:        #D4756B;
+  --danger-bg:     #3D2420;
+  --glass-bg:      rgba(42, 33, 35, 0.85);
+}
 
     * {
       box-sizing: border-box;
@@ -969,7 +1002,7 @@
     /* ── settings ── */
     .settings-theme-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(2, 1fr);
       gap: 8px;
       padding: 10px 16px 6px
     }
