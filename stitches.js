@@ -185,7 +185,16 @@ export function extractStitches(text) {
   // 匹配针法 token：支持 1X, X, 2V, CH, SL, TV, FV 等写法
   // 使用精确匹配已知缩写（从长到短排序，避免短前缀截断），避免误匹配 TEST 等无关字母组合
   const tokens = text.match(/\b\d*(?:BLO|FLO|TV|TA|TW|TM|FV|FA|FW|FM|EV|EA|SL|CH|SK|X|V|A|F|T|E|W|M|G|Q)\d*\b/gi) || [];
-  return tokens.map(t => normalizeStitch(t)).filter(Boolean);
+  const result = [];
+  for (const t of tokens) {
+    const countMatch = t.match(/^(\d+)/);
+    const count = countMatch ? parseInt(countMatch[1], 10) : 1;
+    const id = normalizeStitch(t);
+    if (id) {
+      for (let i = 0; i < count; i++) result.push(id);
+    }
+  }
+  return result;
 }
 
 /**
