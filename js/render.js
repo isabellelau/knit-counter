@@ -13,6 +13,7 @@ export function renderHome() {
     document.getElementById("hdr-pdf").style.display = "none";
     document.getElementById("hdr-stitch").style.display = "none";
     document.getElementById("hdr-settings").style.display = "none";
+    document.getElementById("tab-nav").style.display = "flex";
 
     const totalProjs = state.data.projects.length;
     const totalNeedles = state.data.projects.reduce((sum, p) =>
@@ -113,6 +114,7 @@ export function renderProject() {
   const proj = getProj(state.curProjId);
   if (!proj) return window.goHome();
   const part = getActivePart(proj);
+  const unit = getUnitLabel(proj);
 
   document.getElementById("hdr-back").style.display = "flex";
   document.getElementById("hdr-settings").style.display = "none";
