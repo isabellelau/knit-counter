@@ -17,23 +17,21 @@
 <body>
 
   <!-- Header -->
-  <div class="hdr" id="hdr">
-    <button class="hdr-back" id="hdr-back" style="display:none" onclick="goHome()">‹</button>
-    <div class="hdr-center">
-      <div class="hdr-title" id="hdr-title">
-        <span>🧶 钩织计数本</span>
-      </div>
-    </div>
-    <div class="hdr-sub" id="hdr-sub"></div>
-    <div class="hdr-actions">
-      <button class="hdr-btn" id="hdr-settings" style="display:none" onclick="openSettings()" title="设置">⚙️</button>
-      <button class="hdr-btn" id="hdr-stitch" style="display:none" onclick="openStitchSetup('edit')" title="针法配置">🧶</button>
-      <button class="hdr-btn" id="hdr-pdf" style="display:none" onclick="exportPDF()" title="导出PDF">📄</button>
-    </div>
-  </div>
+  <header class="nav-bar" id="nav-bar">
+    <button class="nav-back" id="nav-back" onclick="goHome()">
+      <span class="nav-back-arrow">‹</span>
+      <span class="nav-back-label">返回</span>
+    </button>
+    <span class="nav-small-title" id="nav-small-title"></span>
+    <div class="nav-actions" id="nav-actions"></div>
+  </header>
 
   <!-- Main screen -->
-  <div id="screen"></div>
+  <div id="screen">
+    <div class="large-title-wrap" id="large-title-wrap">
+      <h1 class="large-title-text" id="large-title-text"></h1>
+      <p class="large-title-sub" id="large-title-sub"></p>
+    </div>
 
   <!-- Bottom palette -->
   <div class="bottom-bar" id="bottom-bar" style="display:none"></div>
