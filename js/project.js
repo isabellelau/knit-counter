@@ -5,7 +5,10 @@ import { saveData, migrateData, exportSingleProject } from './storage.js';
 import { getUnitLabel } from './stitch.js';
 
 export function openProject(id) {
+  document.documentElement.classList.remove('home-view', 'settings-view');
   state.curProjId = String(id); state.selectedStitch = null;
+  state.highlightMode = state.data.settings.highlightEnabled ?? false;
+  state.highlightIndex = 0;
   const proj = getProj(id);
   if (proj) {
     const part = getActivePart(proj);
@@ -18,7 +21,10 @@ export function openProject(id) {
   }
   document.getElementById("tab-nav")?.style.setProperty("display", "none");
   document.getElementById("bottom-bar")?.style.setProperty("display", "block");
+  const navBar = document.getElementById("nav-bar");
+  if (navBar) navBar.classList.remove("hidden");
   const screen = document.getElementById("screen");
+  if (screen) screen.scrollTop = 0;
   screen.classList.add("enter-forward");
   screen.addEventListener("animationend", () => screen.classList.remove("enter-forward"), { once: true });
   window.renderProject();

@@ -3,7 +3,7 @@ import { state, NUMBER_MAP, uid, getProj, getActivePart, isPartEmpty, getEditing
 import { saveData, loadData, migrateData, exportPDF, exportData, exportSingleProject } from './storage.js';
 import { esc, showToast, showSheet, closeSheet, showEntryChoiceSheet, showConfirmDialog, confirmDialog, closeDialog } from './ui.js';
 import { playSound, initRecognition, toggleVoiceMode, setVoicePulse, updateVoiceButton, openVoiceTutorial, dismissVoiceHint } from './voice.js';
-import { openSettings, renderSettings, changeTheme, toggleVoiceDefault, toggleVoiceSound, clearAllData } from './settings.js';
+import { openSettings, renderSettings, changeTheme, changeStitchTheme, toggleVoiceDefault, toggleVoiceSound, toggleHighlightEnabled, clearAllData, navigateToSubPage, goBackFromSubPage } from './settings.js';
 import {
   startImportFlow, startManualFlow, dismissEntryChoice,
   toggleSelectAllInSetup, startImportFromSetup,
@@ -19,7 +19,8 @@ import {
   startInsert, doInsert, openStitchSetup, toggleSetupStitch, openStitchCustomize,
   saveStitchCustomize, resetStitchCustomize, backToSetupGrid, openNewStitchForm,
   saveNewStitch, deleteCustomStitch, saveProjectStitches, closeSetupSheet,
-  triggerEdgeGlow, openInstructionEdit, saveRoundInstruction
+  triggerEdgeGlow, openInstructionEdit, saveRoundInstruction,
+  toggleHighlightMode, updateHighlightButton
 } from './stitch.js';
 import {
   addRound, toggleRound, deleteRound, undoDeleteRound, setActiveRound
@@ -34,6 +35,7 @@ import {
   handlePwaHintOptOut, showPwaTutorial
 } from './project.js';
 import { pickCover, setProjectCover, removeProjectCover } from './image.js';
+import { expandInstruction, getNextStitchSid, debugParseTest } from './highlight.js';
 import { renderHome, renderProject } from './render.js';
 
 let _onboardStep = 0;
@@ -42,7 +44,10 @@ const ONBOARD_KEY = 'knit_onboarded_v1';
 window.state = state;
 // ── navigation ──
 function goHome() {
+  document.documentElement.classList.remove('settings-view');
   state.curProjId = null; state.expandedRounds.clear(); state.selectedStitch = null;
+  state.highlightMode = false;
+  state.highlightIndex = 0;
   state.flowState.projMenuId = null;
   document.getElementById("bottom-bar")?.style.setProperty("display", "none");
   document.getElementById("tab-nav")?.style.setProperty("display", "flex");
@@ -102,13 +107,22 @@ function initScrollBehavior() {
         lastY = screen.scrollTop;
         return;
       }
-      const currentY = screen.scrollTop;
-      if (currentY > lastY + 4) {
-        navBar.classList.add('hidden');
-      } else if (currentY < lastY - 4) {
+      const scrollTop = screen.scrollTop;
+
+      // 滚到顶部强制显示
+      if (scrollTop <= 0) {
         navBar.classList.remove('hidden');
+        lastY = 0;
+        return;
       }
-      lastY = currentY;
+
+      const delta = scrollTop - lastY;
+      if (delta < -8) {
+        navBar.classList.remove('hidden');
+      } else if (delta > 4) {
+        navBar.classList.add('hidden');
+      }
+      lastY = scrollTop;
     }, { passive: true });
   }
 }
@@ -148,10 +162,13 @@ const _globals = {
   toggleVoiceMode, updateVoiceButton, setVoicePulse, playSound,
   openVoiceTutorial, dismissVoiceHint,
   renderDynamicPalette, renderFilterToggle, renderBarRow, triggerEdgeGlow, openInstructionEdit, saveRoundInstruction,
-  openSettings, changeTheme, toggleVoiceDefault, toggleVoiceSound, clearAllData,
+  toggleHighlightMode, updateHighlightButton,
+  openSettings, changeTheme, changeStitchTheme, toggleVoiceDefault, toggleVoiceSound, toggleHighlightEnabled, clearAllData,
   switchTab, renderSettings, updateTabNav,
+  navigateToSubPage, goBackFromSubPage,
   editExpectedCount,
   pickCover, setProjectCover, removeProjectCover,
+  expandInstruction, getNextStitchSid, debugParseTest,
   onboardNext
 };
 Object.entries(_globals).forEach(([k, v]) => { window[k] = v; });

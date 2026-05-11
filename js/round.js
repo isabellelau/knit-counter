@@ -2,7 +2,8 @@ import { state, uid, getProj, getActivePart } from './state.js';
 import { showConfirmDialog, showToast } from './ui.js';
 import { saveData } from './storage.js';
 import { normalizeRoundNums } from './pattern.js';
-import { getUnitLabel, renderDynamicPalette, renderFilterToggle, renderBarRow, renderTaskSlide } from './stitch.js';
+import { getUnitLabel, renderDynamicPalette, renderFilterToggle, renderBarRow, renderTaskSlide, updateHighlightButton } from './stitch.js';
+import { getNextStitchSid } from './highlight.js';
 import { updateVoiceButton } from './voice.js';
 
 export function addRound() {
@@ -120,6 +121,7 @@ export function setActiveRound(proj, rid) {
 
   part.activeRoundId = rid;
   saveData();
+  state.highlightIndex = (part.rounds.find(r => r.id === rid) || {}).seq?.length || 0;
 
   const oldIdx = part.rounds.findIndex(r => r.id === oldRid);
   const newIdx = part.rounds.findIndex(r => r.id === rid);
@@ -187,5 +189,13 @@ export function setActiveRound(proj, rid) {
   } else {
     const slide = document.getElementById('task-slide');
     if (slide) slide.outerHTML = renderTaskSlide(proj);
+  }
+
+  if (state.highlightMode) {
+    const result = getNextStitchSid(proj);
+    if (result.status === 'parse_error') {
+      showToast('本圈图解需要校准 · 点击🪡编辑', null, 3000);
+    }
+    updateHighlightButton();
   }
 }

@@ -7,14 +7,18 @@ export const state = {
     projects: [],
     settings: {
       theme: "morandi",
+      stitchTheme: "morandi",
       customColors: {},
       voiceEnabled: false,
-      voiceSoundEnabled: false
+      voiceSoundEnabled: false,
+      highlightEnabled: false
     }
   },
   curProjId: null,
   expandedRounds: new Set(),
   selectedStitch: null,
+  highlightMode: false,
+  highlightIndex: 0,
   pendingInsert: null,
   dlgCallback: null,
   confirmCallback: null,
@@ -72,3 +76,52 @@ export function isPartEmpty(part) {
   return hasNoRounds || hasOnlyEmptyRound;
 }
 export function getEditingPartId() { return state.editingPartId; }
+
+// ── 每日计数器 ──
+const DAILY_LOG_KEY = 'knit_daily_log';
+
+export function getTodayKey() {
+  const d = new Date();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
+export function getDailyLog() {
+  try {
+    return JSON.parse(localStorage.getItem(DAILY_LOG_KEY)) || {};
+  } catch { return {}; }
+}
+
+export function addDailyCount(n) {
+  const key = getTodayKey();
+  const log = getDailyLog();
+  log[key] = Math.max(0, (log[key] || 0) + n);
+  if (log[key] === 0) delete log[key];
+  localStorage.setItem(DAILY_LOG_KEY, JSON.stringify(log));
+}
+
+export function calcStreak() {
+  const log = getDailyLog();
+  const today = new Date();
+  let streak = 0;
+  // 从昨天开始检查（今日可能还没记录完）
+  const d = new Date(today);
+  d.setDate(d.getDate() - 1);
+  while (true) {
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const key = `${d.getFullYear()}-${mm}-${dd}`;
+    if (log[key] && log[key] > 0) {
+      streak++;
+      d.setDate(d.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
+export function clearDailyLog() {
+  localStorage.removeItem(DAILY_LOG_KEY);
+}

@@ -29,6 +29,7 @@ export function switchPart(partId) {
     window.editingPartId = null;
   }
   proj.activePartId = partId;
+  state.highlightIndex = 0;
   saveData();
   window.renderProject();
 }

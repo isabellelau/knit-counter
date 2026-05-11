@@ -1,8 +1,9 @@
-import { state, uid, getProj, getActivePart } from './state.js';
+import { state, uid, getProj, getActivePart, addDailyCount } from './state.js';
 import { showSheet, closeSheet, showToast, esc, showConfirmDialog } from './ui.js';
 import { saveData } from './storage.js';
 import { STITCH_LIB, STITCHES, SM, extractStitches, resolveColor } from '../stitches.js';
 import { updateVoiceButton } from './voice.js';
+import { getNextStitchSid } from './highlight.js';
 
 export function getUnitLabel(proj) {
   const p = proj || getProj(state.curProjId);
@@ -33,12 +34,21 @@ export const ALL_THEMES = {
     FA: "#8AA79D", FM: "#A9C0B7", EA: "#523D32",
     CH: "#94A3B8", SL: "#64748B", SK: "#475569",
     G: "#CAB382", Q: "#B3A08B"
+  },
+  float: {
+    X: "#7BAAF4", T: "#A78BFA", F: "#2DD4BF", E: "#FB923C",
+    V: "#60A5FA", W: "#4B89ED", TV: "#8B5CF6", TW: "#6D28D9",
+    FV: "#0D9488", FW: "#115E59", EV: "#E25D28",
+    A: "#93C5FD", M: "#DBEAFE", TA: "#C4B5FD", TM: "#DDD6FE",
+    FA: "#99F6E4", FM: "#CCFBF1", EA: "#FDD6A3",
+    CH: "#64748B", SL: "#475569", SK: "#D4D4D8",
+    G: "#F9086C", Q: "#9D1717"
   }
 };
 
 export function getProjColor(sid, proj) {
-  const themeKey = state.data?.settings?.theme || "morandi";
-  const ext = ALL_THEMES[themeKey];
+  const stitchKey = state.data?.settings?.stitchTheme || "morandi";
+  const ext = ALL_THEMES[stitchKey];
   if (ext && ext[sid]) return ext[sid];
   const color = resolveColor(sid, state.data.settings, proj?.customSettings);
   if (color !== '#ccc') return color;
@@ -132,6 +142,14 @@ export function saveRoundInstruction(roundId) {
   }
 
   window.renderProject();
+
+  if (state.highlightMode) {
+    const result = getNextStitchSid(proj);
+    if (result.status === 'ok' || result.status === 'round_complete') {
+      showToast('图解校准成功 ✓');
+    }
+    renderDynamicPalette(proj);
+  }
 }
 
 export function getRoundStitches(round) {
@@ -205,6 +223,8 @@ export function pushStitch(sid) {
   r.seq.push(sid);
 
   saveData();
+  addDailyCount(1);
+  state.highlightIndex++;
 
   const roundEl = document.getElementById("round-" + r.id);
   if (roundEl) {
@@ -234,6 +254,8 @@ export function undoStitch() {
   if (!r || !r.seq.length) return;
   r.seq.pop();
   saveData();
+  addDailyCount(-1);
+  state.highlightIndex = Math.max(0, state.highlightIndex - 1);
 
   const roundEl = document.getElementById("round-" + r.id);
   if (roundEl) {
@@ -579,6 +601,13 @@ export function renderDynamicPalette(proj) {
   const part = getActivePart(proj);
   if (!part) return '<div class="palette"></div>';
 
+  // ── 智能高亮 ──
+  const highlight = state.highlightMode;
+  let next = null;
+  if (highlight) {
+    next = getNextStitchSid(proj);
+  }
+
   let displayIds;
   if (part.customPalette && part.customPalette.length > 0) {
     displayIds = part.customPalette.filter(sid => STITCH_LIB[sid] || proj.customSettings?.customStitches?.[sid]);
@@ -612,15 +641,49 @@ export function renderDynamicPalette(proj) {
     }
   }
 
-  let html = `<div class="palette">`;
+  let html = '';
+
+  // ── 高亮状态栏 ──
+  if (highlight && next) {
+    if (next.status === 'ok') {
+      html += `<div class="palette-status-bar">第 ${next.index + 1} 针 / 共 ${next.total} 针</div>`;
+    } else if (next.status === 'round_complete') {
+      html += `<div class="palette-status-bar palette-status-bar--complete">本圈已完成 ✓</div>`;
+    } else if (next.status === 'parse_error') {
+      html += `<div class="palette-status-bar palette-status-bar--error" onclick="openInstructionEdit('${part.activeRoundId || ''}')">图解需要校准，点击编辑 ›</div>`;
+    }
+  }
+
+  // ── 针法按钮 ──
+  const dimBtn = highlight && next && (next.status === 'ok' || next.status === 'round_complete');
+  html += `<div class="palette">`;
   displayIds.forEach((sid, idx) => {
     const info = getStitchInfo(sid, proj);
     if (!info) return;
-    html += `<button class="pal-btn" data-sid="${sid}" style="background:${info.color}" onclick="pushStitch('${sid}')">
+
+    let btnClass = 'pal-btn';
+    let btnExtra = '';
+
+    if (highlight && next) {
+      if (next.status === 'ok') {
+        if (sid === next.sid) {
+          btnClass += ' palette-btn--highlight';
+        } else {
+          btnExtra = 'opacity:0.3;pointer-events:none';
+        }
+      } else if (next.status === 'round_complete') {
+        btnExtra = 'opacity:0.3;pointer-events:none';
+      }
+    }
+
+    html += `<button class="${btnClass}" data-sid="${sid}" style="background:${info.color};${btnExtra}" onclick="pushStitch('${sid}')">
       ${state.voiceMode ? `<span style="font-size:22px;font-weight:900;line-height:1">${idx + 1}</span><br><small style="opacity:.8;font-size:11px">${esc(info.label)}(${sid})</small>` : `${esc(info.label)}<br><small style="opacity:.8">${sid}</small>`}
     </button>`;
   });
-  html += `<button class="pal-btn" style="background:var(--bg);color:var(--accent);border:2px dashed var(--accent);font-size:18px" onclick="openStitchSetup('edit')" title="增减针法">
+
+  // 增减按钮：高亮模式下 okl/round_complete 时禁用
+  const addBtnExtra = dimBtn ? 'opacity:0.3;pointer-events:none' : '';
+  html += `<button class="pal-btn" style="background:var(--bg);color:var(--accent);border:2px dashed var(--accent);font-size:18px;${addBtnExtra}" onclick="openStitchSetup('edit')" title="增减针法">
     ＋<br><small style="opacity:.7;font-size:11px">增减</small>
   </button>`;
   html += `</div>`;
@@ -660,8 +723,63 @@ export function renderBarRow() {
     <button class="bar-btn" onclick="undoStitch()">↩ 撤销</button>
     <button class="bar-btn" onclick="openPatternPasteSheet()">📥 图解</button>
     <button class="bar-btn" id="voice-mode-btn" onclick="toggleVoiceMode()">🎙 语音</button>
+    <button class="bar-btn" id="highlight-mode-btn" onclick="toggleHighlightMode()" style="position:relative">
+      ✦ 高亮
+      <span class="highlight-pro-badge">PRO</span>
+    </button>
     <button class="bar-btn primary" onclick="addRound()">＋ 新一${unit}</button>
   </div>`;
+}
+
+// ═════════════════════════════════════
+//  智能高亮开关
+// ═════════════════════════════════════
+
+export function toggleHighlightMode() {
+  state.highlightMode = !state.highlightMode;
+
+  if (state.highlightMode) {
+    const proj = getProj(state.curProjId);
+    const part = getActivePart(proj);
+    const activeRound = part?.rounds.find(r => r.id === part.activeRoundId);
+    state.highlightIndex = activeRound?.seq?.length ?? 0;
+
+    const result = getNextStitchSid(proj);
+    if (result.status === 'parse_error') {
+      showToast('本圈图解需要校准才能启用高亮');
+      openInstructionEdit(part.activeRoundId);
+    }
+    showToast('PRO 功能，免费体验中 🧶');
+  } else {
+    state.highlightIndex = 0;
+  }
+
+  updateHighlightButton();
+  const proj = getProj(state.curProjId);
+  if (proj) {
+    const bar = document.getElementById('bottom-bar');
+    if (bar) {
+      const paletteHtml = renderDynamicPalette(proj);
+      const toggleHtml = renderFilterToggle();
+      const barRowHtml = renderBarRow();
+      bar.innerHTML = paletteHtml + toggleHtml + barRowHtml;
+      updateVoiceButton();
+    }
+  }
+}
+
+export function updateHighlightButton() {
+  const btn = document.getElementById('highlight-mode-btn');
+  if (!btn) return;
+  if (state.highlightMode) {
+    btn.style.background = 'var(--accent)';
+    btn.style.color = '#fff';
+    btn.style.borderColor = 'var(--accent)';
+  } else {
+    btn.style.background = '';
+    btn.style.color = '';
+    btn.style.borderColor = '';
+  }
 }
 
 export function openStitchSetup(mode) {
