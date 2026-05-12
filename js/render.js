@@ -5,6 +5,7 @@ import { renderTaskSlide, renderDynamicPalette,
          renderFilterToggle, renderBarRow,
          renderSpillHTML, getProjColor, getUnitLabel } from './stitch.js';
 import { updateVoiceButton } from './voice.js';
+import { renderHighlightReel } from './highlight.js';
 import { getProjImage } from './image.js';
 
 const COVER_COLORS = [
@@ -246,7 +247,11 @@ export function renderProject() {
   html += `<button class="part-tab part-tab-add" onclick="addPart()" title="新增部件">＋</button>
       </div></div>`;
 
+  html += `<div class="sticky-wrap">`;
   html += renderTaskSlide(proj);
+
+  html += `<div id="highlight-reel-container"></div>`;
+  html += `</div>`;
 
   html += `<div class="rounds-wrap">`;
   if (part) part.rounds.forEach((r, i) => {
@@ -311,4 +316,5 @@ export function renderProject() {
   const barH = bar ? bar.offsetHeight : 0;
   if (barH) document.documentElement.style.setProperty('--bottom-bar-h', barH + 'px');
   updateVoiceButton();
+  renderHighlightReel(proj);
 }

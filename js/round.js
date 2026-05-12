@@ -3,7 +3,7 @@ import { showConfirmDialog, showToast } from './ui.js';
 import { saveData } from './storage.js';
 import { normalizeRoundNums } from './pattern.js';
 import { getUnitLabel, renderDynamicPalette, renderFilterToggle, renderBarRow, renderTaskSlide, updateHighlightButton } from './stitch.js';
-import { getNextStitchSid } from './highlight.js';
+import { getNextStitchSid, renderHighlightReel } from './highlight.js';
 import { updateVoiceButton } from './voice.js';
 
 export function addRound() {
@@ -198,4 +198,5 @@ export function setActiveRound(proj, rid) {
     }
     updateHighlightButton();
   }
+  renderHighlightReel(proj);
 }

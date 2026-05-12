@@ -1641,12 +1641,18 @@ html.theme-dark .stats-card-row {
       border-color: var(--accent)
     }
 
-    /* ── task slide ── */
-    .task-slide {
+    /* ── sticky wrap (task slide + highlight reel) ── */
+    .sticky-wrap {
       position: sticky;
       top: var(--hdr-h);
       z-index: 20;
       margin: 10px 12px 0;
+      background: var(--bg);
+    }
+
+    /* ── task slide ── */
+    .task-slide {
+      margin: 0;
       padding: 8px 16px;
       background: var(--card);
       border: 1px solid var(--border);
@@ -2023,6 +2029,50 @@ html.settings-view #screen-content {
   letter-spacing: 0.5px;
   line-height: 1.4;
   vertical-align: middle;
+}
+
+.highlight-reel {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 12px 16px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.highlight-reel::-webkit-scrollbar { display: none; }
+
+.highlight-reel-track {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  width: max-content;
+}
+
+.highlight-reel-item {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  transition: transform 0.2s, opacity 0.2s;
+  user-select: none;
+}
+.highlight-reel-item--done {
+  opacity: 0.3;
+  transform: scale(0.85);
+}
+.highlight-reel-item--current {
+  background: var(--reel-color, var(--accent));
+  color: #fff;
+  transform: scale(1.15);
+  animation: palette-pulse 1.8s ease-in-out infinite;
+}
+.highlight-reel-item--upcoming {
+  background: color-mix(in srgb, var(--reel-color, var(--bg-secondary)) 18%, transparent);
+  color: var(--reel-color, var(--text-secondary));
+  outline: 1px solid color-mix(in srgb, var(--reel-color, transparent) 30%, transparent);
 }
 
 .highlight-pro-badge {

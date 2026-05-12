@@ -35,7 +35,7 @@ import {
   handlePwaHintOptOut, showPwaTutorial
 } from './project.js';
 import { pickCover, setProjectCover, removeProjectCover } from './image.js';
-import { expandInstruction, getNextStitchSid, debugParseTest } from './highlight.js';
+import { expandInstruction, getNextStitchSid, debugParseTest, renderHighlightReel } from './highlight.js';
 import { renderHome, renderProject } from './render.js';
 
 let _onboardStep = 0;
@@ -168,7 +168,7 @@ const _globals = {
   navigateToSubPage, goBackFromSubPage,
   editExpectedCount,
   pickCover, setProjectCover, removeProjectCover,
-  expandInstruction, getNextStitchSid, debugParseTest,
+  expandInstruction, getNextStitchSid, debugParseTest, renderHighlightReel,
   onboardNext
 };
 Object.entries(_globals).forEach(([k, v]) => { window[k] = v; });

@@ -3,7 +3,7 @@ import { showSheet, closeSheet, showToast, esc, showConfirmDialog } from './ui.j
 import { saveData } from './storage.js';
 import { STITCH_LIB, STITCHES, SM, extractStitches, resolveColor } from '../stitches.js';
 import { updateVoiceButton } from './voice.js';
-import { getNextStitchSid } from './highlight.js';
+import { getNextStitchSid, renderHighlightReel, expandInstructionFull } from './highlight.js';
 
 export function getUnitLabel(proj) {
   const p = proj || getProj(state.curProjId);
@@ -149,6 +149,7 @@ export function saveRoundInstruction(roundId) {
       showToast('图解校准成功 ✓');
     }
     renderDynamicPalette(proj);
+    renderHighlightReel(proj);
   }
 }
 
@@ -244,6 +245,15 @@ export function pushStitch(sid) {
     const el = document.getElementById("round-" + r.id);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
   }
+  renderHighlightReel(proj);
+  const bar = document.getElementById('bottom-bar');
+  if (bar && state.highlightMode) {
+    let bhtml = renderDynamicPalette(proj);
+    bhtml += renderFilterToggle();
+    bhtml += renderBarRow();
+    bar.innerHTML = bhtml;
+    updateVoiceButton();
+  }
 }
 
 export function undoStitch() {
@@ -272,6 +282,15 @@ export function undoStitch() {
     updateTaskSlideProgress(r);
   } else {
     window.renderProject();
+  }
+  renderHighlightReel(proj);
+  const bar = document.getElementById('bottom-bar');
+  if (bar && state.highlightMode) {
+    let bhtml = renderDynamicPalette(proj);
+    bhtml += renderFilterToggle();
+    bhtml += renderBarRow();
+    bar.innerHTML = bhtml;
+    updateVoiceButton();
   }
 }
 
@@ -437,6 +456,13 @@ export function doInsert(sid) {
 function calcExpectedCount(instruction) {
   if (!instruction) return null;
 
+  // 优先用智能解析器（正确处理括号嵌套）
+  try {
+    const expanded = expandInstructionFull(instruction);
+    if (expanded !== null && expanded.length > 0) return expanded.length;
+  } catch {}
+
+  // 回退：剥离前缀后交给旧逻辑（处理 [...]*N 方括号等语法）
   let body = instruction
     .replace(/^第[一二三四五六七八九十百零\d]+[圈行环][:：]?\s*/i, '')
     .replace(/^[Rr]\d+[:：]?\s*/, '');
@@ -764,6 +790,7 @@ export function toggleHighlightMode() {
       const barRowHtml = renderBarRow();
       bar.innerHTML = paletteHtml + toggleHtml + barRowHtml;
       updateVoiceButton();
+      renderHighlightReel(proj);
     }
   }
 }
