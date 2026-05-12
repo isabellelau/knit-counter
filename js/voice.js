@@ -1,6 +1,7 @@
 import { state, NUMBER_MAP, getProj } from './state.js';
 import { showToast } from './ui.js';
 import { refreshBottomBar } from './stitch.js';
+import { t } from './i18n.js';
 
 let _audioCtx = null;
 
@@ -95,7 +96,7 @@ export function initRecognition() {
       state.recognition = null;
       setVoicePulse(false);
       updateVoiceButton();
-      showToast('麦克风权限被拒绝');
+      showToast(t('voice_mic_denied'));
     }
     // 其他错误静默，onend 会自动重启
   };
@@ -140,7 +141,7 @@ export async function toggleVoiceMode() {
   // 关闭状态点击 = 开启，进入 starting
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) {
-    showToast('当前浏览器不支持语音识别');
+    showToast(t('voice_not_supported'));
     return;
   }
 
@@ -155,7 +156,7 @@ export async function toggleVoiceMode() {
   } catch(err) {
     state.flowState.voiceState = 'off';
     updateVoiceButton();
-    showToast('麦克风权限被拒绝，请在浏览器设置里允许');
+    showToast(t('voice_mic_denied_settings'));
     return;
   }
 
@@ -173,7 +174,7 @@ export async function toggleVoiceMode() {
     state.voiceMode = false;
     state.recognition = null;
     updateVoiceButton();
-    showToast('语音启动失败，请重试');
+    showToast(t('voice_start_failed'));
     return;
   }
 
@@ -202,19 +203,19 @@ export function updateVoiceButton() {
   const btn = document.getElementById('voice-mode-btn');
   if (!btn) return;
   if (state.flowState.voiceState === 'starting') {
-    btn.textContent = '🎙 启动中';
+    btn.textContent = t('voice_btn_starting');
     btn.style.background = '#F59E0B';
     btn.style.color = '#fff';
     btn.style.borderColor = '#F59E0B';
     btn.style.animation = 'btn-pulse 1s ease-in-out infinite';
   } else if (state.flowState.voiceState === 'on') {
-    btn.textContent = '🎙 语音中';
+    btn.textContent = t('voice_btn_on');
     btn.style.background = '#EF4444';
     btn.style.color = '#fff';
     btn.style.borderColor = '#EF4444';
     btn.style.animation = 'btn-pulse 1.8s ease-in-out infinite';
   } else {
-    btn.textContent = '🎙 语音';
+    btn.textContent = t('voice_btn');
     btn.style.background = '';
     btn.style.color = '';
     btn.style.borderColor = '';
@@ -224,30 +225,30 @@ export function updateVoiceButton() {
 
 export function openVoiceTutorial() {
   const content = `<div class="sheet-handle"></div>
-  <div class="sheet-title">🎙 语音模式使用说明</div>
+  <div class="sheet-title">${t('voice_tutorial_title')}</div>
   <div style="padding:14px 16px;font-size:14px;line-height:1.8;color:var(--text)">
     <div style="background:#FEF3C7;border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:#92400E;line-height:1.6">
-      💡 追求快速记录针数的用户优先推荐手动模式。Web 端语音识别存在不可避免的延迟，适合对节奏要求不高的场景。
+      ${t('voice_tutorial_warning')}
     </div>
     <div style="display:flex;flex-direction:column;gap:12px">
       <div>
-        <div style="font-weight:700;margin-bottom:4px">① 开启语音模式</div>
-        <div style="color:var(--muted);font-size:13px">点击底部"🎙 语音"按钮，按钮变红即为开启。首次使用需要允许麦克风权限。</div>
+        <div style="font-weight:700;margin-bottom:4px">${t('voice_tutorial_step1_title')}</div>
+        <div style="color:var(--muted);font-size:13px">${t('voice_tutorial_step1_body')}</div>
       </div>
       <div>
-        <div style="font-weight:700;margin-bottom:4px">② 说数字添加针法</div>
-        <div style="color:var(--muted);font-size:13px">说"一"到"九"，对应底部针法按钮的顺序（从左到右）。开启语音模式后按钮上会显示对应数字。</div>
+        <div style="font-weight:700;margin-bottom:4px">${t('voice_tutorial_step2_title')}</div>
+        <div style="color:var(--muted);font-size:13px">${t('voice_tutorial_step2_body')}</div>
       </div>
       <div>
-        <div style="font-weight:700;margin-bottom:4px">③ 说"撤销"删除上一针</div>
-        <div style="color:var(--muted);font-size:13px">识别到"撤销""撤回""取消"均可触发撤销。</div>
+        <div style="font-weight:700;margin-bottom:4px">${t('voice_tutorial_step3_title')}</div>
+        <div style="color:var(--muted);font-size:13px">${t('voice_tutorial_step3_body')}</div>
       </div>
       <div>
-        <div style="font-weight:700;margin-bottom:4px">④ 音效反馈（推荐打开）</div>
-        <div style="color:var(--muted);font-size:13px">可在设置里开启"语音模式音效"，每针成功添加时播放短促提示音。</div>
+        <div style="font-weight:700;margin-bottom:4px">${t('voice_tutorial_step4_title')}</div>
+        <div style="color:var(--muted);font-size:13px">${t('voice_tutorial_step4_body')}</div>
       </div>
     </div>
   </div>
-  <button class="sheet-cancel" onclick="closeSheet()">知道了</button>`;
+  <button class="sheet-cancel" onclick="closeSheet()">${t('ok')}</button>`;
   window.showSheet(content);
 }

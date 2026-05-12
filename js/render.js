@@ -7,6 +7,7 @@ import { renderTaskSlide, refreshBottomBar,
 import { setPageView } from './main.js';
 import { renderHighlightReel } from './highlight.js';
 import { getProjImage } from './image.js';
+import { t, term } from './i18n.js';
 
 const COVER_COLORS = [
   '#EAD8DA', '#E6D7CF', '#D8CFC7', '#D8D0DA', '#D3D9D1'
@@ -31,7 +32,7 @@ export async function renderHome() {
 
     if (navBack)    navBack.classList.remove('visible');
     if (navBar)     navBar.classList.remove('hidden');
-    if (navSmall)   { navSmall.textContent = '织影'; navSmall.classList.remove('visible'); navSmall.onclick = null; }
+    if (navSmall)   { navSmall.textContent = t('app_name'); navSmall.classList.remove('visible'); navSmall.onclick = null; }
     if (navActions) navActions.innerHTML = '';
 
     document.getElementById("tab-nav")?.style.setProperty("display", "flex");
@@ -48,21 +49,21 @@ export async function renderHome() {
     if (largeTitleWrap) {
       largeTitleWrap.style.display = '';
       const moti = todayCount === 0
-        ? `<div class="stats-card-moti">每一点积累都会被看见</div>`
+        ? `<div class="stats-card-moti">${t('home_empty_moti')}</div>`
         : '';
       largeTitleWrap.innerHTML = `
         <div class="stats-card">
-          <div class="stats-card-appname">织影</div>
-          <div class="stats-card-label">今日已钩</div>
+          <div class="stats-card-appname">${t('app_name')}</div>
+          <div class="stats-card-label">${t('home_today_label')}</div>
           <div class="stats-today-number">${todayCount.toLocaleString()}</div>
-          <div class="stats-unit">针</div>
+          <div class="stats-unit">${term('stitches')}</div>
           ${moti}
           <div class="stats-card-row">
-            <span class="stats-card-stat"><strong>${totalNeedles.toLocaleString()}</strong><span> 针</span></span>
+            <span class="stats-card-stat">${t('home_total_stitches').replace('{count}', `<strong>${totalNeedles.toLocaleString()}</strong>`)}</span>
             <span class="stats-card-sep"></span>
-            <span class="stats-card-stat"><strong>${totalProjs}</strong><span> 项</span></span>
+            <span class="stats-card-stat">${t('home_total_projects').replace('{count}', `<strong>${totalProjs}</strong>`)}</span>
             <span class="stats-card-sep"></span>
-            <span class="stats-card-stat"><strong>${streak}</strong><span> 天</span></span>
+            <span class="stats-card-stat">${t('home_streak_days').replace('{count}', `<strong>${streak}</strong>`)}</span>
           </div>
         </div>
       `;
@@ -82,7 +83,7 @@ export async function renderHome() {
 
     html += `<div class="proj-list">`;
     if (activeProjs.length === 0 && archivedProjs.length === 0) {
-      html += `<div style="text-align:center;color:var(--muted);font-size:14px;padding:40px 16px">还没有项目，点击下方创建第一个 🌸</div>`;
+      html += `<div style="text-align:center;color:var(--muted);font-size:14px;padding:40px 16px">${t('home_empty')}</div>`;
     }
     activeProjs.forEach(p => {
       const allRounds = (p.parts || []).reduce((s, pt) => s + (pt.rounds?.length || 0), 0);
@@ -101,13 +102,13 @@ export async function renderHome() {
       <div class="proj-info">
         <div class="proj-name">${p.name}</div>
         <div class="proj-meta">
-          ${(p.parts||[]).length} 部件 ·
-          ${allRounds} 圈 ·
-          ${allNeedles} 针
+          ${(p.parts||[]).length} ${term('part')} ·
+          ${allRounds} ${term('round')} ·
+          ${allNeedles} ${term('stitches')}
         </div>
       </div>
       <button class="proj-more" onclick="toggleProjMenu('${p.id}', event)"
-              aria-label="更多操作">···</button>
+              aria-label="${t('more_actions')}">···</button>
     </div>`;
     });
     html += `</div>`;
@@ -115,7 +116,7 @@ export async function renderHome() {
     // 已归档项目
     if (archivedProjs.length > 0) {
       html += `<div style="padding:16px 12px 4px">
-      <div class="home-heading" style="margin-bottom:8px;opacity:.7">📦 已归档 (${archivedProjs.length})</div>
+      <div class="home-heading" style="margin-bottom:8px;opacity:.7">${t('home_archived_section')} (${archivedProjs.length})</div>
     </div>`;
       html += `<div class="proj-list">`;
       archivedProjs.forEach(p => {
@@ -135,13 +136,13 @@ export async function renderHome() {
       <div class="proj-info">
         <div class="proj-name">${p.name}</div>
         <div class="proj-meta">
-          ${(p.parts||[]).length} 部件 ·
-          ${allRounds} 圈 ·
-          ${allNeedles} 针
+          ${(p.parts||[]).length} ${term('part')} ·
+          ${allRounds} ${term('round')} ·
+          ${allNeedles} ${term('stitches')}
         </div>
       </div>
       <button class="proj-more" onclick="toggleProjMenu('${p.id}', event)"
-              aria-label="更多操作">···</button>
+              aria-label="${t('more_actions')}">···</button>
     </div>`;
       });
       html += `</div>`;
@@ -150,7 +151,7 @@ export async function renderHome() {
     html += `
     <div class="home-footer">
       <button class="home-new-btn" onclick="showNewProjectDialog()">
-        ＋ 新建项目
+        ${t('home_new_project_btn')}
       </button>
     </div>`;
 
@@ -186,7 +187,7 @@ export function renderProject() {
     navSmall.classList.add('visible');
     navSmall.onclick = () => {
       if (!proj) return;
-      document.getElementById('dlg-title').textContent = '重命名项目';
+      document.getElementById('dlg-title').textContent = t('rename_project');
       document.getElementById('dlg-input').value = proj.name;
       document.getElementById('dlg-input').style.display = '';
       document.getElementById('dlg-msg').style.display = 'none';
@@ -218,10 +219,10 @@ export function renderProject() {
 
   if (navActions) {
     navActions.innerHTML = `
-      <button class="nav-btn nav-toggle-mode" onclick="toggleRowTerms()" aria-label="切换圈行">
+      <button class="nav-btn nav-toggle-mode" onclick="toggleRowTerms()" aria-label="${t('toggle_row_terms')}">
         <span class="toggle-mode-dot">◉</span> <span class="toggle-mode-label">${unit}</span>
       </button>
-      <button class="nav-btn" onclick="openSettings()" aria-label="设置">⚙️</button>
+      <button class="nav-btn" onclick="openSettings()" aria-label="${t('settings')}">⚙️</button>
     `;
   }
 
@@ -248,11 +249,11 @@ export function renderProject() {
         onfocus="this.setSelectionRange(this.value.length, this.value.length)"
         onblur="partNameBlur(this, '${pt.id}')"
         onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">
-      <span class="part-tab-edit-icon" onclick="handleEditBtnClick(event, '${pt.id}', this)" style="font-size:11px;cursor:pointer;opacity:.6;margin-left:2px" title="${isEditing ? '完成编辑' : '编辑名称'}">${isEditing ? '✔' : '✎'}</span>
-      ${(proj.parts||[]).length > 1 ? `<span class="part-tab-del" onclick="handleDeleteBtnClick(event, '${pt.id}')" title="删除部件">×</span>` : ''}
+      <span class="part-tab-edit-icon" onclick="handleEditBtnClick(event, '${pt.id}', this)" style="font-size:11px;cursor:pointer;opacity:.6;margin-left:2px" title="${isEditing ? t('finish_edit_name') : t('edit_part_name')}">${isEditing ? '✔' : '✎'}</span>
+      ${(proj.parts||[]).length > 1 ? `<span class="part-tab-del" onclick="handleDeleteBtnClick(event, '${pt.id}')" title="${t('delete_part')}">×</span>` : ''}
     </button>`;
   });
-  html += `<button class="part-tab part-tab-add" onclick="addPart()" title="新增部件">＋</button>
+  html += `<button class="part-tab part-tab-add" onclick="addPart()" title="${t('add_part')}">＋</button>
       </div></div>`;
 
   html += `<div class="sticky-wrap">`;
@@ -270,20 +271,20 @@ export function renderProject() {
 
     html += `<div class="round-card" id="round-${r.id}">
     <div class="round-hdr" onclick="toggleRound('${r.id}')">
-      <div class="round-badge${isActive ? " active" : ""}" onclick="event.stopPropagation();setActiveRound(null,'${r.id}')" style="cursor:pointer" title="点击设为当前${unit}">${r.isTextCard ? "文" : (r.roundNum === 0 ? "起" : (r.roundNum != null ? r.roundNum : i + 1))}</div>
+      <div class="round-badge${isActive ? " active" : ""}" onclick="event.stopPropagation();setActiveRound(null,'${r.id}')" style="cursor:pointer" title="${t('set_as_current').replace('{unit}', unit)}">${r.isTextCard ? "文" : (r.roundNum === 0 ? "起" : (r.roundNum != null ? r.roundNum : i + 1))}</div>
       <div class="round-info">
-        <div class="round-label">${r.isTextCard ? (r.instruction || "备注") : (r.roundNum === 0 ? "起针" : `第 ${r.roundNum != null ? r.roundNum : i + 1} ${unit}`)}${isActive ? " <span style='font-size:11px;font-weight:var(--weight-semibold);background:var(--accent);color:#fff;border-radius:6px;padding:2px 7px;margin-left:6px'>编辑中</span>" : ""}</div>
-        <div class="round-count">${total} 针 ${dots}</div>
+        <div class="round-label">${r.isTextCard ? (r.instruction || t('note')) : (r.roundNum === 0 ? term('cast_on') : t('round_label').replace('{n}', r.roundNum != null ? r.roundNum : i + 1).replace('{unit}', unit))}${isActive ? ` <span style='font-size:11px;font-weight:var(--weight-semibold);background:var(--accent);color:#fff;border-radius:6px;padding:2px 7px;margin-left:6px'>${term('active')}</span>` : ""}</div>
+        <div class="round-count">${t('round_count_label').replace('{total}', total)} ${dots}</div>
       </div>
-      <button class="round-edit-btn" onclick="event.stopPropagation();openInstructionEdit('${r.id}')" title="编辑图解" style="font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer;padding:2px 6px;white-space:nowrap"><span style="font-size:13px;color:var(--muted);letter-spacing:1px;">🪡</span></button>
-      <button class="round-del" onclick="event.stopPropagation();deleteRound('${r.id}')" title="删除这一${unit}">×</button>
+      <button class="round-edit-btn" onclick="event.stopPropagation();openInstructionEdit('${r.id}')" title="${t('edit_instruction')}" style="font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer;padding:2px 6px;white-space:nowrap"><span style="font-size:13px;color:var(--muted);letter-spacing:1px;">🪡</span></button>
+      <button class="round-del" onclick="event.stopPropagation();deleteRound('${r.id}')" title="${t('delete_round').replace('{unit}', unit)}">×</button>
       <span class="round-chev${exp ? " open" : ""}">›</span>
     </div>
     <div class="round-body${exp ? " open" : ""}">`;
 
     html += `<div class="seq-wrap">`;
     if (r.seq.length === 0) {
-      html += `<span class="seq-empty">暂无记录，点击下方针法按钮添加</span>`;
+      html += `<span class="seq-empty">${t('empty_round_hint')}</span>`;
     } else {
       r.seq.forEach((sid, idx) => {
         html += renderSpillHTML(sid, idx, r, proj);

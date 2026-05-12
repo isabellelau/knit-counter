@@ -7,7 +7,7 @@
   <title>织影</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#C07A45">
-  <meta name="version" content="1.97">
+  <meta name="version" content="1.98">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -98,6 +98,7 @@
       <button class="onboard-btn" id="onboard-btn" onclick="onboardNext()">下一步</button>
     </div>
   </div>
+  <script>if(localStorage.getItem('knit_onboarded_v1'))document.getElementById('onboarding').classList.add('done');</script>
 
   <!-- Header -->
   <header class="nav-bar" id="nav-bar">
@@ -195,7 +196,7 @@
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
               console.log('[SW] 新版本已安装，请刷新页面');
               if (window.showToast) {
-                showToast('新版本已就绪，刷新后生效', { label: '刷新', onClick: () => location.reload() }, 8000);
+                showToast(t('sw_update_ready'), { label: t('sw_update_refresh'), onClick: () => location.reload() }, 8000);
               }
             }
           });
@@ -232,7 +233,7 @@
         safe-area: env(safe-area-inset-top);
       `;
       el.innerHTML = `
-        <span>✨ 发现新版本</span>
+        <span>${t('sw_update_found')}</span>
         <button onclick="location.reload()" style="
           background: #fff;
           color: var(--accent);
@@ -243,7 +244,7 @@
           font-weight: 700;
           cursor: pointer;
           font-family: inherit;
-        ">立即刷新</button>
+        ">${t('sw_update_refresh')}</button>
       `;
       document.body.prepend(el);
     }

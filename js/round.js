@@ -1,6 +1,7 @@
 import { state, uid, getProj, getActivePart } from './state.js';
 import { showConfirmDialog, showToast } from './ui.js';
 import { saveData } from './storage.js';
+import { t, term } from './i18n.js';
 import { normalizeRoundNums } from './pattern.js';
 import { getUnitLabel, refreshBottomBar, renderFilterToggle, renderTaskSlide, updateHighlightButton, renderImmersive } from './stitch.js';
 import { getNextStitchSid, renderHighlightReel } from './highlight.js';
@@ -50,7 +51,7 @@ export function deleteRound(roundId) {
   if (!ownerPart) return;
 
   const unit = getUnitLabel(proj);
-  showConfirmDialog(`确定要删除这一${unit}吗？`, (ok) => {
+  showConfirmDialog(t('delete_round_confirm').replace('{unit}', unit), (ok) => {
     if (!ok) return;
 
     const idx = ownerPart.rounds.findIndex(r => r.id === roundId);
@@ -83,8 +84,8 @@ export function deleteRound(roundId) {
     window.renderProject();
 
     if (state._lastDeletedRound) {
-      showToast(`已删除一${unit}`, {
-        label: '撤销',
+      showToast(t('deleted_round').replace('{unit}', unit), {
+        label: t('undo'),
         onClick: undoDeleteRound
       }, 5000);
     }
@@ -111,7 +112,7 @@ export function undoDeleteRound() {
   saveData();
   window.renderProject();
 
-  showToast('已恢复');
+  showToast(t('restored'));
 }
 
 export function setActiveRound(proj, rid) {
@@ -139,10 +140,10 @@ export function setActiveRound(proj, rid) {
   function roundLabelHtml(r, idx, isActive) {
     const unit = getUnitLabel(proj);
     const base = r.isTextCard
-      ? (r.instruction || "备注")
-      : (r.roundNum === 0 ? "起针" : `第 ${r.roundNum != null ? r.roundNum : idx + 1} ${unit}`);
+      ? (r.instruction || t('note'))
+      : (r.roundNum === 0 ? term('cast_on') : t('round_label').replace('{n}', r.roundNum != null ? r.roundNum : idx + 1).replace('{unit}', unit));
     return isActive
-      ? base + " <span style='font-size:10px;background:var(--accent);color:#fff;border-radius:4px;padding:1px 5px;margin-left:4px'>编辑中</span>"
+      ? base + ` <span style='font-size:10px;background:var(--accent);color:#fff;border-radius:4px;padding:1px 5px;margin-left:4px'>${term('active')}</span>`
       : base;
   }
 
@@ -195,7 +196,7 @@ export function setActiveRound(proj, rid) {
   if (state.highlightMode) {
     const result = getNextStitchSid(proj);
     if (result.status === 'parse_error') {
-      showToast('本圈图解需要校准 · 点击🪡编辑', null, 3000);
+      showToast(t('round_need_calibration'), null, 3000);
     }
   }
   renderHighlightReel(proj);

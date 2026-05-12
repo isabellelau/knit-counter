@@ -1,4 +1,5 @@
 import { state } from './state.js';
+import { t } from './i18n.js';
 
 export function esc(s) {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -90,31 +91,31 @@ export function closeSheet() {
 
 export function showEntryChoiceSheet() {
   let html = `<div class="sheet-handle"></div>
-  <div class="sheet-title">选择创建方式</div>
+  <div class="sheet-title">${t('entry_choice_title')}</div>
   <div style="padding:14px 16px;display:flex;flex-direction:column;gap:12px">
     <div onclick="startImportFlow()" style="background:var(--card);border:2px solid var(--accent);border-radius:14px;padding:18px 16px;cursor:pointer;display:flex;align-items:center;gap:14px">
       <div style="width:48px;height:48px;border-radius:12px;background:#FEF3C7;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">📋</div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:3px">粘贴图解（自动配置）</div>
-        <div style="font-size:12px;color:var(--muted)">自动识别针法，快速开始钩织</div>
+        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:3px">${t('entry_paste_auto')}</div>
+        <div style="font-size:12px;color:var(--muted)">${t('entry_paste_auto_sub')}</div>
       </div>
       <div style="color:var(--accent);font-size:20px;flex-shrink:0">→</div>
     </div>
     <div onclick="startManualFlow()" style="background:var(--card);border:2px solid var(--border);border-radius:14px;padding:18px 16px;cursor:pointer;display:flex;align-items:center;gap:14px">
       <div style="width:48px;height:48px;border-radius:12px;background:#EDE9FE;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">✋</div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:3px">手动创建（自定义针法）</div>
-        <div style="font-size:12px;color:var(--muted)">自行选择需要的针法组合</div>
+        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:3px">${t('entry_manual')}</div>
+        <div style="font-size:12px;color:var(--muted)">${t('entry_manual_sub')}</div>
       </div>
       <div style="color:var(--muted);font-size:20px;flex-shrink:0">→</div>
     </div>
   </div>
-  <button class="sheet-cancel" onclick="dismissEntryChoice()">跳过（使用全部针法）</button>`;
+  <button class="sheet-cancel" onclick="dismissEntryChoice()">${t('entry_skip')}</button>`;
   showSheet(html);
 }
 
 export function showConfirmDialog(message, onConfirm) {
-  document.getElementById("dlg-title").textContent = "确认操作";
+  document.getElementById("dlg-title").textContent = t('dialog_confirm_title');
   document.getElementById("dlg-msg").textContent = message;
   document.getElementById("dlg-msg").style.display = "";
   document.getElementById("dlg-input").style.display = "none";

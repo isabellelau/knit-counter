@@ -39,6 +39,7 @@ import {
 import { pickCover, setProjectCover, removeProjectCover } from './image.js';
 import { expandInstruction, getNextStitchSid, renderHighlightReel } from './highlight.js';
 import { renderHome, renderProject } from './render.js';
+import { t, term, setLang, getLang, SUPPORTED_LANGS } from './i18n.js';
 
 let _onboardStep = 0;
 const ONBOARD_KEY = 'knit_onboarded_v1';
@@ -194,9 +195,54 @@ const _globals = {
   pickCover, setProjectCover, removeProjectCover,
   expandInstruction, getNextStitchSid, renderHighlightReel,
   setPageView,
+  t, term, setLang, getLang,
   onboardNext
 };
 Object.entries(_globals).forEach(([k, v]) => { window[k] = v; });
+
+function initStaticText() {
+  // Page title
+  document.title = t('app_name');
+  // Nav bar
+  const navBack = document.querySelector('.nav-back-label');
+  if (navBack) navBack.textContent = t('nav_back');
+  // Tab nav
+  const tabProj = document.querySelector('#tab-projects .tab-label');
+  if (tabProj) tabProj.textContent = t('tab_projects');
+  const tabSet = document.querySelector('#tab-settings .tab-label');
+  if (tabSet) tabSet.textContent = t('tab_settings');
+  // Loading
+  const loadingText = document.getElementById('loading-text');
+  if (loadingText) loadingText.textContent = t('loading');
+  // Dialog
+  const dlgTitle = document.getElementById('dlg-title');
+  if (dlgTitle) dlgTitle.textContent = t('new_project');
+  const dlgInput = document.getElementById('dlg-input');
+  if (dlgInput) dlgInput.placeholder = t('project_name_placeholder');
+  const dlgBtns = document.querySelectorAll('#dialog .dialog-btn');
+  if (dlgBtns[0]) dlgBtns[0].textContent = t('cancel');
+  if (dlgBtns[1]) dlgBtns[1].textContent = t('confirm');
+  // Onboarding
+  const obTitle1 = document.querySelector('.onboard-slide:nth-child(1) .onboard-title');
+  if (obTitle1) obTitle1.textContent = t('onboard_step1_title');
+  const obDesc1 = document.querySelector('.onboard-slide:nth-child(1) .onboard-desc');
+  if (obDesc1) obDesc1.textContent = t('onboard_step1_desc');
+  const obMockCount = document.querySelector('.onboard-mock-count');
+  if (obMockCount) obMockCount.textContent = t('onboard_step2_label');
+  const obTitle2 = document.querySelector('.onboard-slide:nth-child(2) .onboard-title');
+  if (obTitle2) obTitle2.textContent = t('onboard_step2_title');
+  const obDesc2 = document.querySelector('.onboard-slide:nth-child(2) .onboard-desc');
+  if (obDesc2) obDesc2.textContent = t('onboard_step2_desc');
+  const obAppName = document.querySelector('.onboard-app-name');
+  if (obAppName) obAppName.textContent = t('app_name');
+  const obTitle3 = document.querySelector('.onboard-slide:nth-child(3) .onboard-title');
+  if (obTitle3) obTitle3.textContent = t('onboard_step3_title');
+  const obDesc3 = document.querySelector('.onboard-slide:nth-child(3) .onboard-desc');
+  if (obDesc3) obDesc3.textContent = t('onboard_step3_desc');
+  const obBtn = document.getElementById('onboard-btn');
+  if (obBtn) obBtn.textContent = t('onboard_next');
+}
+initStaticText();
 
 
 document.getElementById("tab-nav")?.style.setProperty("display", "flex");
@@ -239,7 +285,7 @@ function onboardNext() {
 
   if (_onboardStep === total - 1) {
     const btn = document.getElementById('onboard-btn');
-    if (btn) btn.textContent = '开始使用';
+    if (btn) btn.textContent = t('onboard_start');
   }
 }
 

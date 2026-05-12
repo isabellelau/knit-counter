@@ -1,41 +1,43 @@
+import { term } from './js/i18n.js';
+
 // ═══════════════════════════════════════════
 //  全能针法库（补全别名 aliases 以修复 forEach 报错）
 // ═══════════════════════════════════════════
 export const STITCH_LIB = {
   // --- 短针类 (Basic & Variants) ---
-  X: { id: "X", label: "短针", abbr: "X", description: "基础短针", category: "basic", aliases: ["X", "SC", "短针"] },
-  V: { id: "V", label: "短针加针", abbr: "V", description: "1个针目里钩2个短针", category: "increase", aliases: ["V", "INC", "短针加针", "加针"] },
-  A: { id: "A", label: "短针减针", abbr: "A", description: "2个针目合并为1个短针", category: "decrease", aliases: ["A", "DEC", "短针减针", "减针"] },
-  W: { id: "W", label: "短针加加针", abbr: "W", description: "1个针目里钩3个短针", category: "increase", aliases: ["W", "短针加加针"] },
-  M: { id: "M", label: "短针减减针", abbr: "M", description: "3个针目合并为1个短针", category: "decrease", aliases: ["M", "短针减减针"] },
+  X: { id: "X", label: term('X'), abbr: "X", description: "基础短针", category: "basic", aliases: ["X", "SC", "短针"] },
+  V: { id: "V", label: term('V'), abbr: "V", description: "1个针目里钩2个短针", category: "increase", aliases: ["V", "INC", "短针加针", "加针"] },
+  A: { id: "A", label: term('A'), abbr: "A", description: "2个针目合并为1个短针", category: "decrease", aliases: ["A", "DEC", "短针减针", "减针"] },
+  W: { id: "W", label: term('W'), abbr: "W", description: "1个针目里钩3个短针", category: "increase", aliases: ["W", "短针加加针"] },
+  M: { id: "M", label: term('M'), abbr: "M", description: "3个针目合并为1个短针", category: "decrease", aliases: ["M", "短针减减针"] },
 
   // --- 中长针类 (Half Double Crochet) ---
-  T: { id: "T", label: "中长针", abbr: "T", description: "基础中长针", category: "basic", aliases: ["T", "HDC", "中长针"] },
-  TV: { id: "TV", label: "中长针加针", abbr: "TV", description: "1个针目里钩2个中长针", category: "increase", aliases: ["TV", "HDCINC", "中长针加针"] },
-  TA: { id: "TA", label: "中长针减针", abbr: "TA", description: "2个针目合并为1个中长针", category: "decrease", aliases: ["TA", "HDCDEC", "中长针减针"] },
-  TW: { id: "TW", label: "中长针加加针", abbr: "TW", description: "1个针目里钩3个中长针", category: "increase", aliases: ["TW", "中长针加加针"] },
-  TM: { id: "TM", label: "中长针减减针", abbr: "TM", description: "3个针目合并为1个中长针", category: "decrease", aliases: ["TM", "中长针减减针"] },
+  T: { id: "T", label: term('T'), abbr: "T", description: "基础中长针", category: "basic", aliases: ["T", "HDC", "中长针"] },
+  TV: { id: "TV", label: term('TV'), abbr: "TV", description: "1个针目里钩2个中长针", category: "increase", aliases: ["TV", "HDCINC", "中长针加针"] },
+  TA: { id: "TA", label: term('TA'), abbr: "TA", description: "2个针目合并为1个中长针", category: "decrease", aliases: ["TA", "HDCDEC", "中长针减针"] },
+  TW: { id: "TW", label: term('TW'), abbr: "TW", description: "1个针目里钩3个中长针", category: "increase", aliases: ["TW", "中长针加加针"] },
+  TM: { id: "TM", label: term('TM'), abbr: "TM", description: "3个针目合并为1个中长针", category: "decrease", aliases: ["TM", "中长针减减针"] },
 
   // --- 长针类 (Double Crochet) ---
-  F: { id: "F", label: "长针", abbr: "F", description: "基础长针", category: "basic", aliases: ["F", "DC", "长针"] },
-  FV: { id: "FV", label: "长针加针", abbr: "FV", description: "1个针目里钩2个长针", category: "increase", aliases: ["FV", "DCINC", "长针加针"] },
-  FA: { id: "FA", label: "长针减针", abbr: "FA", description: "2个针目合并为1个长针", category: "decrease", aliases: ["FA", "DCDEC", "长针减针"] },
-  FW: { id: "FW", label: "长针加加针", abbr: "FW", description: "1个针目里钩3个长针", category: "increase", aliases: ["FW", "长针加加针"] },
-  FM: { id: "FM", label: "长针减减针", abbr: "FM", description: "3个针目合并为1个长针", category: "decrease", aliases: ["FM", "长针减减针"] },
+  F: { id: "F", label: term('F'), abbr: "F", description: "基础长针", category: "basic", aliases: ["F", "DC", "长针"] },
+  FV: { id: "FV", label: term('FV'), abbr: "FV", description: "1个针目里钩2个长针", category: "increase", aliases: ["FV", "DCINC", "长针加针"] },
+  FA: { id: "FA", label: term('FA'), abbr: "FA", description: "2个针目合并为1个长针", category: "decrease", aliases: ["FA", "DCDEC", "长针减针"] },
+  FW: { id: "FW", label: term('FW'), abbr: "FW", description: "1个针目里钩3个长针", category: "increase", aliases: ["FW", "长针加加针"] },
+  FM: { id: "FM", label: term('FM'), abbr: "FM", description: "3个针目合并为1个长针", category: "decrease", aliases: ["FM", "长针减减针"] },
 
   // --- 长长针类 (Treble Crochet) ---
-  E: { id: "E", label: "长长针", abbr: "E", description: "基础长长针", category: "basic", aliases: ["E", "TR", "长长针"] },
-  EV: { id: "EV", label: "长长针加针", abbr: "EV", description: "1个针目里钩2个长长针", category: "increase", aliases: ["EV", "TRINC", "长长针加针"] },
-  EA: { id: "EA", label: "长长针减针", abbr: "EA", description: "2个针目合并为1个长长针", category: "decrease", aliases: ["EA", "TRDEC", "长长针减针"] },
+  E: { id: "E", label: term('E'), abbr: "E", description: "基础长长针", category: "basic", aliases: ["E", "TR", "长长针"] },
+  EV: { id: "EV", label: term('EV'), abbr: "EV", description: "1个针目里钩2个长长针", category: "increase", aliases: ["EV", "TRINC", "长长针加针"] },
+  EA: { id: "EA", label: term('EA'), abbr: "EA", description: "2个针目合并为1个长长针", category: "decrease", aliases: ["EA", "TRDEC", "长长针减针"] },
 
   // --- 基础功能 (Utility) ---
-  CH: { id: "CH", label: "锁针/辫子针", abbr: "CH", description: "基础锁针", category: "basic", aliases: ["CH", "锁针", "辫子针"] },
-  SL: { id: "SL", label: "引拔针", abbr: "SL", description: "引拔连接", category: "basic", aliases: ["SL", "引拔", "引拔针"] },
-  SK: { id: "SK", label: "空针", abbr: "SK", description: "跳过不钩", category: "basic", aliases: ["SK", "空针", "SKIP"] },
+  CH: { id: "CH", label: term('CH'), abbr: "CH", description: "基础锁针", category: "basic", aliases: ["CH", "锁针", "辫子针"] },
+  SL: { id: "SL", label: term('SL'), abbr: "SL", description: "引拔连接", category: "basic", aliases: ["SL", "引拔", "引拔针"] },
+  SK: { id: "SK", label: term('SK'), abbr: "SK", description: "跳过不钩", category: "basic", aliases: ["SK", "空针", "SKIP"] },
 
   // --- 特殊/针目构造 (Specialty) ---
-  G: { id: "G", label: "爆米花针", abbr: "G", description: "5针长针的爆米花", category: "special", aliases: ["G", "爆米花针"] },
-  Q: { id: "Q", label: "枣形针", abbr: "Q", description: "3针中长针的未完成针", category: "special", aliases: ["Q", "枣形针", "枣针"] },
+  G: { id: "G", label: term('G'), abbr: "G", description: "5针长针的爆米花", category: "special", aliases: ["G", "爆米花针"] },
+  Q: { id: "Q", label: term('Q'), abbr: "Q", description: "3针中长针的未完成针", category: "special", aliases: ["Q", "枣形针", "枣针"] },
 };
 
 // 旧系统 id → 新缩写 id（数据迁移专用）
@@ -130,7 +132,7 @@ export function parsePattern(text) {
         results.push({
           type: "round",
           roundNum: 0,
-          instruction: `起针: ${raw}`,
+          instruction: `${term('cast_on')}: ${raw}`,
           seq,
           raw
         });

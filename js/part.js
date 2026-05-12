@@ -1,6 +1,7 @@
 import { state, uid, getProj, getActivePart } from './state.js';
 import { showConfirmDialog } from './ui.js';
 import { saveData } from './storage.js';
+import { t } from './i18n.js';
 
 export function addPart() {
   const proj = getProj(state.curProjId);
@@ -9,7 +10,7 @@ export function addPart() {
   const r = { id: uid(), roundNum: 0, instruction: '', seq: [], isTextCard: false };
   const part = {
     id: uid(),
-    title: `部件 ${(proj.parts || []).length + 1}`,
+    title: t('part_default_name').replace('{n}', (proj.parts || []).length + 1),
     rawPattern: '',
     rounds: [r],
     activeRoundId: r.id,
@@ -78,7 +79,7 @@ export function deletePart(partId) {
   const proj = getProj(state.curProjId);
   if (!proj) return;
   if (!proj.parts || proj.parts.length <= 1) return;
-  showConfirmDialog("确定删除这个部件及其中所有记录？此操作不可撤销。", (ok) => {
+  showConfirmDialog(t('delete_part_confirm'), (ok) => {
     if (!ok) return;
     proj.parts = proj.parts.filter(pt => pt.id !== partId);
     if (proj.activePartId === partId) proj.activePartId = proj.parts[0].id;

@@ -5,10 +5,11 @@ import { STITCH_LIB, STITCHES, SM, extractStitches, resolveColor } from '../stit
 import { updateVoiceButton } from './voice.js';
 import { getNextStitchSid, renderHighlightReel, expandInstructionFull } from './highlight.js';
 import { setActiveRound } from './round.js';
+import { t, term } from './i18n.js';
 
 export function getUnitLabel(proj) {
   const p = proj || getProj(state.curProjId);
-  return p && p.useRowTerms ? '行' : '圈';
+  return p && p.useRowTerms ? term('row') : term('round');
 }
 
 export function toggleRowTerms() {
@@ -107,18 +108,18 @@ export function openInstructionEdit(roundId) {
   if (!r) return;
 
   const html = `<div class="sheet-handle"></div>
-<div class="sheet-title">编辑图解</div>
+<div class="sheet-title">${t('edit_instruction')}</div>
 <div style="padding:0 16px 12px">
   <textarea id="instruction-edit-area"
     style="width:100%;min-height:120px;
     border:1px solid var(--accent);border-radius:8px;
     padding:10px;font-size:14px;font-family:inherit;
     resize:vertical;box-sizing:border-box"
-    placeholder="例：R4: 10(X,V,X)">${esc(r.instruction || '')}</textarea>
+    placeholder="${esc(t('instruction_placeholder'))}">${esc(r.instruction || '')}</textarea>
 </div>
 <button class="sheet-cancel" style="background:var(--accent);color:#fff"
-  onclick="saveRoundInstruction('${roundId}')">保存</button>
-<button class="sheet-cancel" onclick="closeSheet()">取消</button>`;
+  onclick="saveRoundInstruction('${roundId}')">${t('save')}</button>
+<button class="sheet-cancel" onclick="closeSheet()">${t('cancel')}</button>`;
 
   showSheet(html);
 }
@@ -149,7 +150,7 @@ export function saveRoundInstruction(roundId) {
   if (state.highlightMode) {
     const result = getNextStitchSid(proj);
     if (result.status === 'ok' || result.status === 'round_complete') {
-      showToast('图解校准成功 ✓');
+      showToast(t('instruction_calibrated'));
     }
     renderDynamicPalette(proj);
     renderHighlightReel(proj);
@@ -184,7 +185,7 @@ export function updateRoundHeader(r, proj) {
       const c = getProjColor(sid, proj);
       return `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${c};margin-right:2px"></span>`;
     }).join("");
-    countEl.innerHTML = `${total} 针 ${dots}`;
+    countEl.innerHTML = `${total} ${term('stitches')} ${dots}`;
   }
 }
 
@@ -193,7 +194,7 @@ export function updateHeaderStats(proj) {
   const allNeedles = (proj.parts || []).reduce((s, pt) => s + (pt.rounds || []).reduce((ss, r) => ss + (r.seq?.length || 0), 0), 0);
   const largeTitleSub = document.getElementById("large-title-sub");
   const unit = getUnitLabel(proj);
-  if (largeTitleSub) largeTitleSub.textContent = `${(proj.parts||[]).length} 部件 · ${allRounds} ${unit} · ${allNeedles} 针`;
+  if (largeTitleSub) largeTitleSub.textContent = t('header_stats').replace('{parts}', (proj.parts||[]).length).replace('{rounds}', allRounds).replace('{unit}', unit).replace('{stitches}', allNeedles);
 }
 
 function updateTaskSlideProgress(r) {
@@ -231,6 +232,11 @@ export function pushStitch(sid) {
   addDailyCount(1);
   state.highlightIndex++;
 
+  if (state.immersiveMode) {
+    renderImmersive(proj);
+    return;
+  }
+
   const roundEl = document.getElementById("round-" + r.id);
   if (roundEl) {
     const seqWrap = roundEl.querySelector('.seq-wrap');
@@ -265,6 +271,11 @@ export function undoStitch() {
   addDailyCount(-1);
   state.highlightIndex = Math.max(0, state.highlightIndex - 1);
 
+  if (state.immersiveMode) {
+    renderImmersive(proj);
+    return;
+  }
+
   const roundEl = document.getElementById("round-" + r.id);
   if (roundEl) {
     const seqWrap = roundEl.querySelector('.seq-wrap');
@@ -272,7 +283,7 @@ export function undoStitch() {
       const lastSpill = seqWrap.querySelector('.spill:last-child');
       if (lastSpill) lastSpill.remove();
       if (r.seq.length === 0) {
-        seqWrap.innerHTML = '<span class="seq-empty">暂无记录，点击下方针法按钮添加</span>';
+        seqWrap.innerHTML = '<span class="seq-empty">' + t('empty_round_hint') + '</span>';
       }
     }
     updateRoundHeader(r, proj);
@@ -299,9 +310,9 @@ function openStitchSheet(roundId, idx) {
   const projLabel = resolveLabel(sid, proj);
 
   let html = `<div class="sheet-handle"></div>
-  <div class="sheet-title">第 ${idx + 1} 针 · <span style="color:${projColor};font-weight:700">${esc(projLabel)}</span></div>`;
+  <div class="sheet-title">${t('stitch_detail_title').replace('{idx}', idx + 1)} · <span style="color:${projColor};font-weight:700">${esc(projLabel)}</span></div>`;
 
-  html += `<div class="sheet-section">更改为</div>`;
+  html += `<div class="sheet-section">${t('change_to')}</div>`;
   html += `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:8px 14px">`;
   getAllStitchesForProject(proj).forEach(st => {
     if (st.id === sid) return;
@@ -309,22 +320,22 @@ function openStitchSheet(roundId, idx) {
   });
   html += `</div>`;
 
-  html += `<div class="sheet-section" style="margin-top:4px">插入针法</div>`;
+  html += `<div class="sheet-section" style="margin-top:4px">${t('insert_stitch')}</div>`;
   html += `<div class="sheet-item" onclick="startInsert('${roundId}',${idx},'before')">
     <div class="sheet-item-icon" style="background:#EFF6FF;color:#3B82F6">↑</div>
-    <div><div class="sheet-item-label">在此针前插入</div><div class="sheet-item-sub">第 ${idx + 1} 针之前</div></div>
+    <div><div class="sheet-item-label">${t('insert_before')}</div><div class="sheet-item-sub">${t('insert_before_sub').replace('{idx}', idx + 1)}</div></div>
   </div>`;
   html += `<div class="sheet-item" onclick="startInsert('${roundId}',${idx},'after')">
     <div class="sheet-item-icon" style="background:#F0FDF4;color:#22C55E">↓</div>
-    <div><div class="sheet-item-label">在此针后插入</div><div class="sheet-item-sub">第 ${idx + 1} 针之后</div></div>
+    <div><div class="sheet-item-label">${t('insert_after')}</div><div class="sheet-item-sub">${t('insert_after_sub').replace('{idx}', idx + 1)}</div></div>
   </div>`;
 
   html += `<div class="sheet-item sheet-del" onclick="deleteStitch('${roundId}',${idx})">
     <div class="sheet-item-icon" style="background:#FEF2F2;color:#EF4444">×</div>
-    <div><div class="sheet-item-label" style="color:#EF4444">删除此针</div></div>
+    <div><div class="sheet-item-label" style="color:#EF4444">${t('delete_stitch')}</div></div>
   </div>`;
 
-  html += `<button class="sheet-cancel" onclick="closeSheet()">取消</button>`;
+  html += `<button class="sheet-cancel" onclick="closeSheet()">${t('cancel')}</button>`;
   showSheet(html);
 }
 
@@ -374,7 +385,7 @@ export function deleteStitch(roundId, idx) {
       const spills = seqWrap.querySelectorAll('.spill');
       if (spills[idx]) spills[idx].remove();
       if (r.seq.length === 0) {
-        seqWrap.innerHTML = '<span class="seq-empty">暂无记录，点击下方针法按钮添加</span>';
+        seqWrap.innerHTML = '<span class="seq-empty">' + t('empty_round_hint') + '</span>';
       } else {
         reindexSpills(seqWrap, roundId);
       }
@@ -397,12 +408,12 @@ export function startInsert(roundId, idx, dir) {
   state.pendingInsert = { roundId, idx, dir };
   const proj = getProj(state.curProjId);
   let html = `<div class="sheet-handle"></div>
-  <div class="sheet-title">选择要插入的针法</div>
+  <div class="sheet-title">${t('select_stitch_to_insert')}</div>
   <div class="picker-grid">`;
   getAllStitchesForProject(proj).forEach(s => {
     html += `<button class="picker-btn" style="background:${s.color}" onclick="doInsert('${s.id}')">${esc(s.label)}</button>`;
   });
-  html += `</div><button class="sheet-cancel" onclick="closeSheet()">取消</button>`;
+  html += `</div><button class="sheet-cancel" onclick="closeSheet()">${t('cancel')}</button>`;
   showSheet(html);
 }
 
@@ -550,7 +561,7 @@ export function renderTaskSlide(proj) {
 
   if (!instruction) {
     return `<div class="task-slide" id="task-slide">
-      <span class="task-slide-empty">暂无图解，点击导入或开始记录</span>
+      <span class="task-slide-empty">${t('empty_instruction_hint')}</span>
     </div>`;
   }
 
@@ -565,9 +576,12 @@ export function renderTaskSlide(proj) {
     const pct = Math.min(done / expected, 1);
     const isOver = done > expected;
     const progressColor = isOver ? '#EF4444' : 'var(--accent)';
-    const countText = isOver
-      ? `<span style="color:#EF4444;font-weight:700">${done}</span> / <span class="exp-count" onclick="editExpectedCount(this)">${expectedDisplay}</span> 针（超出 ${done - expected}）`
-      : `<span style="color:var(--accent);font-weight:700">${done}</span> / <span class="exp-count" onclick="editExpectedCount(this)">${expectedDisplay}</span> 针`;
+    const doneSpan = `<span style="color:${isOver ? '#EF4444' : 'var(--accent)'};font-weight:700">${done}</span>`;
+    const expectedSpan = `<span class="exp-count" onclick="editExpectedCount(this)">${expectedDisplay}</span>`;
+    const baseText = isOver
+      ? t('progress_over').replace('{diff}', done - expected)
+      : t('progress_normal');
+    const countText = baseText.replace('{done}', doneSpan).replace('{expected}', expectedSpan);
 
     progressHtml = `
       <div style="margin-top:6px;width:100%">
@@ -577,7 +591,7 @@ export function renderTaskSlide(proj) {
         <div style="margin-top:3px;font-size:12px;color:var(--muted);text-align:center">${countText}</div>
       </div>`;
   } else if (done > 0) {
-    progressHtml = `<div style="margin-top:4px;font-size:12px;color:var(--muted);text-align:center">已钩 <span style="color:var(--accent);font-weight:700">${done}</span> 针</div>`;
+    progressHtml = `<div style="margin-top:4px;font-size:12px;color:var(--muted);text-align:center">${t('progress_no_expected').replace('{done}', `<span style="color:var(--accent);font-weight:700">${done}</span>`)}</div>`;
   }
 
   return `<div class="task-slide" id="task-slide">
@@ -595,25 +609,43 @@ export function editExpectedCount(el) {
   input.value = currentVal;
   input.className = 'exp-count-input';
 
+  const proj = getProj(state.curProjId);
+  const part = getActivePart(proj);
+  const activeRound = part?.rounds.find(r => r.id === part.activeRoundId);
+  const instruction = activeRound?.instruction;
+  const parsedCount = instruction ? calcExpectedCount(instruction) : null;
+
+  const wrapper = document.createElement('span');
+  wrapper.className = 'exp-count-edit-wrap';
+  wrapper.appendChild(input);
+
+  if (parsedCount != null && parsedCount > 0) {
+    const hint = document.createElement('div');
+    hint.className = 'exp-count-hint';
+    hint.textContent = t('expected_count_hint').replace('{parsed}', parsedCount);
+    wrapper.appendChild(hint);
+  }
+
   const save = () => {
     const val = input.value.trim();
     const num = val === '' ? null : parseInt(val, 10);
-    const proj = getProj(state.curProjId);
-    const part = getActivePart(proj);
-    const round = part?.rounds.find(r => r.id === part.activeRoundId);
-    if (round) {
-      round.expectedCount = (num === null || isNaN(num) || num === 0) ? null : num;
+    if (activeRound) {
+      activeRound.expectedCount = (num === null || isNaN(num) || num === 0) ? null : num;
       proj.lastModified = Date.now();
       saveData();
     }
     const slide = document.getElementById('task-slide');
     if (slide) slide.outerHTML = renderTaskSlide(proj);
+    if (state.highlightMode) {
+      const p = getProj(state.curProjId);
+      if (p) renderHighlightReel(p);
+    }
   };
 
   input.onblur = save;
   input.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); input.blur(); } };
 
-  el.replaceWith(input);
+  el.replaceWith(wrapper);
   input.focus();
   input.select();
 }
@@ -667,11 +699,11 @@ export function renderDynamicPalette(proj) {
   // ── 高亮状态栏 ──
   if (highlight && next) {
     if (next.status === 'ok') {
-      html += `<div class="palette-status-bar">第 ${next.index + 1} 针 / 共 ${next.total} 针</div>`;
+      html += `<div class="palette-status-bar">${t('highlight_status_current').replace('{n}', next.index + 1).replace('{total}', next.total)}</div>`;
     } else if (next.status === 'round_complete') {
-      html += `<div class="palette-status-bar palette-status-bar--complete">本圈已完成 ✓</div>`;
+      html += `<div class="palette-status-bar palette-status-bar--complete">${t('highlight_status_done')}</div>`;
     } else if (next.status === 'parse_error') {
-      html += `<div class="palette-status-bar palette-status-bar--error" onclick="openInstructionEdit('${part.activeRoundId || ''}')">图解需要校准，点击编辑 ›</div>`;
+      html += `<div class="palette-status-bar palette-status-bar--error" onclick="openInstructionEdit('${part.activeRoundId || ''}')">${t('highlight_status_calibrate')}</div>`;
     }
   }
 
@@ -705,8 +737,8 @@ export function renderDynamicPalette(proj) {
   // 增减按钮：高亮模式下 okl/round_complete 时禁用；沉浸模式下隐藏
   if (!state.immersiveMode) {
     const addBtnExtra = dimBtn ? 'opacity:0.3;pointer-events:none' : '';
-    html += `<button class="pal-btn" style="background:var(--bg);color:var(--accent);border:2px dashed var(--accent);font-size:18px;${addBtnExtra}" onclick="openStitchSetup('edit')" title="增减针法">
-      ＋<br><small style="opacity:.7;font-size:11px">增减</small>
+    html += `<button class="pal-btn" style="background:var(--bg);color:var(--accent);border:2px dashed var(--accent);font-size:18px;${addBtnExtra}" onclick="openStitchSetup('edit')" title="${t('add_remove_stitches_title')}">
+      ＋<br><small style="opacity:.7;font-size:11px">${t('add_remove_stitches')}</small>
     </button>`;
   }
   html += `</div>`;
@@ -725,7 +757,7 @@ export function renderFilterToggle() {
   const dotPos = state.filterByRound ? '18px' : '2px';
   const unit = getUnitLabel();
   return `<div style="display:flex;align-items:center;justify-content:flex-end;padding:2px 4px 6px;gap:6px;cursor:pointer" onclick="toggleFilterByRound()">
-    <span style="font-size:10px;color:var(--muted);user-select:none">仅显示本${unit}针法</span>
+    <span style="font-size:10px;color:var(--muted);user-select:none">${t('filter_by_round').replace('{unit}', unit)}</span>
     <span style="display:inline-block;width:34px;height:20px;border-radius:10px;background:${dotBg};position:relative;transition:background .2s;flex-shrink:0">
       <span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;left:${dotPos};transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></span>
     </span>
@@ -735,7 +767,7 @@ export function renderFilterToggle() {
 export function renderImmersiveToggle() {
   const active = state.immersiveMode;
   return `<button class="bar-btn" id="immersive-mode-btn" onclick="toggleImmersiveMode()" style="font-size:11px;padding:4px 8px;${active ? 'background:var(--accent);color:#fff;border-color:var(--accent)' : ''}">
-    ${active ? '⛶ 退出沉浸' : '⛶ 沉浸'}
+    ${active ? t('immersive_exit') : t('immersive_enter')}
   </button>`;
 }
 
@@ -749,16 +781,16 @@ export function renderToggleRow() {
 export function renderBarRow() {
   const unit = getUnitLabel();
   const hint = state.voiceMode
-    ? `<div style="text-align:center;font-size:11px;color:#EF4444;padding:2px 0 4px;opacity:.8">🎙 说数字 1-9 添加针法 · 说"撤销"删除上一针</div>`
+    ? `<div style="text-align:center;font-size:11px;color:#EF4444;padding:2px 0 4px;opacity:.8">${t('voice_hint_bar')}</div>`
     : '';
   return `${hint}<div class="bar-row">
-    <button class="bar-btn" onclick="undoStitch()">↩ 撤销</button>
-    <button class="bar-btn" onclick="openPatternPasteSheet()">📥 图解</button>
-    <button class="bar-btn" id="voice-mode-btn" onclick="toggleVoiceMode()">🎙 语音</button>
+    <button class="bar-btn" onclick="undoStitch()">${t("immersive_undo")}</button>
+    <button class="bar-btn" onclick="openPatternPasteSheet()">${t("import_pattern")}</button>
+    <button class="bar-btn" id="voice-mode-btn" onclick="toggleVoiceMode()">${t("voice_btn")}</button>
     <button class="bar-btn" id="highlight-mode-btn" onclick="toggleHighlightMode()" style="position:relative">
-      ✦ 高亮
+      ${t('highlight_btn')}
     </button>
-    <button class="bar-btn primary" onclick="addRound()">＋ 新一${unit}</button>
+    <button class="bar-btn primary" onclick="addRound()">${t('add_round_btn').replace('{unit}', unit)}</button>
   </div>`;
 }
 
@@ -784,12 +816,12 @@ export function renderImmersive(proj) {
 
   html += `<div class="round-card" id="round-${r.id}">
     <div class="round-hdr">
-      <div class="round-badge active">${r.isTextCard ? "文" : (r.roundNum === 0 ? "起" : r.roundNum)}</div>
+      <div class="round-badge active">${r.isTextCard ? t('note').charAt(0) : (r.roundNum === 0 ? term('cast_on').charAt(0) : r.roundNum)}</div>
       <div class="round-info">
-        <div class="round-label">${r.isTextCard ? (r.instruction || "备注") : (r.roundNum === 0 ? "起针" : `第 ${r.roundNum} ${unit}`)} <span style='font-size:11px;font-weight:var(--weight-semibold);background:var(--accent);color:#fff;border-radius:6px;padding:2px 7px;margin-left:6px'>编辑中</span></div>
-        <div class="round-count">${total} 针 ${dots}</div>
+        <div class="round-label">${r.isTextCard ? (r.instruction || t('note')) : (r.roundNum === 0 ? term('cast_on') : t('round_label').replace('{n}', r.roundNum).replace('{unit}', unit))} <span style='font-size:11px;font-weight:var(--weight-semibold);background:var(--accent);color:#fff;border-radius:6px;padding:2px 7px;margin-left:6px'>${term('active')}</span></div>
+        <div class="round-count">${total} ${term('stitches')} ${dots}</div>
       </div>
-      <button class="round-edit-btn" onclick="showToast('请退出沉浸模式后编辑图解')" title="编辑图解" style="font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer;padding:2px 6px;white-space:nowrap"><span style="font-size:13px;color:var(--muted);letter-spacing:1px;">🪡</span></button>
+      <button class="round-edit-btn" onclick="showToast(t('immersive_edit_blocked'))" title="${t('edit_instruction')}" style="font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer;padding:2px 6px;white-space:nowrap"><span style="font-size:13px;color:var(--muted);letter-spacing:1px;">🪡</span></button>
     </div>
   </div>`;
   html += `</div>`;
@@ -817,7 +849,7 @@ export function goNextRound() {
   if (nextRound) {
     setActiveRound(proj, nextRound.id);
   } else {
-    showToast('已经是最后一圈了，请退出沉浸模式添加新圈');
+    showToast(t('last_round_immersive_hint'));
   }
 }
 
@@ -853,7 +885,7 @@ export function toggleHighlightMode() {
 
     const result = getNextStitchSid(proj);
     if (result.status === 'parse_error') {
-      showToast('本圈图解需要校准才能启用高亮');
+      showToast(t('highlight_need_calibration'));
       openInstructionEdit(part.activeRoundId);
     }
   } else {
@@ -889,12 +921,12 @@ export function updateImmersiveButton() {
     btn.style.background = 'var(--accent)';
     btn.style.color = '#fff';
     btn.style.borderColor = 'var(--accent)';
-    btn.textContent = '⛶ 退出沉浸';
+    btn.textContent = t('immersive_exit');
   } else {
     btn.style.background = '';
     btn.style.color = '';
     btn.style.borderColor = '';
-    btn.textContent = '⛶ 沉浸';
+    btn.textContent = t('immersive_enter');
   }
 }
 
@@ -907,9 +939,9 @@ export function refreshBottomBar(proj) {
 
   if (state.immersiveMode) {
     let bhtml = `<div class="bar-row">
-      <button class="bar-btn" onclick="undoStitch()">↩ 撤销</button>
-      <button class="bar-btn primary" onclick="goNextRound()">下一圈 ›</button>
-      <button class="bar-btn" onclick="toggleImmersiveMode()">⊡ 退出</button>
+      <button class="bar-btn" onclick="undoStitch()">${t('immersive_undo')}</button>
+      <button class="bar-btn primary" onclick="goNextRound()">${t('immersive_next_round')}</button>
+      <button class="bar-btn" onclick="toggleImmersiveMode()">${t('immersive_exit_short')}</button>
     </div>`;
     bhtml += renderDynamicPalette(proj);
     bar.innerHTML = bhtml;
@@ -959,10 +991,10 @@ export function openStitchSetup(mode) {
   }
 
   const categories = {
-    basic: '基础针法',
-    increase: '加针类',
-    decrease: '减针类',
-    special: '特殊针法'
+    basic: t('category_basic'),
+    increase: t('category_increase'),
+    decrease: t('category_decrease'),
+    special: t('category_special')
   };
 
   const customByCat = { basic: [], increase: [], decrease: [], special: [] };
@@ -975,8 +1007,8 @@ export function openStitchSetup(mode) {
   }
 
   let html = `<div class="sheet-handle"></div>
-  <div class="sheet-title">选择常用针法</div>
-  <div style="font-size:10px;color:var(--muted);text-align:center;padding:0 14px 6px">点击 ✎ 可自定义名称与颜色</div>
+  <div class="sheet-title">${t('choose_stitches')}</div>
+  <div style="font-size:10px;color:var(--muted);text-align:center;padding:0 14px 6px">${t('customize_hint')}</div>
   <div style="max-height:55vh;overflow-y:auto;padding:0 14px">`;
 
   Object.entries(categories).forEach(([cat, catLabel]) => {
@@ -1002,22 +1034,22 @@ export function openStitchSetup(mode) {
         onclick="toggleSetupStitch('${s.id}')"
         data-checked="${isSel}"
         data-color="${color}"
-      >${dotMark}${esc(label)}<br><small style="display:block;line-height:1.4">${s.id}</small><small style="display:block;color:var(--accent);font-size:10px;cursor:pointer;line-height:1.2" onclick="event.stopPropagation();openStitchCustomize('${s.id}')">✎ 自定义</small></button>`;
+      >${dotMark}${esc(label)}<br><small style="display:block;line-height:1.4">${s.id}</small><small style="display:block;color:var(--accent);font-size:10px;cursor:pointer;line-height:1.2" onclick="event.stopPropagation();openStitchCustomize('${s.id}')">${t('customize_btn')}</small></button>`;
     });
     html += `</div>`;
   });
 
   html += `</div>`;
   html += `<div style="padding:10px 14px 6px;display:flex;gap:8px">
-    <button class="bar-btn" style="flex:1" id="select-all-btn" onclick="toggleSelectAllInSetup()">全选</button>
-    <button class="bar-btn" style="flex:1;color:var(--accent);border-color:var(--accent)" onclick="startImportFromSetup()">📋 导入图解</button>
+    <button class="bar-btn" style="flex:1" id="select-all-btn" onclick="toggleSelectAllInSetup()">${t('select_all')}</button>
+    <button class="bar-btn" style="flex:1;color:var(--accent);border-color:var(--accent)" onclick="startImportFromSetup()">${t('import_pattern')}</button>
   </div>`;
   html += `<div style="padding:2px 14px 6px">
-    <button class="bar-btn" style="width:100%;border-style:dashed;color:var(--accent);border-color:var(--accent)" onclick="openNewStitchForm()">＋ 新建针法</button>
+    <button class="bar-btn" style="width:100%;border-style:dashed;color:var(--accent);border-color:var(--accent)" onclick="openNewStitchForm()">${t('new_stitch')}</button>
   </div>`;
   html += `<div style="padding:6px 14px 10px;display:flex;gap:8px">
-    <button class="bar-btn" style="flex:1" onclick="closeSetupSheet()">取消</button>
-    <button class="bar-btn primary" style="flex:2" onclick="saveProjectStitches('${mode}')">${mode === 'create' ? '开始钩织' : '更新配置'}</button>
+    <button class="bar-btn" style="flex:1" onclick="closeSetupSheet()">${t('cancel')}</button>
+    <button class="bar-btn primary" style="flex:2" onclick="saveProjectStitches('${mode}')">${mode === 'create' ? t('start_knitting') : t('update_config')}</button>
   </div>`;
 
   state.flowState.setupMode = mode;
@@ -1059,30 +1091,30 @@ export function openStitchCustomize(sid) {
   const s = STITCH_LIB[sid];
 
   let html = `<div class="sheet-handle"></div>
-      <div class="sheet-title">✎ 自定义 · <span style="font-weight:700">${esc(currentLabel)}</span> <small style="opacity:.5">(${sid})</small></div>
+      <div class="sheet-title">${t('customize_btn')} · <span style="font-weight:700">${esc(currentLabel)}</span> <small style="opacity:.5">(${sid})</small></div>
       <div style="padding:12px 16px">
         <div style="margin-bottom:14px">
-          <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600">名称</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600">${t('name_field')}</div>
           <input id="custom-name" value="${esc(currentLabel)}" maxlength="20"
             style="width:100%;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:14px;background:var(--bg);color:var(--text);outline:none;font-family:inherit">
         </div>
         <div style="margin-bottom:14px">
-          <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600">颜色</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600">${t('color_field')}</div>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             <input type="color" id="custom-color" value="${currentColor}"
               style="width:38px;height:38px;border:none;border-radius:8px;cursor:pointer;background:none;padding:0">
             <span style="font-size:12px;color:var(--muted);font-family:monospace" id="color-hex">${currentColor}</span>
-            <button class="bar-btn" style="flex:0;padding:6px 10px;font-size:11px" onclick="resetStitchCustomize('${sid}')">恢复默认</button>
+            <button class="bar-btn" style="flex:0;padding:6px 10px;font-size:11px" onclick="resetStitchCustomize('${sid}')">${t('reset_default')}</button>
           </div>
         </div>
       </div>
       ${proj.customSettings?.customStitches?.[sid] ? `
       <div style="padding:0 16px 8px">
-        <button class="bar-btn" style="width:100%;color:#E07070;border-color:#E07070" onclick="deleteCustomStitch('${sid}')">🗑 删除此针法</button>
+        <button class="bar-btn" style="width:100%;color:#E07070;border-color:#E07070" onclick="deleteCustomStitch('${sid}')">${t('delete_custom_stitch')}</button>
       </div>` : ''}
       <div style="padding:10px 16px;display:flex;gap:8px">
-        <button class="bar-btn" style="flex:1" onclick="backToSetupGrid()">← 返回</button>
-        <button class="bar-btn primary" style="flex:2" onclick="saveStitchCustomize('${sid}')">✓ 保存</button>
+        <button class="bar-btn" style="flex:1" onclick="backToSetupGrid()">${t('back_btn')}</button>
+        <button class="bar-btn primary" style="flex:2" onclick="saveStitchCustomize('${sid}')">${t('save_btn')}</button>
       </div>`;
 
   showSheet(html);
@@ -1144,21 +1176,21 @@ export function openNewStitchForm() {
   state.flowState.setupSelections = selections;
 
   let html = `<div class="sheet-handle"></div>
-      <div class="sheet-title">＋ 新建针法</div>
+      <div class="sheet-title">${t('new_stitch')}</div>
       <div style="padding:12px 16px">
         <div style="margin-bottom:14px">
-          <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600">缩写 ID（英文，如 DC3L）</div>
-          <input id="new-stitch-id" placeholder="例如：DC3L" maxlength="10"
+          <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600">${t('stitch_id_label')}</div>
+          <input id="new-stitch-id" placeholder="${t('stitch_id_placeholder')}" maxlength="10"
             style="width:100%;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:14px;background:var(--bg);color:var(--text);outline:none;font-family:monospace;text-transform:uppercase"
             oninput="this.value=this.value.replace(/[^a-zA-Z0-9]/g,'').toUpperCase()">
         </div>
         <div style="margin-bottom:14px">
-          <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600">名称（中文标签）</div>
-          <input id="new-stitch-label" placeholder="例如：三卷长针" maxlength="16"
+          <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600">${t('stitch_name_label')}</div>
+          <input id="new-stitch-label" placeholder="${t('stitch_name_placeholder')}" maxlength="16"
             style="width:100%;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:14px;background:var(--bg);color:var(--text);outline:none;font-family:inherit">
         </div>
         <div style="margin-bottom:14px">
-          <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600">颜色</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600">${t('color_field')}</div>
           <div style="display:flex;align-items:center;gap:8px">
             <input type="color" id="new-stitch-color" value="#7DD3FC"
               style="width:38px;height:38px;border:none;border-radius:8px;cursor:pointer;background:none;padding:0">
@@ -1166,9 +1198,9 @@ export function openNewStitchForm() {
           </div>
         </div>
         <div style="margin-bottom:8px">
-          <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600">分类</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600">${t('category_field')}</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
-            ${[{v:'basic',l:'基础'},{v:'increase',l:'加针'},{v:'decrease',l:'减针'},{v:'special',l:'特殊'}].map(c =>
+            ${[{v:'basic',l:t('cat_basic_short')},{v:'increase',l:t('cat_increase_short')},{v:'decrease',l:t('cat_decrease_short')},{v:'special',l:t('cat_special_short')}].map(c =>
               `<label style="font-size:12px;color:var(--text);display:flex;align-items:center;gap:3px;cursor:pointer;padding:4px 8px;border:1px solid var(--border);border-radius:8px">
                 <input type="radio" name="new-stitch-cat" value="${c.v}" ${c.v==='basic'?'checked':''}> ${c.l}
               </label>`
@@ -1177,8 +1209,8 @@ export function openNewStitchForm() {
         </div>
       </div>
       <div style="padding:10px 16px;display:flex;gap:8px">
-        <button class="bar-btn" style="flex:1" onclick="backToSetupGrid()">← 返回</button>
-        <button class="bar-btn primary" style="flex:2" onclick="saveNewStitch()">✓ 创建</button>
+        <button class="bar-btn" style="flex:1" onclick="backToSetupGrid()">${t('back_btn')}</button>
+        <button class="bar-btn primary" style="flex:2" onclick="saveNewStitch()">${t('create_btn')}</button>
       </div>`;
 
   showSheet(html);
@@ -1200,9 +1232,9 @@ export function saveNewStitch() {
   const catRadio = document.querySelector('input[name="new-stitch-cat"]:checked');
 
   const sid = idInput?.value?.trim().toUpperCase();
-  if (!sid) { alert('请输入缩写 ID'); return; }
-  if (STITCH_LIB[sid]) { alert('该 ID 与预设针法冲突，请换一个'); return; }
-  if (proj.customSettings.customStitches[sid]) { alert('该 ID 已存在'); return; }
+  if (!sid) { alert(t('stitch_id_required')); return; }
+  if (STITCH_LIB[sid]) { alert(t('stitch_id_conflict')); return; }
+  if (proj.customSettings.customStitches[sid]) { alert(t('stitch_id_exists')); return; }
 
   const label = labelInput?.value?.trim() || sid;
   const color = colorInput?.value || '#7DD3FC';
@@ -1219,7 +1251,7 @@ export function saveNewStitch() {
 export function deleteCustomStitch(sid) {
   const proj = getProj(state.curProjId);
   if (!proj) return;
-  showConfirmDialog(`确定要删除自定义针法「${resolveLabel(sid, proj)}」吗？`, (ok) => {
+  showConfirmDialog(t('delete_custom_stitch_confirm').replace('{name}', resolveLabel(sid, proj)), (ok) => {
     if (!ok) return;
 
     delete proj.customSettings.customStitches[sid];

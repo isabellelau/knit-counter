@@ -2,6 +2,7 @@ import { state, getProj, clearDailyLog } from './state.js';
 import { showConfirmDialog, showToast, closeSheet } from './ui.js';
 import { saveData, checkStorageQuota } from './storage.js';
 import { getProjColor, ALL_THEMES, refreshBottomBar } from './stitch.js';
+import { t, setLang, getLang, SUPPORTED_LANGS } from './i18n.js';
 import { COLOR_THEMES } from '../stitches.js';
 import { setPageView } from './main.js';
 import { removeProjectCover } from './image.js';
@@ -10,11 +11,11 @@ let _settingsStack = [];
 let _settingsMode = 'page'; // 'page' | 'sheet'
 
 const SUBPAGE_TITLES = {
-  color: '配色设置',
-  permissions: '系统权限',
-  data: '数据管理',
-  advanced: '进阶功能',
-  about: '关于'
+  color: t('settings_color'),
+  permissions: t('settings_permissions'),
+  data: t('settings_data'),
+  advanced: t('settings_advanced'),
+  about: t('settings_about')
 };
 
 // ── Sheet 版（从项目页头部按钮调用，保留兼容）──
@@ -50,10 +51,10 @@ function _resetNavBarToSettingsRoot() {
 
   if (navBack)    { navBack.classList.remove('visible'); navBack.onclick = null; }
   if (navBar)     navBar.classList.remove('hidden');
-  if (navSmall)   { navSmall.textContent = '设置'; navSmall.classList.remove('visible'); navSmall.onclick = null; navSmall.style.cursor = ''; }
+  if (navSmall)   { navSmall.textContent = t('settings'); navSmall.classList.remove('visible'); navSmall.onclick = null; navSmall.style.cursor = ''; }
   if (navActions) navActions.innerHTML = '';
 
-  if (largeTitleEl)  largeTitleEl.textContent = '设置';
+  if (largeTitleEl)  largeTitleEl.textContent = t('settings');
   if (largeTitleEl)  largeTitleEl.contentEditable = 'false';
   if (largeSubEl)    largeSubEl.textContent = '';
   if (largeTitleWrap) largeTitleWrap.style.display = '';
@@ -65,22 +66,37 @@ function _resetNavBarToSettingsRoot() {
 
 function _buildSettingsListInnerHTML() {
   const theme = state.data.settings.theme || 'morandi';
-  const themeName = theme === 'morandi' ? '莫兰迪' : theme === 'night' ? '夜色' : '跟随系统';
+  const themeName = theme === 'morandi' ? t('theme_morandi') : theme === 'night' ? t('theme_night') : t('theme_system');
+  const curLang = getLang();
+  const langPills = SUPPORTED_LANGS.map(l => {
+    const active = l.code === curLang;
+    return `<button class="settings-lang-pill${active ? ' active' : ''}"
+      onclick="event.stopPropagation();switchLang('${l.code}')"
+      data-lang="${l.code}">${l.label}</button>`;
+  }).join('');
 
   return `
     <div class="settings-list">
       <div class="settings-row" onclick="navigateToSubPage('color')">
         <div class="settings-row-icon" style="background:var(--accent-bg);color:var(--accent)">🎨</div>
-        <span class="settings-row-label">配色设置</span>
+        <span class="settings-row-label">${t('settings_color')}</span>
         <div class="settings-row-extra">
           <span class="settings-row-value">${themeName}</span>
           <span class="settings-row-chevron">›</span>
         </div>
       </div>
 
+      <div class="settings-row settings-row--lang">
+        <div class="settings-row-icon" style="background:var(--accent-bg);color:var(--accent)">🌐</div>
+        <span class="settings-row-label">${t('settings_language')}</span>
+        <div class="settings-row-extra">
+          <span class="settings-lang-pills">${langPills}</span>
+        </div>
+      </div>
+
       <div class="settings-row" onclick="navigateToSubPage('permissions')">
         <div class="settings-row-icon" style="background:var(--accent-bg);color:var(--accent)">🔒</div>
-        <span class="settings-row-label">系统权限</span>
+        <span class="settings-row-label">${t('settings_permissions')}</span>
         <div class="settings-row-extra">
           <span class="settings-row-chevron">›</span>
         </div>
@@ -88,25 +104,25 @@ function _buildSettingsListInnerHTML() {
 
       <div class="settings-row" onclick="navigateToSubPage('data')">
         <div class="settings-row-icon" style="background:var(--accent-bg);color:var(--accent)">🗂</div>
-        <span class="settings-row-label">数据管理</span>
+        <span class="settings-row-label">${t('settings_data')}</span>
         <div class="settings-row-extra">
-          <span class="settings-row-value">${state.data.projects.length} 个项目</span>
+          <span class="settings-row-value">${t('settings_n_projects').replace('{n}', state.data.projects.length)}</span>
           <span class="settings-row-chevron">›</span>
         </div>
       </div>
 
       <div class="settings-row" onclick="navigateToSubPage('advanced')">
         <div class="settings-row-icon" style="background:var(--accent-bg);color:var(--accent)">⚡</div>
-        <span class="settings-row-label">进阶功能</span>
+        <span class="settings-row-label">${t('settings_advanced')}</span>
         <div class="settings-row-extra">
-          <span class="settings-badge-pro">PRO</span>
+          <span class="settings-badge-pro">${t('settings_pro_badge')}</span>
           <span class="settings-row-chevron">›</span>
         </div>
       </div>
 
       <div class="settings-row" onclick="navigateToSubPage('about')">
         <div class="settings-row-icon" style="background:var(--accent-bg);color:var(--accent)">ℹ️</div>
-        <span class="settings-row-label">关于</span>
+        <span class="settings-row-label">${t('settings_about')}</span>
         <div class="settings-row-extra">
           <span class="settings-row-chevron">›</span>
         </div>
@@ -136,7 +152,7 @@ function _renderSubPageIntoRoot(html, animClass) {
     <div class="settings-subhead">
       <button class="settings-subhead-back" onclick="goBackFromSubPage()">
         <span style="font-size:18px;line-height:1">‹</span>
-        <span>设置</span>
+        <span>${t('settings')}</span>
       </button>
       <div class="settings-subhead-title">${title}</div>
     </div>`;
@@ -207,7 +223,7 @@ export function navigateToSubPage(key) {
       subHTML = _buildColorSubPageHTML();
       break;
     case 'permissions':
-      subHTML = _buildPlaceholderSubPageHTML('系统权限', '🔒', '麦克风权限管理、通知设置等将在此处配置');
+      subHTML = _buildPlaceholderSubPageHTML(t('settings_permissions'), '🔒', t('settings_permissions_placeholder'));
       break;
     case 'data':
       subHTML = _buildDataSubPageHTML();
@@ -259,9 +275,9 @@ function _buildColorSubPageHTML() {
   const dotIds = ['X', 'V', 'A', 'CH'];
 
   const UI_THEME_META = {
-    morandi: { name: '莫兰迪',   sub: '浅色 · 暖调', dots: ['#C9969F', '#FFFFFF', '#F5E6E8', '#2D1E20'] },
-    night:   { name: '夜色',     sub: '深色 · 暗调', dots: ['#C4909A', '#3D2D30', '#4A2D32', '#F2E8E9'] },
-    system:  { name: '跟随系统', sub: '自动切换',     dots: ['#F5E6E8', '#FFFFFF', '#3D2D30', '#2A2123'] }
+    morandi: { name: t('theme_morandi'),   sub: t('theme_morandi_sub'), dots: ['#C9969F', '#FFFFFF', '#F5E6E8', '#2D1E20'] },
+    night:   { name: t('theme_night'),     sub: t('theme_night_sub'), dots: ['#C4909A', '#3D2D30', '#4A2D32', '#F2E8E9'] },
+    system:  { name: t('theme_system'),    sub: t('theme_system_sub'), dots: ['#F5E6E8', '#FFFFFF', '#3D2D30', '#2A2123'] }
   };
 
   // 针法配色方案：从 COLOR_THEMES + ALL_THEMES 收集所有 key
@@ -271,9 +287,9 @@ function _buildColorSubPageHTML() {
   ])];
 
   const STITCH_META = {
-    morandi: { name: '暖煦', sub: '莫兰迪暖调' },
-    night:   { name: '沉影', sub: '夜色冷调' },
-    float:   { name: '浮光', sub: '清透淡彩' }
+    morandi: { name: t('stitch_theme_warm'), sub: t('stitch_theme_warm_sub') },
+    night:   { name: t('stitch_theme_dark'), sub: t('stitch_theme_dark_sub') },
+    float:   { name: t('stitch_theme_float'), sub: t('stitch_theme_float_sub') }
   };
 
   function resolveDotColor(tKey, sid) {
@@ -298,20 +314,20 @@ function _buildColorSubPageHTML() {
   }
 
   return `
-    <div class="settings-section-hd">界面主题</div>
-    <div class="settings-section-desc" style="padding:0 16px 8px;font-size:var(--text-caption1);color:var(--muted)">切换整体 UI 配色</div>
+    <div class="settings-section-hd">${t('settings_ui_theme')}</div>
+    <div class="settings-section-desc" style="padding:0 16px 8px;font-size:var(--text-caption1);color:var(--muted)">${t('settings_ui_theme_desc')}</div>
     <div class="settings-theme-card-grid col3">
       ${_renderCards(Object.keys(UI_THEME_META), UI_THEME_META, uiTheme, 'changeTheme', 'data-theme')}
     </div>
 
-    <div class="settings-section-hd">针法配色</div>
-    <div class="settings-section-desc" style="padding:0 16px 8px;font-size:var(--text-caption1);color:var(--muted)">仅影响针法胶囊颜色，不影响 UI 主题</div>
+    <div class="settings-section-hd">${t('settings_stitch_theme')}</div>
+    <div class="settings-section-desc" style="padding:0 16px 8px;font-size:var(--text-caption1);color:var(--muted)">${t('settings_stitch_theme_desc')}</div>
     <div class="settings-theme-card-grid col3">
       ${_renderCards(stitchKeys, STITCH_META, stitchTheme, 'changeStitchTheme', 'data-stitch-theme')}
     </div>
 
     <div class="settings-section-desc settings-section-desc--bottom">
-      在项目内点击针法按钮右上角的 ✎ 可自定义
+      ${t('settings_stitch_theme_footer')}
     </div>
   `;
 }
@@ -360,17 +376,17 @@ function _buildDataSubPageHTML() {
       s + (pt.rounds || []).reduce((ss, r) => ss + (r.seq?.length || 0), 0), 0), 0);
 
   return `
-    <div class="settings-section-hd">统计</div>
-    <div class="settings-stat" style="text-align:left;padding:4px 16px 12px">当前 ${totalProjs} 个项目 · 累计 ${totalNeedles.toLocaleString()} 针</div>
+    <div class="settings-section-hd">${t('settings_stats')}</div>
+    <div class="settings-stat" style="text-align:left;padding:4px 16px 12px">${t('settings_stats_text').replace('{projects}', totalProjs).replace('{stitches}', totalNeedles.toLocaleString())}</div>
 
-    <div class="settings-section-hd">操作</div>
+    <div class="settings-section-hd">${t('settings_actions')}</div>
     <div class="settings-btn-row">
-      <button class="settings-btn settings-btn-secondary" onclick="exportData()">📤 导出备份</button>
+      <button class="settings-btn settings-btn-secondary" onclick="exportData()">${t('settings_export')}</button>
       <label class="settings-btn settings-btn-secondary" style="display:block;text-align:center">
-        📥 导入备份
+        ${t('settings_import')}
         <input type="file" accept="application/json,.json" style="display:none" onchange="importData(this)">
       </label>
-      <button class="settings-btn settings-btn-danger" onclick="clearAllData()">🗑 清空所有数据</button>
+      <button class="settings-btn settings-btn-danger" onclick="clearAllData()">${t('settings_clear_all')}</button>
     </div>
   `;
 }
@@ -383,16 +399,16 @@ function _buildAdvancedSubPageHTML() {
   const enabled = state.data.settings.highlightEnabled ?? false;
 
   return `
-    <div class="settings-section-hd">针法辅助</div>
+    <div class="settings-section-hd">${t('settings_stitch_assist')}</div>
 
     <div class="settings-row" onclick="toggleHighlightEnabled()" style="cursor:pointer">
       <div class="settings-row-icon" style="background:var(--accent-bg);color:var(--accent)">✦</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:var(--text-body);color:var(--text);display:flex;align-items:center;gap:8px">
-          智能高亮当前针
-          <span class="highlight-pro-badge-inline">PRO</span>
+          ${t('highlight_toggle_label')}
+          <span class="highlight-pro-badge-inline">${t('settings_pro_badge')}</span>
         </div>
-        <div style="font-size:var(--text-caption1);color:var(--muted);margin-top:2px">每次只高亮下一针，其他针法降低亮度</div>
+        <div style="font-size:var(--text-caption1);color:var(--muted);margin-top:2px">${t('highlight_toggle_desc')}</div>
       </div>
       <span class="settings-toggle${enabled ? ' on' : ''}" id="settings-highlight-toggle">
         <i class="settings-toggle-knob"></i>
@@ -400,7 +416,7 @@ function _buildAdvancedSubPageHTML() {
     </div>
 
     <div class="settings-section-desc settings-section-desc--bottom">
-      开启后在底部针法面板自动聚焦当前需钩织的下一针
+      ${t('highlight_toggle_footer')}
     </div>
   `;
 }
@@ -420,7 +436,7 @@ export function toggleHighlightEnabled() {
     window.renderProject();
   }
 
-  showToast(enabled ? '智能高亮已开启 · 长按可关闭' : '智能高亮已关闭');
+  showToast(enabled ? t('highlight_enabled_toast') : t('highlight_disabled_toast'));
 }
 
 // ═════════════════════════════════════
@@ -431,16 +447,21 @@ function _buildAboutSubPageHTML() {
   return `
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px;gap:8px">
       <div style="font-size:48px">🧶</div>
-      <div style="font-size:var(--text-title3);font-weight:var(--weight-semibold);color:var(--text)">织影</div>
+      <div style="font-size:var(--text-title3);font-weight:var(--weight-semibold);color:var(--text)">${t('app_name')}</div>
       <div style="font-size:var(--text-footnote);color:var(--muted)">v0.1</div>
     </div>
 
-    <div class="settings-section-hd" style="text-align:center">安装</div>
+    <div class="settings-section-hd" style="text-align:center">${t('settings_install_section')}</div>
     <div class="settings-btn-row">
-      <button class="settings-btn settings-btn-primary" onclick="showPwaTutorial()">📲 安装到主屏幕</button>
+      <button class="settings-btn settings-btn-primary" onclick="showPwaTutorial()">${t('settings_install_btn')}</button>
     </div>
   `;
 }
+
+window.switchLang = function(code) {
+  setLang(code);
+  location.reload();
+};
 
 // ═════════════════════════════════════
 //  主题切换
@@ -488,7 +509,7 @@ export function toggleVoiceSound() {
 }
 
 export function clearAllData() {
-  showConfirmDialog("确定要清空所有数据吗？此操作不可恢复。", async (ok) => {
+  showConfirmDialog(t('settings_clear_confirm'), async (ok) => {
     if (!ok) return;
     await Promise.all(state.data.projects.map(p => removeProjectCover(p.id)));
     state.data.projects = [];
@@ -499,6 +520,6 @@ export function clearAllData() {
     } else {
       window.renderHome();
     }
-    showToast("所有数据已清空");
+    showToast(t('settings_cleared'));
   });
 }

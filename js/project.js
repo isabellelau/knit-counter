@@ -4,6 +4,7 @@ import { pickCover, setProjectCover, removeProjectCover, getProjImage } from './
 import { saveData, migrateData, exportSingleProject } from './storage.js';
 import { getUnitLabel } from './stitch.js';
 import { setPageView } from './main.js';
+import { t, term } from './i18n.js';
 
 export function openProject(id) {
   setPageView(null);
@@ -38,30 +39,30 @@ export function importData(input) {
   reader.onload = e => {
     try {
       const imported = JSON.parse(e.target.result);
-      if (!imported || typeof imported !== 'object') throw new Error('文件格式错误');
-      if (!Array.isArray(imported.projects)) throw new Error('缺少 projects 数组');
+      if (!imported || typeof imported !== 'object') throw new Error(t('import_file_error'));
+      if (!Array.isArray(imported.projects)) throw new Error(t('import_missing_projects'));
 
       imported.projects.forEach((p, i) => {
-        if (!p.id || !p.name) throw new Error(`第 ${i + 1} 个项目缺少必要字段`);
+        if (!p.id || !p.name) throw new Error(t('import_item_missing_fields').replace('{n}', i + 1));
       });
 
-      showConfirmDialog(`确定导入备份？\n共有 ${imported.projects.length} 个项目\n当前 ${state.data.projects.length} 个项目将被覆盖`, (ok) => {
+      showConfirmDialog(t('import_confirm').replace('{count}', imported.projects.length).replace('{current}', state.data.projects.length), (ok) => {
         if (!ok) return;
         Object.keys(state.data).forEach(k => delete state.data[k]);
         Object.assign(state.data, imported);
         migrateData(state.data);
         saveData();
         window.renderHome();
-        alert('✅ 数据恢复成功');
+        alert(t('import_success'));
       });
     } catch (err) {
-      alert('❌ 导入失败：' + err.message);
+      alert(t('import_failed') + err.message);
     } finally {
       input.value = '';
     }
   };
   reader.onerror = () => {
-    alert('❌ 文件读取失败');
+    alert(t('import_read_failed'));
     input.value = '';
   };
   reader.readAsText(file);
@@ -74,7 +75,7 @@ export function showNewProjectDialog() {
     const partId = uid();
     const proj = {
       id: uid(), name: name.trim(),
-      parts: [{ id: partId, title: '主图解', rawPattern: '', rounds: [r], activeRoundId: r.id, customPalette: null }],
+      parts: [{ id: partId, title: t('default_part_title'), rawPattern: '', rounds: [r], activeRoundId: r.id, customPalette: null }],
       activePartId: partId,
       customSettings: { names: {}, colors: {}, customStitches: {} },
       useRowTerms: false,
@@ -89,7 +90,7 @@ export function showNewProjectDialog() {
     state.flowState.newProjectFlow = true;
     showEntryChoiceSheet();
   };
-  document.getElementById("dlg-title").textContent = "新建项目";
+  document.getElementById("dlg-title").textContent = t('new_project');
   document.getElementById("dlg-msg").style.display = "none";
   document.getElementById("dlg-input").style.display = "";
   document.getElementById("dlg-input").value = "";
@@ -108,26 +109,26 @@ export async function toggleProjMenu(id, e) {
 
   const coverActions = `
     <button class="sheet-item" onclick="pickCover('${id}');closeSheet()">
-      <span class="sheet-item-icon">🖼️</span> 设置封面
+      <span class="sheet-item-icon">🖼️</span> ${t('set_cover')}
     </button>
     ${coverImg ? `
     <button class="sheet-item" onclick="removeProjectCover('${id}');closeSheet()">
-      <span class="sheet-item-icon">🗑️</span> 移除封面
+      <span class="sheet-item-icon">🗑️</span> ${t('remove_cover')}
     </button>` : ''}
   `;
 
   const archiveAction = isArchived
     ? `<button class="sheet-item" onclick="unarchiveProject('${id}');closeSheet()">
-         <span class="sheet-item-icon">📤</span> 取消归档
+         <span class="sheet-item-icon">📤</span> ${t('unarchive')}
        </button>`
     : `<button class="sheet-item" onclick="archiveProject('${id}');closeSheet()">
-         <span class="sheet-item-icon">📦</span> 归档
+         <span class="sheet-item-icon">📦</span> ${t('archive')}
        </button>`;
 
   const deleteAction = `
     <button class="sheet-item sheet-item--danger"
             onclick="deleteProject('${id}', event);closeSheet()">
-      <span class="sheet-item-icon">🗑️</span> 删除项目
+      <span class="sheet-item-icon">🗑️</span> ${t('delete_project')}
     </button>
   `;
 
@@ -137,7 +138,7 @@ export async function toggleProjMenu(id, e) {
     ${archiveAction}
     <div class="sheet-divider"></div>
     ${deleteAction}
-    <button class="sheet-cancel" onclick="closeSheet()">取消</button>
+    <button class="sheet-cancel" onclick="closeSheet()">${t('cancel')}</button>
   `);
 }
 
@@ -145,7 +146,7 @@ export function archiveProject(id) {
   const proj = state.data.projects.find(p => String(p.id) === String(id));
   if (!proj) return;
 
-  showConfirmDialog(`确定归档「${proj.name}」？归档后可在下方列表找到，仍可继续编辑。`, (ok) => {
+  showConfirmDialog(t('archive_confirm').replace('{name}', proj.name), (ok) => {
     if (!ok) return;
     proj.archived = true;
     proj.lastModified = Date.now();
@@ -168,13 +169,13 @@ export function showArchiveSuccessSheet(proj) {
     pwaHint = `
       <div style="margin:0 16px 12px;padding:14px;background:#FEF3C7;border-radius:12px;font-size:12px;color:#92400E;line-height:1.6">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <div style="font-weight:bold">💡 技巧提示</div>
-          <div onclick="event.stopPropagation();showPwaTutorial()" style="color:#C07A45;font-weight:bold;cursor:pointer;text-decoration:underline;white-space:nowrap">详细教程 ></div>
+          <div style="font-weight:bold">${t('archive_tip_title')}</div>
+          <div onclick="event.stopPropagation();showPwaTutorial()" style="color:#C07A45;font-weight:bold;cursor:pointer;text-decoration:underline;white-space:nowrap">${t('archive_tip_tutorial')}</div>
         </div>
-        您可以将本页面"添加到主屏幕"，下次即可像 App 一样从桌面直接打开，体验更沉浸。
+        ${t('archive_pwa_hint')}
         <div style="margin-top:8px;display:flex;align-items:center;gap:6px;opacity:0.8;cursor:pointer" onclick="handlePwaHintOptOut(event)">
           <input type="checkbox" id="stop-pwa-hint" style="width:14px;height:14px;accent-color:#C07A45">
-          <label for="stop-pwa-hint" style="cursor:pointer">后续不再提示</label>
+          <label for="stop-pwa-hint" style="cursor:pointer">${t('archive_no_more_hint')}</label>
         </div>
       </div>`;
   }
@@ -182,22 +183,22 @@ export function showArchiveSuccessSheet(proj) {
   const html = `<div class="sheet-handle"></div>
     <div style="text-align:center;padding:20px 16px 12px">
       <div style="font-size:36px;margin-bottom:8px">📦</div>
-      <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px">「${esc(proj.name)}」已归档</div>
-      <div style="font-size:12px;color:var(--muted)">${allRounds} ${unit} · ${allNeedles} 针</div>
+      <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px">${t('archived_title').replace('{name}', esc(proj.name))}</div>
+      <div style="font-size:12px;color:var(--muted)">${allRounds} ${unit} · ${t('round_count_label').replace('{total}', allNeedles)}</div>
     </div>
     ${pwaHint}
     <div style="margin:0 16px 8px;padding:14px;background:var(--bg);border-radius:12px">
-      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">💾 下载备份文件</div>
-      <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:10px">如果你需要<strong>换手机</strong>或<strong>多设备使用</strong>，建议保存一份备份。平时只用一台手机的话，无需操作。</div>
-      <button class="bar-btn primary" style="width:100%" onclick="exportSingleProject('${proj.id}')">下载「${esc(proj.name)}」的备份</button>
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">${t('archive_backup_title')}</div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:10px">${t('archive_backup_desc')}</div>
+      <button class="bar-btn primary" style="width:100%" onclick="exportSingleProject('${proj.id}')">${t('archive_download_btn').replace('{name}', esc(proj.name))}</button>
     </div>
     <div id="backup-guide" style="display:none;margin:0 16px 8px;padding:12px 14px;background:var(--bg);border-radius:10px;font-size:12px;color:var(--muted);line-height:1.8">
-      📁 <strong>在哪里找到备份文件？</strong><br>
-      iPhone：文件 App → 我的iPhone → 下载<br>
-      安卓：文件管理器 → 下载文件夹<br><br>
-      📲 <strong>防丢小技巧：</strong>把文件发送到<strong>微信收藏</strong>，换手机后也能找回
+      📁 <strong>${t('archive_where_backup')}</strong><br>
+      ${t('archive_ios_path')}<br>
+      ${t('archive_android_path')}<br><br>
+      ${t('archive_backup_tip')}
     </div>
-    <button class="sheet-cancel" onclick="closeSheet()">完成</button>`;
+    <button class="sheet-cancel" onclick="closeSheet()">${t('done')}</button>`;
 
   showSheet(html);
 }
@@ -218,34 +219,34 @@ export function showPwaTutorial() {
   const content = `
     <div class="sheet-handle"></div>
     <div style="padding:16px 16px 8px;max-height:70vh;overflow-y:auto">
-      <h3 style="font-size:18px;margin-bottom:16px;text-align:center">如何安装为 App</h3>
+      <h3 style="font-size:18px;margin-bottom:16px;text-align:center">${t('pwa_tutorial_title')}</h3>
 
       <div style="display:flex;flex-direction:column;gap:20px;color:var(--text);line-height:1.6">
         <section>
-          <h4 style="color:var(--accent);margin-bottom:8px"> iOS (Safari 浏览器)</h4>
-          <p style="font-size:13px">1. 点击浏览器底部的<strong>分享按钮</strong>（方框带向上箭头）。</p>
-          <p style="font-size:13px">2. 向上滑动菜单，找到并点击<strong>"添加到主屏幕"</strong>。</p>
-          <p style="font-size:13px">3. 点击右上角的"添加"即可完成。</p>
+          <h4 style="color:var(--accent);margin-bottom:8px">${t('pwa_ios_title')}</h4>
+          <p style="font-size:13px">${t('pwa_ios_step1')}</p>
+          <p style="font-size:13px">${t('pwa_ios_step2')}</p>
+          <p style="font-size:13px">${t('pwa_ios_step3')}</p>
         </section>
 
         <section>
-          <h4 style="color:var(--accent);margin-bottom:8px">🤖 Android (Chrome/自带浏览器)</h4>
-          <p style="font-size:13px">1. 点击右上角或右下角的<strong>"三个点"</strong>或"菜单"图标。</p>
-          <p style="font-size:13px">2. 找到并点击<strong>"安装应用"</strong>或<strong>"添加到主屏幕"</strong>。</p>
-          <p style="font-size:13px">3. 根据系统提示完成添加。</p>
+          <h4 style="color:var(--accent);margin-bottom:8px">${t('pwa_android_title')}</h4>
+          <p style="font-size:13px">${t('pwa_android_step1')}</p>
+          <p style="font-size:13px">${t('pwa_android_step2')}</p>
+          <p style="font-size:13px">${t('pwa_android_step3')}</p>
         </section>
 
         <section style="background:var(--bg);padding:12px;border-radius:10px">
-          <h4 style="font-size:14px;margin-bottom:4px">为什么推荐安装？</h4>
+          <h4 style="font-size:14px;margin-bottom:4px">${t('pwa_why_title')}</h4>
           <ul style="font-size:12px;color:var(--muted);padding-left:16px">
-            <li><strong>离线可用</strong>：在没有网络的情况下也能打开和使用。</li>
-            <li><strong>纯净体验</strong>：隐藏浏览器地址栏，操作空间更大。</li>
-            <li><strong>快速启动</strong>：直接从桌面点击图标，无需在浏览器标签页寻找。</li>
+            <li>${t('pwa_why_offline')}</li>
+            <li>${t('pwa_why_clean')}</li>
+            <li>${t('pwa_why_fast')}</li>
           </ul>
         </section>
       </div>
 
-      <button class="sheet-cancel" onclick="closeSheet()" style="width:100%;margin-top:24px">我知道了</button>
+      <button class="sheet-cancel" onclick="closeSheet()" style="width:100%;margin-top:24px">${t('got_it')}</button>
     </div>`;
 
   showSheet(content);
@@ -259,7 +260,7 @@ export function unarchiveProject(id) {
 export function deleteProject(id, e) {
   e.stopPropagation();
   state.flowState.projMenuId = null;
-  showConfirmDialog("确定要删除这个项目吗？此操作不可恢复。", (ok) => {
+  showConfirmDialog(t('delete_project_confirm'), (ok) => {
     if (!ok) return;
     removeProjectCover(id);
     state.data.projects = state.data.projects.filter(p => String(p.id) !== String(id));

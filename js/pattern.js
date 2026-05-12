@@ -3,6 +3,7 @@ import { showSheet, closeSheet, showToast, esc, showConfirmDialog } from './ui.j
 import { saveData } from './storage.js';
 import { parsePattern, extractStitches } from '../stitches.js';
 import { setPageView } from './main.js';
+import { t, term } from './i18n.js';
 
 export function startImportFlow() {
   document.getElementById("sheet").classList.remove("show");
@@ -42,7 +43,7 @@ export function toggleSelectAllInSetup() {
     }
   });
   const allBtn = document.getElementById('select-all-btn');
-  if (allBtn) allBtn.textContent = allChecked ? '全选' : '清空';
+  if (allBtn) allBtn.textContent = allChecked ? t('select_all') : t('clear_all');
 }
 
 export function startImportFromSetup() {
@@ -56,20 +57,20 @@ export function startImportFromSetup() {
 export function openPatternPasteSheet() {
   state.flowState.pendingParsed = null;
   let html = `<div class="sheet-handle"></div>
-  <div class="sheet-title">📥 导入图解</div>
+  <div class="sheet-title">${t('import_pattern')}</div>
   <div style="padding:12px 16px">
-    <textarea id="pattern-input" placeholder="在此粘贴图解文字，或上传图片自动识别...\n例如：\nR1: 6X\nR2: 6V\nR3: [1X, 1V]*6"
+    <textarea id="pattern-input" placeholder="${t('pattern_placeholder').replace(/\n/g, '&#10;')}"
     style="width:100%;height:120px;border:1px solid var(--border);border-radius:10px;padding:12px;font-size:14px;font-family:inherit;resize:none;outline:none;background:var(--bg);color:var(--text)"></textarea>
   </div>
   <div style="padding:0 16px 10px;display:flex;gap:8px;align-items:center">
     <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border:1.5px dashed var(--border);border-radius:10px;background:var(--bg);cursor:pointer;color:var(--muted);font-size:13px;font-weight:600">
       <input type="file" id="ocr-file" accept="image/*" style="display:none" onchange="handleOCR(this)">
-      📷 识别图片
+      ${t('ocr_button')}
     </label>
-    <button class="bar-btn primary" style="flex:2" onclick="handleParsePattern()">🔍 解析预览</button>
+    <button class="bar-btn primary" style="flex:2" onclick="handleParsePattern()">${t('parse_preview')}</button>
   </div>
   <div id="ocr-status" style="padding:0 16px 10px;font-size:12px;color:var(--muted);display:none"></div>
-  <button class="sheet-cancel" onclick="cancelPasteSheet()">取消</button>`;
+  <button class="sheet-cancel" onclick="cancelPasteSheet()">${t('cancel')}</button>`;
   showSheet(html);
   setTimeout(() => document.getElementById('pattern-input').focus(), 100);
 }
@@ -84,12 +85,12 @@ export function cancelPasteSheet() {
 export function handleParsePattern() {
   const text = document.getElementById('pattern-input').value;
   if (!text.trim()) {
-    alert("请输入图解内容");
+    alert(t('pattern_empty_error'));
     return;
   }
   const parsed = parsePattern(text);
   if (parsed.length === 0) {
-    alert("未能解析出任何内容，请检查格式");
+    alert(t('pattern_parse_failed'));
     return;
   }
   state.flowState.pendingParsed = parsed;
@@ -103,7 +104,7 @@ let _tesseractLoading = false;
 export function showLoading(text) {
   const mask = document.getElementById('loading-mask');
   const txt = document.getElementById('loading-text');
-  if (txt) txt.textContent = text || '正在加载...';
+  if (txt) txt.textContent = text || t('loading');
   if (mask) mask.classList.add('show');
 }
 
@@ -118,7 +119,7 @@ export function loadTesseract() {
     if (_tesseractLoading) {
       const check = () => {
         if (_tesseractLoaded) resolve();
-        else if (!_tesseractLoading) reject(new Error('Tesseract 加载失败'));
+        else if (!_tesseractLoading) reject(new Error(t('tesseract_load_failed')));
         else setTimeout(check, 100);
       };
       check();
@@ -128,7 +129,7 @@ export function loadTesseract() {
     const script = document.createElement('script');
     script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
     script.onload = () => { _tesseractLoaded = true; _tesseractLoading = false; resolve(); };
-    script.onerror = () => { _tesseractLoading = false; reject(new Error('Tesseract 脚本加载失败')); };
+    script.onerror = () => { _tesseractLoading = false; reject(new Error(t('tesseract_script_failed'))); };
     document.head.appendChild(script);
   });
 }
@@ -141,34 +142,34 @@ export async function handleOCR(input) {
   if (status) {
     status.style.display = 'block';
     status.style.color = 'var(--muted)';
-    status.textContent = '⏳ 正在初始化识别引擎...';
+    status.textContent = t('ocr_initializing');
   }
 
   try {
-    showLoading('正在加载识别引擎...');
+    showLoading(t('ocr_loading_engine'));
     await loadTesseract();
     hideLoading();
 
-    if (status) status.textContent = '⏳ 识别中... 0%';
+    if (status) status.textContent = t('ocr_in_progress_zero');
 
     const result = await Tesseract.recognize(file, 'chi_sim+eng', {
       logger: m => {
         if (m.status === 'recognizing text' && status) {
-          status.textContent = `⏳ 识别中... ${(m.progress * 100).toFixed(0)}%`;
+          status.textContent = t('ocr_in_progress') + ` ${(m.progress * 100).toFixed(0)}%`;
         }
       }
     });
     const text = result.data.text;
     if (textarea) textarea.value = text;
     if (status) {
-      status.textContent = '✅ 识别完成，请检查修正后点击解析';
+      status.textContent = t('ocr_complete');
       status.style.color = 'var(--accent)';
     }
   } catch (err) {
     hideLoading();
     console.error('OCR 失败:', err);
     if (status) {
-      status.textContent = '❌ 识别失败，请手动输入';
+      status.textContent = t('ocr_failed');
       status.style.color = '#E07070';
     }
   }
@@ -181,13 +182,13 @@ export function openParseConfirmSheet(parsed) {
   const proj = getProj(state.curProjId);
   const unit = window.getUnitLabel(proj);
   let html = `<div class="sheet-handle"></div>
-  <div class="sheet-title">✅ 校验图解（${roundCount} ${unit} · ${textCount} 条备注）</div>
+  <div class="sheet-title">${t('parse_confirm_title').replace('{rounds}', roundCount).replace('{unit}', unit).replace('{texts}', textCount)}</div>
   <div style="max-height:50vh;overflow-y:auto;padding:0 4px">`;
 
   parsed.forEach((item, idx) => {
     const badge = item.type === 'round'
-      ? `<span style="display:inline-block;background:var(--accent);color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;margin-right:6px;flex-shrink:0">第${item.roundNum}${unit}</span>`
-      : `<span style="display:inline-block;background:var(--border);color:var(--muted);font-size:10px;padding:2px 6px;border-radius:4px;margin-right:6px;flex-shrink:0">备注</span>`;
+      ? `<span style="display:inline-block;background:var(--accent);color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;margin-right:6px;flex-shrink:0">${t('round_label').replace('{n}', item.roundNum).replace('{unit}', unit)}</span>`
+      : `<span style="display:inline-block;background:var(--border);color:var(--muted);font-size:10px;padding:2px 6px;border-radius:4px;margin-right:6px;flex-shrink:0">${t('text_card_badge')}</span>`;
 
     html += `<div class="sheet-item" style="padding:10px 16px;align-items:flex-start">
       <div style="flex:1;min-width:0">
@@ -195,7 +196,7 @@ export function openParseConfirmSheet(parsed) {
         <input id="edit-${idx}" value="${esc(item.instruction)}"
           style="width:100%;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:13px;background:var(--bg);color:var(--text);outline:none;font-family:inherit"
           onchange="state.flowState.pendingParsed[${idx}].instruction=this.value.trim()">
-        ${item.seq.length ? `<div style="font-size:11px;color:var(--muted);margin-top:3px">检测到针法：${[...new Set(item.seq)].join(' · ')}</div>` : ''}
+        ${item.seq.length ? `<div style="font-size:11px;color:var(--muted);margin-top:3px">${t('detected_stitches')}${[...new Set(item.seq)].join(' · ')}</div>` : ''}
       </div>
       <button onclick="removeParsedItem(${idx})" style="background:none;border:none;color:#D0B0A0;font-size:20px;padding:4px 8px;cursor:pointer;line-height:1;margin-top:20px">×</button>
     </div>`;
@@ -207,22 +208,22 @@ export function openParseConfirmSheet(parsed) {
 
   if (isEmpty) {
     html += `<div style="padding:10px 16px">
-    <button class="bar-btn primary" style="width:100%;animation:scale-in 0.25s ease-out" onclick="updateCurrentPart()">确认导入并开始</button>
-    <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:6px">内容将直接填入当前空白部件</div>
+    <button class="bar-btn primary" style="width:100%;animation:scale-in 0.25s ease-out" onclick="updateCurrentPart()">${t('confirm_import_start')}</button>
+    <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:6px">${t('import_to_empty_hint')}</div>
   </div>`;
   } else {
     html += `<div style="padding:10px 16px;display:flex;gap:8px">
     <div style="flex:1;display:flex;flex-direction:column;gap:4px">
-      <button class="bar-btn" style="width:100%" onclick="updateCurrentPart()">覆盖当前部件</button>
-      <span style="font-size:10px;color:var(--muted);text-align:center">原有进度将被清除</span>
+      <button class="bar-btn" style="width:100%" onclick="updateCurrentPart()">${t('overwrite_part')}</button>
+      <span style="font-size:10px;color:var(--muted);text-align:center">${t('overwrite_warning')}</span>
     </div>
     <div style="flex:2;display:flex;flex-direction:column;gap:4px">
-      <button class="bar-btn primary" style="width:100%;animation:scale-in 0.25s ease-out" onclick="addNewPart()">作为新部件导入</button>
-      <span style="font-size:10px;color:var(--muted);text-align:center">保留当前进度，创建新分类</span>
+      <button class="bar-btn primary" style="width:100%;animation:scale-in 0.25s ease-out" onclick="addNewPart()">${t('import_as_new_part')}</button>
+      <span style="font-size:10px;color:var(--muted);text-align:center">${t('import_new_part_hint')}</span>
     </div>
   </div>`;
   }
-  html += `<button class="sheet-cancel" onclick="openPatternPasteSheet()">← 返回修改</button>`;
+  html += `<button class="sheet-cancel" onclick="openPatternPasteSheet()">${t('back_to_edit')}</button>`;
 
   showSheet(html);
 }
@@ -252,7 +253,7 @@ export function confirmImport(mode) {
   if (mode === 'newPart') {
     // 创建新部件
     const partId = uid();
-    targetPart = { id: partId, title: '部件 ' + (proj.parts.length + 1), rawPattern: '', rounds: [], activeRoundId: null, customPalette: null };
+    targetPart = { id: partId, title: t('new_part_label') + (proj.parts.length + 1), rawPattern: '', rounds: [], activeRoundId: null, customPalette: null };
     proj.parts.push(targetPart);
     proj.activePartId = partId;
   } else {
@@ -306,7 +307,7 @@ export function confirmImport(mode) {
   closeSheet();
   setPageView(null);
   window.renderProject();
-  showToast('图解已同步至 ' + targetPart.title);
+  showToast(t('pattern_synced') + targetPart.title);
   setTimeout(() => {
     const firstRound = targetPart.rounds[0];
     const el = document.getElementById('round-' + firstRound.id);

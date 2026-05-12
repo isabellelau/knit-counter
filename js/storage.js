@@ -21,6 +21,7 @@
 import { state, uid } from './state.js';
 import { STITCH_LIB, OLD_ID_MAP } from '../stitches.js';
 import { showToast } from './ui.js';
+import { t } from './i18n.js';
 
 // ═══════════════════════════════════════
 //  IndexedDB 适配层
@@ -136,7 +137,7 @@ export async function saveData() {
     await storageAdapter.set(STORAGE_KEY, state.data);
   } catch (e) {
     if (e.name === 'QuotaExceededError') {
-      showToast('存储空间不足，请删除部分封面图片');
+      showToast(t('storage_quota'));
     }
   }
   checkStorageQuota();
@@ -155,7 +156,7 @@ export async function checkStorageQuota() {
       const usedMB = (usage / 1024 / 1024).toFixed(1);
       const quotaMB = (quota / 1024 / 1024).toFixed(0);
       showToast(
-        `存储空间已用 ${usedMB}MB / ${quotaMB}MB · 建议导出备份后清理旧项目`,
+        t('storage_usage').replace('{used}', usedMB).replace('{quota}', quotaMB),
         null,
         6000
       );
@@ -249,7 +250,7 @@ export function migrateData(d) {
         const partId = uid();
         p.parts = [{
           id: partId,
-          title: '主图解',
+          title: t('default_part_title'),
           rawPattern: '',
           rounds: p.rounds || [],
           activeRoundId: p.activeRoundId || (p.rounds?.length ? p.rounds[p.rounds.length - 1].id : null),
@@ -264,7 +265,7 @@ export function migrateData(d) {
       // 保底：确保 parts 数组存在
       if (!p.parts || !Array.isArray(p.parts)) {
         const partId = uid();
-        p.parts = [{ id: partId, title: '主图解', rawPattern: '', rounds: [], activeRoundId: null, customPalette: null }];
+        p.parts = [{ id: partId, title: t('default_part_title'), rawPattern: '', rounds: [], activeRoundId: null, customPalette: null }];
         p.activePartId = partId;
       }
 
@@ -278,7 +279,7 @@ export function migrateData(d) {
         if (!part.rounds) part.rounds = [];
         if (part.customPalette === undefined) part.customPalette = null;
         if (!part.rawPattern && part.rawPattern !== '') part.rawPattern = '';
-        if (!part.title) part.title = '未命名';
+        if (!part.title) part.title = t('unnamed');
 
         part.rounds.forEach(r => {
           if (!r.instruction && r.instruction !== "") r.instruction = "";
@@ -339,7 +340,7 @@ export function exportData() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `织影备份_${new Date().toISOString().slice(0,10)}.json`;
+  a.download = t('export_filename').replace('{date}', new Date().toISOString().slice(0,10));
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
