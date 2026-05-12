@@ -251,39 +251,3 @@ export function renderHighlightReel(proj) {
     }
   });
 }
-
-// ═══════════════════════════════════════
-//  临时诊断：测试 expandInstructionFull 解析能力
-// ═══════════════════════════════════════
-export function debugParseTest() {
-  const cases = [
-    { input: '6X',              expect: [{sid:'X', count:6}] },
-    { input: '2V, 4A',          expect: [{sid:'V', count:2}, {sid:'A', count:4}] },
-    { input: '10(X,V,X)',       expect: [{sid:'X',count:1},{sid:'V',count:1},{sid:'X',count:2},{sid:'V',count:1},{sid:'X',count:2},{sid:'V',count:1},{sid:'X',count:2},{sid:'V',count:1},{sid:'X',count:2},{sid:'V',count:1},{sid:'X',count:2},{sid:'V',count:1},{sid:'X',count:2},{sid:'V',count:1},{sid:'X',count:2},{sid:'V',count:1},{sid:'X',count:2},{sid:'V',count:1},{sid:'X',count:2},{sid:'V',count:1},{sid:'X',count:1}] },
-    { input: '3(2X,V)',         expect: [{sid:'X',count:2},{sid:'V',count:1},{sid:'X',count:2},{sid:'V',count:1},{sid:'X',count:2},{sid:'V',count:1}] },
-    { input: '2(X,3V,A)',       expect: [{sid:'X',count:1},{sid:'V',count:3},{sid:'A',count:1},{sid:'X',count:1},{sid:'V',count:3},{sid:'A',count:1}] },
-    { input: '6X, 2(V,A)',      expect: [{sid:'X', count:6}, {sid:'V',count:1},{sid:'A',count:1},{sid:'V',count:1},{sid:'A',count:1}] },
-  ];
-
-  const groupBySid = (arr) => {
-    const out = [];
-    for (const sid of arr) {
-      const last = out[out.length - 1];
-      if (last && last.sid === sid) { last.count++; }
-      else { out.push({ sid, count: 1 }); }
-    }
-    return out;
-  };
-
-  console.group('🔍 expandInstructionFull 诊断');
-  cases.forEach(({ input, expect }, i) => {
-    const raw = expandInstructionFull(input);
-    const grouped = groupBySid(raw || []);
-    const pass = JSON.stringify(grouped) === JSON.stringify(expect);
-    console.log(`\n[${i + 1}] "${input}"`);
-    console.log(`  期望: ${JSON.stringify(expect)}`);
-    console.log(`  实际: ${JSON.stringify(grouped)}  (展开: [${(raw || []).join(',')}])`);
-    console.log(`  结果: ${pass ? '✅ 通过' : '❌ 失败'}`);
-  });
-  console.groupEnd();
-}
