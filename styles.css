@@ -2088,3 +2088,36 @@ html.settings-view #screen-content {
   letter-spacing: 0.5px;
   line-height: 1.4;
 }
+
+/* 沉浸模式隐藏元素 */
+html.immersive-mode .nav-bar { display: none; }
+html.immersive-mode .part-tabs-wrap { display: none; }
+html.immersive-mode .rounds-wrap { display: none; }
+html.immersive-mode .task-slide { display: none; }
+html.immersive-mode .filter-row { display: none; }
+
+/* 沉浸模式保留但调整 */
+html.immersive-mode .highlight-reel {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg);
+  padding: 8px 0;
+}
+
+/* 针法按钮放大 */
+html.immersive-mode .pal-btn {
+  height: 80px;
+  font-size: 15px;
+  border-radius: 16px;
+}
+
+/* 底部操作栏只保留撤销 */
+html.immersive-mode .bar-btn:not(.undo-btn):not(.immersive-btn) {
+  display: none;
+}
+
+/* 增减虚线按钮隐藏 */
+html.immersive-mode .palette-add-btn {
+  display: none;
+}

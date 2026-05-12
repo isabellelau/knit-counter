@@ -252,7 +252,7 @@ export function pushStitch(sid) {
   const bar = document.getElementById('bottom-bar');
   if (bar && state.highlightMode) {
     let bhtml = renderDynamicPalette(proj);
-    bhtml += renderFilterToggle();
+    bhtml += renderToggleRow();
     bhtml += renderBarRow();
     bar.innerHTML = bhtml;
     updateVoiceButton();
@@ -291,7 +291,7 @@ export function undoStitch() {
   const bar = document.getElementById('bottom-bar');
   if (bar && state.highlightMode) {
     let bhtml = renderDynamicPalette(proj);
-    bhtml += renderFilterToggle();
+    bhtml += renderToggleRow();
     bhtml += renderBarRow();
     bar.innerHTML = bhtml;
     updateVoiceButton();
@@ -717,7 +717,7 @@ export function renderDynamicPalette(proj) {
 
   // 增减按钮：高亮模式下 okl/round_complete 时禁用
   const addBtnExtra = dimBtn ? 'opacity:0.3;pointer-events:none' : '';
-  html += `<button class="pal-btn" style="background:var(--bg);color:var(--accent);border:2px dashed var(--accent);font-size:18px;${addBtnExtra}" onclick="openStitchSetup('edit')" title="增减针法">
+  html += `<button class="pal-btn palette-add-btn" style="background:var(--bg);color:var(--accent);border:2px dashed var(--accent);font-size:18px;${addBtnExtra}" onclick="openStitchSetup('edit')" title="增减针法">
     ＋<br><small style="opacity:.7;font-size:11px">增减</small>
   </button>`;
   html += `</div>`;
@@ -730,7 +730,7 @@ export function toggleFilterByRound() {
   if (!proj) return;
   const bar = document.getElementById('bottom-bar');
   const paletteHtml = renderDynamicPalette(proj);
-  const toggleHtml = renderFilterToggle();
+  const toggleHtml = renderToggleRow();
   const barRowHtml = renderBarRow();
   bar.innerHTML = paletteHtml + toggleHtml + barRowHtml;
   updateVoiceButton();
@@ -740,11 +740,29 @@ export function renderFilterToggle() {
   const dotBg = state.filterByRound ? 'var(--accent)' : 'var(--border)';
   const dotPos = state.filterByRound ? '18px' : '2px';
   const unit = getUnitLabel();
-  return `<div style="display:flex;align-items:center;justify-content:flex-end;padding:2px 4px 6px;gap:6px;cursor:pointer" onclick="toggleFilterByRound()">
+  return `<div class="filter-toggle" style="display:flex;align-items:center;gap:6px;cursor:pointer" onclick="toggleFilterByRound()">
     <span style="font-size:10px;color:var(--muted);user-select:none">仅显示本${unit}针法</span>
     <span style="display:inline-block;width:34px;height:20px;border-radius:10px;background:${dotBg};position:relative;transition:background .2s;flex-shrink:0">
       <span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;left:${dotPos};transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></span>
     </span>
+  </div>`;
+}
+
+export function renderImmersiveToggle() {
+  const dotBg = state.immersiveMode ? 'var(--accent)' : 'var(--border)';
+  const dotPos = state.immersiveMode ? '18px' : '2px';
+  return `<div class="immersive-toggle" style="display:flex;align-items:center;gap:6px;cursor:pointer" onclick="toggleImmersiveMode()">
+    <span style="font-size:10px;color:var(--muted);user-select:none">沉浸模式</span>
+    <span style="display:inline-block;width:34px;height:20px;border-radius:10px;background:${dotBg};position:relative;transition:background .2s;flex-shrink:0">
+      <span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;left:${dotPos};transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></span>
+    </span>
+  </div>`;
+}
+
+export function renderToggleRow() {
+  return `<div class="filter-row" style="display:flex;align-items:center;justify-content:flex-end;padding:2px 4px 6px;gap:16px">
+    ${renderFilterToggle()}
+    ${renderImmersiveToggle()}
   </div>`;
 }
 
@@ -754,11 +772,14 @@ export function renderBarRow() {
     ? `<div style="text-align:center;font-size:11px;color:#EF4444;padding:2px 0 4px;opacity:.8">🎙 说数字 1-9 添加针法 · 说"撤销"删除上一针</div>`
     : '';
   return `${hint}<div class="bar-row">
-    <button class="bar-btn" onclick="undoStitch()">↩ 撤销</button>
+    <button class="bar-btn undo-btn" onclick="undoStitch()">↩ 撤销</button>
     <button class="bar-btn" onclick="openPatternPasteSheet()">📥 图解</button>
     <button class="bar-btn" id="voice-mode-btn" onclick="toggleVoiceMode()">🎙 语音</button>
     <button class="bar-btn" id="highlight-mode-btn" onclick="toggleHighlightMode()" style="position:relative">
       ✦ 高亮
+    </button>
+    <button class="bar-btn immersive-btn" onclick="toggleImmersiveMode()" style="color:${state.immersiveMode ? 'var(--accent)' : 'var(--muted)'}">
+      ⛶ 沉浸
     </button>
     <button class="bar-btn primary" onclick="addRound()">＋ 新一${unit}</button>
   </div>`;
@@ -792,7 +813,7 @@ export function toggleHighlightMode() {
     const bar = document.getElementById('bottom-bar');
     if (bar) {
       const paletteHtml = renderDynamicPalette(proj);
-      const toggleHtml = renderFilterToggle();
+      const toggleHtml = renderToggleRow();
       const barRowHtml = renderBarRow();
       bar.innerHTML = paletteHtml + toggleHtml + barRowHtml;
       updateVoiceButton();
@@ -813,6 +834,29 @@ export function updateHighlightButton() {
     btn.style.color = '';
     btn.style.borderColor = '';
   }
+}
+
+export function toggleImmersiveMode() {
+  state.immersiveMode = !state.immersiveMode;
+  document.documentElement.classList.toggle('immersive-mode', state.immersiveMode);
+  updateImmersiveButton();
+  const proj = getProj(state.curProjId);
+  if (!proj) return;
+  const bar = document.getElementById('bottom-bar');
+  if (bar) {
+    let bhtml = renderDynamicPalette(proj);
+    bhtml += renderToggleRow();
+    bhtml += renderBarRow();
+    bar.innerHTML = bhtml;
+    updateVoiceButton();
+    updateHighlightButton();
+  }
+}
+
+export function updateImmersiveButton() {
+  const btn = document.querySelector('.immersive-btn');
+  if (!btn) return;
+  btn.style.color = state.immersiveMode ? 'var(--accent)' : 'var(--muted)';
 }
 
 export function openStitchSetup(mode) {
@@ -1158,7 +1202,7 @@ export function saveProjectStitches(mode) {
   } else {
     const bar = document.getElementById('bottom-bar');
     const paletteHtml = renderDynamicPalette(proj);
-    const toggleHtml = renderFilterToggle();
+    const toggleHtml = renderToggleRow();
     const barRowHtml = renderBarRow();
     bar.innerHTML = paletteHtml + toggleHtml + barRowHtml;
     updateVoiceButton();

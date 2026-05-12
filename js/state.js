@@ -26,6 +26,7 @@ export const state = {
   editingPartId: null,
   currentTab: 'projects',
   voiceMode: false,
+  immersiveMode: false,
   recognition: null,
   flowState: {
     importMode: null,

@@ -15,12 +15,12 @@ import {
 import {
   getUnitLabel, toggleRowTerms, getProjColor, renderSpillHTML, renderTaskSlide,
   editExpectedCount, renderDynamicPalette, toggleFilterByRound, renderFilterToggle,
-  renderBarRow, pushStitch, undoStitch, stitchTap, changeStitch, deleteStitch,
+  renderToggleRow, renderBarRow, pushStitch, undoStitch, stitchTap, changeStitch, deleteStitch,
   startInsert, doInsert, openStitchSetup, toggleSetupStitch, openStitchCustomize,
   saveStitchCustomize, resetStitchCustomize, backToSetupGrid, openNewStitchForm,
   saveNewStitch, deleteCustomStitch, saveProjectStitches, closeSetupSheet,
   triggerEdgeGlow, openInstructionEdit, saveRoundInstruction,
-  toggleHighlightMode, updateHighlightButton
+  toggleHighlightMode, updateHighlightButton, toggleImmersiveMode, updateImmersiveButton
 } from './stitch.js';
 import {
   addRound, toggleRound, deleteRound, undoDeleteRound, setActiveRound
@@ -64,6 +64,10 @@ function goHome() {
   state.curProjId = null; state.expandedRounds.clear(); state.selectedStitch = null;
   state.highlightMode = false;
   state.highlightIndex = 0;
+  if (state.immersiveMode) {
+    state.immersiveMode = false;
+    document.documentElement.classList.remove('immersive-mode');
+  }
   state.flowState.projMenuId = null;
   document.getElementById("bottom-bar")?.style.setProperty("display", "none");
   document.getElementById("tab-nav")?.style.setProperty("display", "flex");
@@ -177,8 +181,8 @@ const _globals = {
   toggleProjMenu, archiveProject, showArchiveSuccessSheet, handlePwaHintOptOut, showPwaTutorial, unarchiveProject,
   toggleVoiceMode, updateVoiceButton, setVoicePulse, playSound,
   openVoiceTutorial,
-  renderDynamicPalette, renderFilterToggle, renderBarRow, triggerEdgeGlow, openInstructionEdit, saveRoundInstruction,
-  toggleHighlightMode, updateHighlightButton,
+  renderDynamicPalette, renderFilterToggle, renderToggleRow, renderBarRow, triggerEdgeGlow, openInstructionEdit, saveRoundInstruction,
+  toggleHighlightMode, updateHighlightButton, toggleImmersiveMode, updateImmersiveButton,
   openSettings, changeTheme, changeStitchTheme, toggleVoiceDefault, toggleVoiceSound, toggleHighlightEnabled, clearAllData,
   switchTab, renderSettings, updateTabNav,
   navigateToSubPage, goBackFromSubPage,

@@ -2,7 +2,7 @@ import { state, getProj, getActivePart, getEditingPartId, getTodayKey, getDailyL
 import { esc } from './ui.js';
 import { saveData } from './storage.js';
 import { renderTaskSlide, renderDynamicPalette,
-         renderFilterToggle, renderBarRow,
+         renderToggleRow, renderBarRow,
          renderSpillHTML, getProjColor, getUnitLabel } from './stitch.js';
 import { setPageView } from './main.js';
 import { updateVoiceButton } from './voice.js';
@@ -300,7 +300,7 @@ export function renderProject() {
   const bar = document.getElementById("bottom-bar");
   if (bar) bar.style.display = "block";
   let bhtml = renderDynamicPalette(proj);
-  bhtml += renderFilterToggle();
+  bhtml += renderToggleRow();
   bhtml += renderBarRow();
 
   if (bar) bar.innerHTML = bhtml;
