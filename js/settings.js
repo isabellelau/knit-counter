@@ -107,14 +107,6 @@ function _buildSettingsListInnerHTML() {
           <span class="settings-row-chevron">›</span>
         </div>
       </div>
-
-      <div class="settings-row" onclick="exportPDF();closeSheet()">
-        <div class="settings-row-icon" style="background:var(--accent-bg);color:var(--accent)">📄</div>
-        <span class="settings-row-label">导出 PDF</span>
-        <div class="settings-row-extra">
-          <span class="settings-row-chevron">›</span>
-        </div>
-      </div>
     </div>
   `;
 }

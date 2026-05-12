@@ -223,12 +223,6 @@ export function updateVoiceButton() {
   }
 }
 
-export function dismissVoiceHint() {
-  localStorage.setItem('voice_hint_shown', 'true');
-  const banner = document.getElementById('voice-hint-banner');
-  if (banner) banner.remove();
-}
-
 export function openVoiceTutorial() {
   const content = `<div class="sheet-handle"></div>
   <div class="sheet-title">🎙 语音模式使用说明</div>

@@ -2,7 +2,7 @@ import { STITCH_LIB, COLOR_THEMES, OLD_ID_MAP, ALIAS_TO_ID, STITCHES, SM, parseP
 import { state, NUMBER_MAP, uid, getProj, getActivePart, isPartEmpty, getEditingPartId } from './state.js';
 import { saveData, loadData, migrateData, exportPDF, exportData, exportSingleProject, checkStorageQuota } from './storage.js';
 import { esc, showToast, showSheet, closeSheet, showEntryChoiceSheet, showConfirmDialog, confirmDialog, closeDialog } from './ui.js';
-import { playSound, initRecognition, toggleVoiceMode, setVoicePulse, updateVoiceButton, openVoiceTutorial, dismissVoiceHint } from './voice.js';
+import { playSound, initRecognition, toggleVoiceMode, setVoicePulse, updateVoiceButton, openVoiceTutorial } from './voice.js';
 import { openSettings, renderSettings, changeTheme, changeStitchTheme, toggleVoiceDefault, toggleVoiceSound, toggleHighlightEnabled, clearAllData, navigateToSubPage, goBackFromSubPage } from './settings.js';
 import {
   startImportFlow, startManualFlow, dismissEntryChoice,
@@ -166,7 +166,7 @@ const _globals = {
   startEditPartName, partNameBlur, getEditingPartId, handleEditBtnClick, handleDeleteBtnClick,
   toggleProjMenu, archiveProject, showArchiveSuccessSheet, handlePwaHintOptOut, showPwaTutorial, unarchiveProject,
   toggleVoiceMode, updateVoiceButton, setVoicePulse, playSound,
-  openVoiceTutorial, dismissVoiceHint,
+  openVoiceTutorial,
   renderDynamicPalette, renderFilterToggle, renderBarRow, triggerEdgeGlow, openInstructionEdit, saveRoundInstruction,
   toggleHighlightMode, updateHighlightButton,
   openSettings, changeTheme, changeStitchTheme, toggleVoiceDefault, toggleVoiceSound, toggleHighlightEnabled, clearAllData,

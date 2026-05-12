@@ -759,7 +759,6 @@ export function renderBarRow() {
     <button class="bar-btn" id="voice-mode-btn" onclick="toggleVoiceMode()">🎙 语音</button>
     <button class="bar-btn" id="highlight-mode-btn" onclick="toggleHighlightMode()" style="position:relative">
       ✦ 高亮
-      <span class="highlight-pro-badge">PRO</span>
     </button>
     <button class="bar-btn primary" onclick="addRound()">＋ 新一${unit}</button>
   </div>`;
@@ -783,7 +782,6 @@ export function toggleHighlightMode() {
       showToast('本圈图解需要校准才能启用高亮');
       openInstructionEdit(part.activeRoundId);
     }
-    showToast('PRO 功能，免费体验中 🧶');
   } else {
     state.highlightIndex = 0;
   }

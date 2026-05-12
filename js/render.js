@@ -303,24 +303,6 @@ export function renderProject() {
   bhtml += renderFilterToggle();
   bhtml += renderBarRow();
 
-  if (localStorage.getItem('voice_hint_shown') === null) {
-    bhtml += `<div id="voice-hint-banner" style="
-      background:#FEF3C7;border-top:1px solid #FDE68A;
-      padding:10px 14px;display:flex;
-      align-items:center;gap:8px;
-      font-size:13px;color:#92400E;">
-      <span style="flex:1">🎙 试试语音模式，解放双手钩织</span>
-      <button onclick="openVoiceTutorial()"
-        style="background:none;border:none;color:var(--accent);
-        font-weight:700;font-size:13px;cursor:pointer;
-        font-family:inherit;padding:0">了解 ›</button>
-      <button onclick="dismissVoiceHint()"
-        style="background:none;border:none;color:#92400E;
-        font-size:18px;cursor:pointer;line-height:1;
-        padding:0 0 0 4px;opacity:.6">×</button>
-    </div>`;
-  }
-
   if (bar) bar.innerHTML = bhtml;
   const barH = bar ? bar.offsetHeight : 0;
   if (barH) document.documentElement.style.setProperty('--bottom-bar-h', barH + 'px');
