@@ -2102,3 +2102,18 @@ html.immersive-mode .sticky-wrap {
   margin: 0 12px 16px;
 }
 
+html.immersive-mode .palette {
+  gap: 10px;
+  padding: 16px 12px 0;
+}
+
+html.immersive-mode .pal-btn {
+  height: 88px;
+  font-size: 16px;
+  border-radius: 18px;
+}
+
+html.immersive-mode .pal-btn small {
+  font-size: 13px;
+}
+
