@@ -240,6 +240,8 @@ export default {
   settings_advanced: 'Advanced',
   settings_about: 'About',
   settings_language: 'Language / 语言',
+  settings_notation: 'Stitch notation',
+  settings_notation_desc: 'Independent of UI language; affects stitch name display only',
   settings_ui_theme: 'UI theme',
   settings_ui_theme_desc: 'Change the overall look of the app',
   settings_stitch_theme: 'Stitch colors',

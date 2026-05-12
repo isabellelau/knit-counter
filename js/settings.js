@@ -2,7 +2,7 @@ import { state, getProj, clearDailyLog } from './state.js';
 import { showConfirmDialog, showToast, closeSheet } from './ui.js';
 import { saveData, checkStorageQuota } from './storage.js';
 import { getProjColor, ALL_THEMES, refreshBottomBar } from './stitch.js';
-import { t, setLang, getLang, SUPPORTED_LANGS } from './i18n.js';
+import { t, setLang, getLang, setNotation, getNotationKey, SUPPORTED_LANGS, NOTATION_OPTIONS } from './i18n.js';
 import { COLOR_THEMES } from '../stitches.js';
 import { setPageView } from './main.js';
 import { removeProjectCover } from './image.js';
@@ -15,7 +15,8 @@ const SUBPAGE_TITLES = {
   permissions: t('settings_permissions'),
   data: t('settings_data'),
   advanced: t('settings_advanced'),
-  about: t('settings_about')
+  about: t('settings_about'),
+  lang: t('settings_language')
 };
 
 // ── Sheet 版（从项目页头部按钮调用，保留兼容）──
@@ -67,14 +68,6 @@ function _resetNavBarToSettingsRoot() {
 function _buildSettingsListInnerHTML() {
   const theme = state.data.settings.theme || 'morandi';
   const themeName = theme === 'morandi' ? t('theme_morandi') : theme === 'night' ? t('theme_night') : t('theme_system');
-  const curLang = getLang();
-  const langPills = SUPPORTED_LANGS.map(l => {
-    const active = l.code === curLang;
-    return `<button class="settings-lang-pill${active ? ' active' : ''}"
-      onclick="event.stopPropagation();switchLang('${l.code}')"
-      data-lang="${l.code}">${l.label}</button>`;
-  }).join('');
-
   return `
     <div class="settings-list">
       <div class="settings-row" onclick="navigateToSubPage('color')">
@@ -86,11 +79,11 @@ function _buildSettingsListInnerHTML() {
         </div>
       </div>
 
-      <div class="settings-row settings-row--lang">
+      <div class="settings-row" onclick="navigateToSubPage('lang')">
         <div class="settings-row-icon" style="background:var(--accent-bg);color:var(--accent)">🌐</div>
         <span class="settings-row-label">${t('settings_language')}</span>
         <div class="settings-row-extra">
-          <span class="settings-lang-pills">${langPills}</span>
+          <span class="settings-row-chevron">›</span>
         </div>
       </div>
 
@@ -234,6 +227,9 @@ export function navigateToSubPage(key) {
       break;
     case 'about':
       subHTML = _buildAboutSubPageHTML();
+      break;
+    case 'lang':
+      subHTML = _buildLangSubPageHTML();
       break;
     default:
       _settingsStack.pop();
@@ -440,6 +436,45 @@ export function toggleHighlightEnabled() {
 }
 
 // ═════════════════════════════════════
+//  子页：语言与针法显示
+// ═════════════════════════════════════
+
+function _buildLangSubPageHTML() {
+  const curLang = getLang();
+  const langPills = SUPPORTED_LANGS.map(l => {
+    const active = l.code === curLang;
+    return `<button class="settings-theme-card${active ? ' active' : ''}"
+      style="flex:1;padding:10px 8px;font-size:14px;font-weight:600"
+      onclick="switchLang('${l.code}')"
+      data-lang="${l.code}">${l.label}</button>`;
+  }).join('');
+
+  const curNotation = getNotationKey();
+  const notationPills = NOTATION_OPTIONS.map(o => {
+    const active = o.code === curNotation;
+    return `<button class="settings-theme-card${active ? ' active' : ''}"
+      style="flex:1;padding:10px 8px;font-size:14px;font-weight:600"
+      onclick="switchNotation('${o.code}')"
+      data-notation="${o.code}">${o.label}</button>`;
+  }).join('');
+
+  return `
+    <div class="settings-section-hd" style="text-align:center">${t('settings_language')}</div>
+    <div style="display:flex;gap:8px;padding:0 16px 16px">
+      ${langPills}
+    </div>
+
+    <div class="settings-divider"></div>
+
+    <div class="settings-section-hd" style="text-align:center">${t('settings_notation')}</div>
+    <div style="display:flex;gap:8px;padding:0 16px 8px">
+      ${notationPills}
+    </div>
+    <div class="settings-notation-desc">${t('settings_notation_desc')}</div>
+  `;
+}
+
+// ═════════════════════════════════════
 //  子页：关于
 // ═════════════════════════════════════
 
@@ -460,6 +495,11 @@ function _buildAboutSubPageHTML() {
 
 window.switchLang = function(code) {
   setLang(code);
+  location.reload();
+};
+
+window.switchNotation = function(code) {
+  setNotation(code);
   location.reload();
 };
 

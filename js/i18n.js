@@ -3,6 +3,7 @@ import enLocale from './locales/en.js';
 import { STITCH_TERMS } from './locales/terms.js';
 
 const UI_LANGS = { zh: zhLocale, en: enLocale };
+const NOTATION_KEY = 'knit_stitch_notation';
 
 function detectLang() {
   const saved = localStorage.getItem('knit_lang');
@@ -19,10 +20,28 @@ export function t(key) {
     ?? key;
 }
 
+function getNotation() {
+  const saved = localStorage.getItem(NOTATION_KEY);
+  if (saved) return saved;
+  return currentLang === 'zh' ? 'zh' : 'en_us';
+}
+
 export function term(sid) {
-  return STITCH_TERMS[currentLang]?.[sid]
+  const notation = getNotation();
+  if (notation === 'symbol') {
+    return STITCH_TERMS['symbol']?.[sid] ?? sid;
+  }
+  return STITCH_TERMS[notation]?.[sid]
     ?? STITCH_TERMS['zh']?.[sid]
     ?? sid;
+}
+
+export function setNotation(notation) {
+  localStorage.setItem(NOTATION_KEY, notation);
+}
+
+export function getNotationKey() {
+  return getNotation();
 }
 
 export function setLang(lang) {
@@ -38,4 +57,11 @@ export function getLang() {
 export const SUPPORTED_LANGS = [
   { code: 'zh', label: '中文' },
   { code: 'en', label: 'English' },
+];
+
+export const NOTATION_OPTIONS = [
+  { code: 'symbol', label: '符号 X/V' },
+  { code: 'zh', label: '中文' },
+  { code: 'en_us', label: 'EN-US' },
+  { code: 'en_uk', label: 'EN-UK' },
 ];

@@ -240,6 +240,8 @@ export default {
   settings_advanced: '进阶功能',
   settings_about: '关于',
   settings_language: '语言 / Language',
+  settings_notation: '针法显示',
+  settings_notation_desc: '独立于界面语言，仅影响针法名称显示',
   settings_ui_theme: '界面主题',
   settings_ui_theme_desc: '切换整体 UI 配色',
   settings_stitch_theme: '针法配色',
