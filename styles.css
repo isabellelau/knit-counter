@@ -2095,6 +2095,11 @@ html.immersive-mode .part-tabs-wrap { display: none; }
 html.immersive-mode .round-card:not(.active) { display: none; }
 html.immersive-mode .task-slide-text { display: none; }
 
+/* 沉浸模式下活跃圈卡片强制展开 */
+html.immersive-mode .round-card.active .round-body {
+  display: block !important;
+}
+
 /* 针法按钮放大 */
 html.immersive-mode .pal-btn {
   height: 80px;

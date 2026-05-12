@@ -835,14 +835,15 @@ export function updateHighlightButton() {
 
 export function toggleImmersiveMode() {
   state.immersiveMode = !state.immersiveMode;
-  document.documentElement.classList.toggle('immersive-mode', state.immersiveMode);
-  updateImmersiveButton();
 
   const proj = getProj(state.curProjId);
   const part = getActivePart(proj);
   if (state.immersiveMode && part?.activeRoundId) {
     state.expandedRounds.add(part.activeRoundId);
   }
+
+  document.documentElement.classList.toggle('immersive-mode', state.immersiveMode);
+  updateImmersiveButton();
 
   if (proj) {
     window.renderProject();
