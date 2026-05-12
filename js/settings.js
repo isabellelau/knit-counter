@@ -1,8 +1,10 @@
 import { state, getProj, clearDailyLog } from './state.js';
 import { showConfirmDialog, showToast, closeSheet } from './ui.js';
-import { saveData } from './storage.js';
+import { saveData, checkStorageQuota } from './storage.js';
 import { getProjColor, ALL_THEMES } from './stitch.js';
 import { COLOR_THEMES } from '../stitches.js';
+import { setPageView } from './main.js';
+import { removeProjectCover } from './image.js';
 
 let _settingsStack = [];
 let _settingsMode = 'page'; // 'page' | 'sheet'
@@ -27,8 +29,7 @@ export function openSettings() {
 
 // ── 全页版（从 Tab Bar 切换调用）──
 export function renderSettings() {
-  document.documentElement.classList.remove('home-view');
-  document.documentElement.classList.add('settings-view');
+  setPageView('settings-view');
   _settingsMode = 'page';
   document.getElementById("bottom-bar")?.style.setProperty("display", "none");
 
@@ -211,6 +212,7 @@ export function navigateToSubPage(key) {
       break;
     case 'data':
       subHTML = _buildDataSubPageHTML();
+      checkStorageQuota();
       break;
     case 'advanced':
       subHTML = _buildAdvancedSubPageHTML();
@@ -512,10 +514,11 @@ export function toggleVoiceSound() {
 }
 
 export function clearAllData() {
-  showConfirmDialog("确定要清空所有数据吗？此操作不可恢复。", (ok) => {
+  showConfirmDialog("确定要清空所有数据吗？此操作不可恢复。", async (ok) => {
     if (!ok) return;
+    await Promise.all(state.data.projects.map(p => removeProjectCover(p.id)));
     state.data.projects = [];
-    saveData();
+    await saveData();
     clearDailyLog();
     if (state.curProjId) {
       window.goHome();
