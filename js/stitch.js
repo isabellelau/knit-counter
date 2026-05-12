@@ -842,11 +842,16 @@ export function toggleImmersiveMode() {
     state.expandedRounds.add(part.activeRoundId);
   }
 
+  // 先 toggle class
   document.documentElement.classList.toggle('immersive-mode', state.immersiveMode);
+  console.log('immersive-mode class present:', document.documentElement.classList.contains('immersive-mode'));
+
   updateImmersiveButton();
 
+  // renderProject 之后再确认 class 还在
   if (proj) {
     window.renderProject();
+    console.log('after renderProject, immersive-mode:', document.documentElement.classList.contains('immersive-mode'));
   }
 }
 

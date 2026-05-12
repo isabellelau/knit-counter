@@ -2092,11 +2092,11 @@ html.settings-view #screen-content {
 /* 沉浸模式隐藏元素 */
 html.immersive-mode .nav-bar { display: none; }
 html.immersive-mode .part-tabs-wrap { display: none; }
-html.immersive-mode .round-card:not(.active) { display: none; }
+html.immersive-mode .rounds-wrap .round-card:not(.active) { display: none !important; }
 html.immersive-mode .task-slide-text { display: none; }
 
 /* 沉浸模式下活跃圈卡片强制展开 */
-html.immersive-mode .round-card.active .round-body {
+html.immersive-mode .rounds-wrap .round-card.active .round-body {
   display: block !important;
 }
 
