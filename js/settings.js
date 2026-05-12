@@ -470,7 +470,7 @@ export function changeTheme(themeKey) {
       const bar = document.getElementById("bottom-bar");
       if (bar) {
         let bhtml = window.renderDynamicPalette(proj);
-        bhtml += window.renderFilterToggle();
+        bhtml += window.renderToggleRow();
         bhtml += window.renderBarRow();
         bar.innerHTML = bhtml;
         window.updateVoiceButton();

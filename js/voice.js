@@ -131,7 +131,7 @@ export async function toggleVoiceMode() {
     const proj = getProj(state.curProjId);
     if (proj) {
       const bar = document.getElementById('bottom-bar');
-      bar.innerHTML = window.renderDynamicPalette(proj) + window.renderFilterToggle() + window.renderBarRow();
+      bar.innerHTML = window.renderDynamicPalette(proj) + window.renderToggleRow() + window.renderBarRow();
     }
     updateVoiceButton();
     return;
@@ -182,7 +182,7 @@ export async function toggleVoiceMode() {
   const proj = getProj(state.curProjId);
   if (proj) {
     const bar = document.getElementById('bottom-bar');
-    bar.innerHTML = window.renderDynamicPalette(proj) + window.renderFilterToggle() + window.renderBarRow();
+    bar.innerHTML = window.renderDynamicPalette(proj) + window.renderToggleRow() + window.renderBarRow();
   }
   updateVoiceButton();
 }

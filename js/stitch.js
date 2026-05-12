@@ -772,14 +772,11 @@ export function renderBarRow() {
     ? `<div style="text-align:center;font-size:11px;color:#EF4444;padding:2px 0 4px;opacity:.8">🎙 说数字 1-9 添加针法 · 说"撤销"删除上一针</div>`
     : '';
   return `${hint}<div class="bar-row">
-    <button class="bar-btn undo-btn" onclick="undoStitch()">↩ 撤销</button>
+    <button class="bar-btn" onclick="undoStitch()">↩ 撤销</button>
     <button class="bar-btn" onclick="openPatternPasteSheet()">📥 图解</button>
     <button class="bar-btn" id="voice-mode-btn" onclick="toggleVoiceMode()">🎙 语音</button>
     <button class="bar-btn" id="highlight-mode-btn" onclick="toggleHighlightMode()" style="position:relative">
       ✦ 高亮
-    </button>
-    <button class="bar-btn immersive-btn" onclick="toggleImmersiveMode()" style="color:${state.immersiveMode ? 'var(--accent)' : 'var(--muted)'}">
-      ⛶ 沉浸
     </button>
     <button class="bar-btn primary" onclick="addRound()">＋ 新一${unit}</button>
   </div>`;

@@ -2,7 +2,7 @@ import { state, uid, getProj, getActivePart } from './state.js';
 import { showConfirmDialog, showToast } from './ui.js';
 import { saveData } from './storage.js';
 import { normalizeRoundNums } from './pattern.js';
-import { getUnitLabel, renderDynamicPalette, renderFilterToggle, renderBarRow, renderTaskSlide, updateHighlightButton } from './stitch.js';
+import { getUnitLabel, renderDynamicPalette, renderToggleRow, renderBarRow, renderTaskSlide, updateHighlightButton } from './stitch.js';
 import { getNextStitchSid, renderHighlightReel } from './highlight.js';
 import { updateVoiceButton } from './voice.js';
 
@@ -173,7 +173,7 @@ export function setActiveRound(proj, rid) {
   const bar = document.getElementById("bottom-bar");
   if (bar) {
     let bhtml = renderDynamicPalette(proj);
-    bhtml += renderFilterToggle();
+    bhtml += renderToggleRow();
     bhtml += renderBarRow();
     bar.innerHTML = bhtml;
     updateVoiceButton();
