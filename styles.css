@@ -2092,48 +2092,8 @@ html.settings-view #screen-content {
 /* 沉浸模式隐藏元素 */
 html.immersive-mode .nav-bar { display: none; }
 html.immersive-mode .part-tabs-wrap { display: none; }
-html.immersive-mode .rounds-wrap { display: none; }
+html.immersive-mode .round-card:not(.active) { display: none; }
 html.immersive-mode .task-slide-text { display: none; }
-
-/* 沉浸模式布局：screen 仅包裹内容，bottom-bar 填满剩余空间 */
-html.immersive-mode #screen {
-  flex: 0 0 auto;
-  overflow: visible;
-}
-
-html.immersive-mode #bottom-bar {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-/* palette 区域填满剩余空间 */
-html.immersive-mode .palette {
-  flex: 1;
-  align-content: center;
-  overflow-y: auto;
-}
-
-/* palette 状态栏不收缩 */
-html.immersive-mode .palette-status-bar {
-  flex-shrink: 0;
-}
-
-/* filter row 固定在 palette 下方 */
-html.immersive-mode .filter-row {
-  flex-shrink: 0;
-}
-
-/* bar row 固定在底部 */
-html.immersive-mode .bar-row {
-  flex-shrink: 0;
-}
-
-/* highlight reel 不收缩，保持在顶部 */
-html.immersive-mode .highlight-reel {
-  flex-shrink: 0;
-}
 
 /* 针法按钮放大 */
 html.immersive-mode .pal-btn {

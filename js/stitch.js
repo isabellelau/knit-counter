@@ -837,16 +837,15 @@ export function toggleImmersiveMode() {
   state.immersiveMode = !state.immersiveMode;
   document.documentElement.classList.toggle('immersive-mode', state.immersiveMode);
   updateImmersiveButton();
+
   const proj = getProj(state.curProjId);
-  if (!proj) return;
-  const bar = document.getElementById('bottom-bar');
-  if (bar) {
-    let bhtml = renderDynamicPalette(proj);
-    bhtml += renderToggleRow();
-    bhtml += renderBarRow();
-    bar.innerHTML = bhtml;
-    updateVoiceButton();
-    updateHighlightButton();
+  const part = getActivePart(proj);
+  if (state.immersiveMode && part?.activeRoundId) {
+    state.expandedRounds.add(part.activeRoundId);
+  }
+
+  if (proj) {
+    window.renderProject();
   }
 }
 

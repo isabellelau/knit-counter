@@ -269,7 +269,7 @@ export function renderProject() {
     const total = r.seq.length;
     const dots = r.seq.slice(-8).map(sid => `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${getProjColor(sid, proj)};margin-right:2px"></span>`).join("");
 
-    html += `<div class="round-card" id="round-${r.id}">
+    html += `<div class="round-card${isActive ? ' active' : ''}" id="round-${r.id}">
     <div class="round-hdr" onclick="toggleRound('${r.id}')">
       <div class="round-badge${isActive ? " active" : ""}" onclick="event.stopPropagation();setActiveRound(null,'${r.id}')" style="cursor:pointer" title="点击设为当前${unit}">${r.isTextCard ? "文" : (r.roundNum === 0 ? "起" : (r.roundNum != null ? r.roundNum : i + 1))}</div>
       <div class="round-info">
