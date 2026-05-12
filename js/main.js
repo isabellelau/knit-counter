@@ -1,6 +1,6 @@
 import { STITCH_LIB, COLOR_THEMES, OLD_ID_MAP, ALIAS_TO_ID, STITCHES, SM, parsePattern, extractStitches, normalizeStitch, resolveColor } from '../stitches.js';
 import { state, NUMBER_MAP, uid, getProj, getActivePart, isPartEmpty, getEditingPartId } from './state.js';
-import { saveData, loadData, migrateData, exportPDF, exportData, exportSingleProject } from './storage.js';
+import { saveData, loadData, migrateData, exportPDF, exportData, exportSingleProject, checkStorageQuota } from './storage.js';
 import { esc, showToast, showSheet, closeSheet, showEntryChoiceSheet, showConfirmDialog, confirmDialog, closeDialog } from './ui.js';
 import { playSound, initRecognition, toggleVoiceMode, setVoicePulse, updateVoiceButton, openVoiceTutorial, dismissVoiceHint } from './voice.js';
 import { openSettings, renderSettings, changeTheme, changeStitchTheme, toggleVoiceDefault, toggleVoiceSound, toggleHighlightEnabled, clearAllData, navigateToSubPage, goBackFromSubPage } from './settings.js';
@@ -35,16 +35,22 @@ import {
   handlePwaHintOptOut, showPwaTutorial
 } from './project.js';
 import { pickCover, setProjectCover, removeProjectCover } from './image.js';
-import { expandInstruction, getNextStitchSid, debugParseTest, renderHighlightReel } from './highlight.js';
+import { expandInstruction, getNextStitchSid, renderHighlightReel } from './highlight.js';
 import { renderHome, renderProject } from './render.js';
 
 let _onboardStep = 0;
 const ONBOARD_KEY = 'knit_onboarded_v1';
 
 window.state = state;
+
+export function setPageView(view) {
+  document.documentElement.classList.remove('home-view', 'settings-view');
+  if (view) document.documentElement.classList.add(view);
+}
+
 // ── navigation ──
 function goHome() {
-  document.documentElement.classList.remove('settings-view');
+  setPageView('home-view');
   state.curProjId = null; state.expandedRounds.clear(); state.selectedStitch = null;
   state.highlightMode = false;
   state.highlightIndex = 0;
@@ -138,7 +144,7 @@ document.getElementById("dialog").addEventListener("keydown", e => {
 //  暴露全局函数（供 HTML onclick 使用）
 // ═══════════════════════════════════════════
 const _globals = {
-  goHome, openProject, exportPDF, exportData, exportSingleProject, importData,
+  goHome, openProject, exportPDF, exportData, exportSingleProject, importData, checkStorageQuota,
   showNewProjectDialog, showConfirmDialog, confirmDialog, closeDialog, deleteProject,
   renderProject, renderHome,
   addRound, toggleRound, deleteRound, undoDeleteRound, setActiveRound,
@@ -168,7 +174,8 @@ const _globals = {
   navigateToSubPage, goBackFromSubPage,
   editExpectedCount,
   pickCover, setProjectCover, removeProjectCover,
-  expandInstruction, getNextStitchSid, debugParseTest, renderHighlightReel,
+  expandInstruction, getNextStitchSid, renderHighlightReel,
+  setPageView,
   onboardNext
 };
 Object.entries(_globals).forEach(([k, v]) => { window[k] = v; });
@@ -185,7 +192,7 @@ if (savedTheme === 'morandi') {
   html.classList.add('theme-dark');
 }
 initOnboarding();
-loadData();
+await loadData();
 initScrollBehavior();
 renderHome();
 
