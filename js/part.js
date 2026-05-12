@@ -52,7 +52,6 @@ export function handleDeleteBtnClick(event, partId) {
 }
 
 export function startEditPartName(icon, partId) {
-  console.log('Action Triggered: startEditPartName', partId);
   window.editingPartId = partId;
   const input = icon.previousElementSibling;
   const span = input.previousElementSibling;
@@ -62,7 +61,6 @@ export function startEditPartName(icon, partId) {
 }
 
 export function partNameBlur(input, partId) {
-  console.log('Action Triggered: partNameBlur', partId, input.value.trim());
   renamePart(partId, input.value.trim());
   window.editingPartId = null;
   window.renderProject();
@@ -77,7 +75,6 @@ export function renamePart(partId, name) {
 }
 
 export function deletePart(partId) {
-  console.log('Action Triggered: deletePart', partId);
   const proj = getProj(state.curProjId);
   if (!proj) return;
   if (!proj.parts || proj.parts.length <= 1) return;
