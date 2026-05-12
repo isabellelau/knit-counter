@@ -33,6 +33,13 @@ export function renderSettings() {
   _settingsMode = 'page';
   document.getElementById("bottom-bar")?.style.setProperty("display", "none");
 
+  _resetNavBarToSettingsRoot();
+
+  _settingsStack = [];
+  _renderSettingsList();
+}
+
+function _resetNavBarToSettingsRoot() {
   const navBar    = document.getElementById('nav-bar');
   const navBack   = document.getElementById('nav-back');
   const navSmall  = document.getElementById('nav-small-title');
@@ -41,18 +48,15 @@ export function renderSettings() {
   const largeSubEl   = document.getElementById('large-title-sub');
   const largeTitleWrap = document.getElementById('large-title-wrap');
 
-  if (navBack)    navBack.classList.remove('visible');
+  if (navBack)    { navBack.classList.remove('visible'); navBack.onclick = null; }
   if (navBar)     navBar.classList.remove('hidden');
-  if (navSmall)   { navSmall.textContent = '设置'; navSmall.classList.remove('visible'); navSmall.onclick = null; }
+  if (navSmall)   { navSmall.textContent = '设置'; navSmall.classList.remove('visible'); navSmall.onclick = null; navSmall.style.cursor = ''; }
   if (navActions) navActions.innerHTML = '';
 
-  if (largeTitleEl) largeTitleEl.textContent = '设置';
-  if (largeTitleEl) largeTitleEl.contentEditable = 'false';
-  if (largeSubEl)   largeSubEl.textContent = '';
+  if (largeTitleEl)  largeTitleEl.textContent = '设置';
+  if (largeTitleEl)  largeTitleEl.contentEditable = 'false';
+  if (largeSubEl)    largeSubEl.textContent = '';
   if (largeTitleWrap) largeTitleWrap.style.display = '';
-
-  _settingsStack = [];
-  _renderSettingsList();
 }
 
 // ═════════════════════════════════════
@@ -125,8 +129,10 @@ function _getContentRoot() {
 function _renderSubPageIntoRoot(html, animClass) {
   const root = _getContentRoot();
   const key = _settingsStack[_settingsStack.length - 1];
-  const title = SUBPAGE_TITLES[key] || '';
-  const subhead = `
+  let subhead = '';
+  if (key) {
+    const title = SUBPAGE_TITLES[key] || '';
+    subhead = `
     <div class="settings-subhead">
       <button class="settings-subhead-back" onclick="goBackFromSubPage()">
         <span style="font-size:18px;line-height:1">‹</span>
@@ -134,6 +140,7 @@ function _renderSubPageIntoRoot(html, animClass) {
       </button>
       <div class="settings-subhead-title">${title}</div>
     </div>`;
+  }
 
   if (_settingsMode === 'sheet') {
     root.innerHTML = `<div class="settings-page ${animClass}" id="settings-page">${subhead}${html}</div>`;
@@ -226,26 +233,11 @@ export function goBackFromSubPage() {
 
   if (_settingsMode === 'page') {
     if (_settingsStack.length === 0) {
-      // 回到设置一级列表，恢复 Nav Bar 状态
-      const lt = document.getElementById('large-title-wrap');
-      if (lt) lt.style.display = '';
-
-      const navBack  = document.getElementById('nav-back');
-      const navSmall = document.getElementById('nav-small-title');
-      const navActions = document.getElementById('nav-actions');
-      if (navBack) {
-        navBack.classList.remove('visible');
-        navBack.onclick = null;
-      }
-      if (navSmall) {
-        navSmall.textContent = '设置';
-        navSmall.classList.remove('visible');
-        navSmall.onclick = null;
-        navSmall.style.cursor = 'default';
-      }
-      if (navActions) navActions.innerHTML = '';
+      _resetNavBarToSettingsRoot();
+      _renderSettingsList('back');
+    } else {
+      _renderSubPageIntoRoot(_buildSettingsListInnerHTML(), 'back');
     }
-    _renderSubPageIntoRoot(_buildSettingsListInnerHTML(), 'back');
   } else {
     // sheet mode
     const listHTML = `<div class="settings-page back" id="settings-page">${_buildSettingsListInnerHTML()}</div>`;
