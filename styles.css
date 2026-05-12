@@ -2093,8 +2093,7 @@ html.settings-view #screen-content {
 html.immersive-mode .nav-bar { display: none; }
 html.immersive-mode .part-tabs-wrap { display: none; }
 html.immersive-mode .rounds-wrap { display: none; }
-html.immersive-mode .task-slide { display: none; }
-html.immersive-mode .filter-row { display: none; }
+html.immersive-mode .task-slide-text { display: none; }
 
 /* 沉浸模式保留但调整 */
 html.immersive-mode .highlight-reel {
@@ -2110,11 +2109,6 @@ html.immersive-mode .pal-btn {
   height: 80px;
   font-size: 15px;
   border-radius: 16px;
-}
-
-/* 底部操作栏只保留撤销 */
-html.immersive-mode .bar-btn:not(.undo-btn):not(.immersive-btn) {
-  display: none;
 }
 
 /* 增减虚线按钮隐藏 */
