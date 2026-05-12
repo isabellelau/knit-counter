@@ -169,8 +169,6 @@ html.theme-dark {
       background: var(--border);
       border-radius: 999px;
     }
-      padding-bottom: 12px
-    }
 
     /* page transitions */
     @keyframes slide-in-right {
