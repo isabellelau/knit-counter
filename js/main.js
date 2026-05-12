@@ -50,7 +50,16 @@ export function setPageView(view) {
 
 // ── navigation ──
 function goHome() {
-  if (state.voiceMode) toggleVoiceMode();
+  if (state.voiceMode) {
+    state.flowState.voiceState = 'off';
+    if (state.recognition) {
+      try { state.recognition.abort(); } catch (_) {}
+      state.recognition = null;
+    }
+    state.voiceMode = false;
+    setVoicePulse(false);
+    updateVoiceButton();
+  }
   setPageView('home-view');
   state.curProjId = null; state.expandedRounds.clear(); state.selectedStitch = null;
   state.highlightMode = false;
