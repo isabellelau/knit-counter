@@ -3,9 +3,10 @@ import { showSheet, esc, showConfirmDialog, showEntryChoiceSheet } from './ui.js
 import { pickCover, setProjectCover, removeProjectCover, getProjImage } from './image.js';
 import { saveData, migrateData, exportSingleProject } from './storage.js';
 import { getUnitLabel } from './stitch.js';
+import { setPageView } from './main.js';
 
 export function openProject(id) {
-  document.documentElement.classList.remove('home-view', 'settings-view');
+  setPageView(null);
   state.curProjId = String(id); state.selectedStitch = null;
   state.highlightMode = state.data.settings.highlightEnabled ?? false;
   state.highlightIndex = 0;
@@ -76,7 +77,8 @@ export function showNewProjectDialog() {
       parts: [{ id: partId, title: '主图解', rawPattern: '', rounds: [r], activeRoundId: r.id, customPalette: null }],
       activePartId: partId,
       customSettings: { names: {}, colors: {}, customStitches: {} },
-      useRowTerms: false
+      useRowTerms: false,
+      lastModified: Date.now()
     };
     state.data.projects.push(proj);
     saveData();
@@ -95,12 +97,12 @@ export function showNewProjectDialog() {
   setTimeout(() => document.getElementById("dlg-input").focus(), 100);
 }
 
-export function toggleProjMenu(id, e) {
+export async function toggleProjMenu(id, e) {
   e.stopPropagation();
   const proj = state.data.projects.find(p => String(p.id) === String(id));
   if (!proj) return;
 
-  const coverImg = getProjImage(id);
+  const coverImg = await getProjImage(id);
   const isArchived = proj.archived;
 
   const coverActions = `
@@ -145,6 +147,7 @@ export function archiveProject(id) {
   showConfirmDialog(`确定归档「${proj.name}」？归档后可在下方列表找到，仍可继续编辑。`, (ok) => {
     if (!ok) return;
     proj.archived = true;
+    proj.lastModified = Date.now();
     state.flowState.projMenuId = null;
     saveData();
     window.renderHome();
@@ -249,7 +252,7 @@ export function showPwaTutorial() {
 
 export function unarchiveProject(id) {
   const proj = state.data.projects.find(p => String(p.id) === String(id));
-  if (proj) { proj.archived = false; state.flowState.projMenuId = null; saveData(); window.renderHome(); }
+  if (proj) { proj.archived = false; proj.lastModified = Date.now(); state.flowState.projMenuId = null; saveData(); window.renderHome(); }
 }
 
 export function deleteProject(id, e) {
@@ -257,6 +260,7 @@ export function deleteProject(id, e) {
   state.flowState.projMenuId = null;
   showConfirmDialog("确定要删除这个项目吗？此操作不可恢复。", (ok) => {
     if (!ok) return;
+    removeProjectCover(id);
     state.data.projects = state.data.projects.filter(p => String(p.id) !== String(id));
     saveData(); window.renderHome();
   });
@@ -265,5 +269,5 @@ export function deleteProject(id, e) {
 export function renameProject(name) {
   if (!name || !state.curProjId) return;
   const proj = getProj(state.curProjId);
-  if (proj) { proj.name = name; saveData(); }
+  if (proj) { proj.name = name; proj.lastModified = Date.now(); saveData(); }
 }

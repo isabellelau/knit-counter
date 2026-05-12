@@ -14,6 +14,7 @@ export function addRound() {
   part.rounds.push(r);
   normalizeRoundNums(part.rounds);
   state.expandedRounds.add(r.id);
+  proj.lastModified = Date.now();
   saveData();
   setActiveRound(proj, r.id);
   window.renderProject();
@@ -78,6 +79,7 @@ export function deleteRound(roundId) {
     }
 
     normalizeRoundNums(ownerPart.rounds);
+    proj.lastModified = Date.now();
     saveData();
     window.renderProject();
 
@@ -106,6 +108,7 @@ export function undoDeleteRound() {
   part.activeRoundId = prevActiveRoundId;
 
   normalizeRoundNums(part.rounds);
+  proj.lastModified = Date.now();
   saveData();
   window.renderProject();
 
@@ -120,6 +123,7 @@ export function setActiveRound(proj, rid) {
   if (oldRid === rid) return;
 
   part.activeRoundId = rid;
+  proj.lastModified = Date.now();
   saveData();
   state.highlightIndex = (part.rounds.find(r => r.id === rid) || {}).seq?.length || 0;
 

@@ -300,6 +300,7 @@ export function confirmImport(mode) {
   window.normalizeRoundNums(targetPart.rounds);
 
   state.flowState.pendingParsed = null;
+  proj.lastModified = Date.now();
   saveData();
   closeSheet();
   window.renderProject();

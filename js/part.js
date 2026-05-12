@@ -18,6 +18,7 @@ export function addPart() {
   proj.parts = proj.parts || [];
   proj.parts.push(part);
   proj.activePartId = part.id;
+  proj.lastModified = Date.now();
   saveData();
   window.renderProject();
 }
@@ -72,7 +73,7 @@ export function renamePart(partId, name) {
   const proj = getProj(state.curProjId);
   if (!proj) return;
   const pt = (proj.parts || []).find(p => p.id === partId);
-  if (pt) { pt.title = name; saveData(); }
+  if (pt) { pt.title = name; proj.lastModified = Date.now(); saveData(); }
 }
 
 export function deletePart(partId) {
@@ -84,6 +85,7 @@ export function deletePart(partId) {
     if (!ok) return;
     proj.parts = proj.parts.filter(pt => pt.id !== partId);
     if (proj.activePartId === partId) proj.activePartId = proj.parts[0].id;
+    proj.lastModified = Date.now();
     saveData();
     window.renderProject();
   });

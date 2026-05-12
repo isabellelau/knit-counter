@@ -14,6 +14,7 @@ export function toggleRowTerms() {
   const proj = getProj(state.curProjId);
   if (!proj) return;
   proj.useRowTerms = !proj.useRowTerms;
+  proj.lastModified = Date.now();
   saveData();
   window.renderProject();
 }
@@ -132,6 +133,7 @@ export function saveRoundInstruction(roundId) {
   const newValue = textarea.value.trim();
   r.instruction = newValue;
   r.expectedCount = null;
+  proj.lastModified = Date.now();
   saveData();
   closeSheet();
 
@@ -223,6 +225,7 @@ export function pushStitch(sid) {
 
   r.seq.push(sid);
 
+  proj.lastModified = Date.now();
   saveData();
   addDailyCount(1);
   state.highlightIndex++;
@@ -263,6 +266,7 @@ export function undoStitch() {
   const r = part.rounds.find(x => x.id === part.activeRoundId);
   if (!r || !r.seq.length) return;
   r.seq.pop();
+  proj.lastModified = Date.now();
   saveData();
   addDailyCount(-1);
   state.highlightIndex = Math.max(0, state.highlightIndex - 1);
@@ -342,6 +346,7 @@ export function changeStitch(roundId, idx, sid) {
   const r = findRound(proj, roundId);
   if (!r) return;
   r.seq[idx] = sid;
+  proj.lastModified = Date.now();
   saveData(); closeSheet();
 
   const roundEl = document.getElementById("round-" + r.id);
@@ -372,6 +377,7 @@ export function deleteStitch(roundId, idx) {
   const r = findRound(proj, roundId);
   if (!r) return;
   r.seq.splice(idx, 1);
+  proj.lastModified = Date.now();
   saveData(); closeSheet();
 
   const roundEl = document.getElementById("round-" + r.id);
@@ -422,6 +428,7 @@ export function doInsert(sid) {
   const pos = dir === "before" ? idx : idx + 1;
   r.seq.splice(pos, 0, sid);
   state.pendingInsert = null;
+  proj.lastModified = Date.now();
   saveData(); closeSheet();
 
   const roundEl = document.getElementById("round-" + r.id);
@@ -609,6 +616,7 @@ export function editExpectedCount(el) {
     const round = part?.rounds.find(r => r.id === part.activeRoundId);
     if (round) {
       round.expectedCount = (num === null || isNaN(num) || num === 0) ? null : num;
+      proj.lastModified = Date.now();
       saveData();
     }
     const slide = document.getElementById('task-slide');
@@ -997,6 +1005,7 @@ export function saveStitchCustomize(sid) {
     proj.customSettings.colors[sid] = colorInput.value;
   }
 
+  proj.lastModified = Date.now();
   saveData();
   backToSetupGrid();
 }
@@ -1007,6 +1016,7 @@ export function resetStitchCustomize(sid) {
 
   delete proj.customSettings.names[sid];
   delete proj.customSettings.colors[sid];
+  proj.lastModified = Date.now();
   saveData();
 
   openStitchCustomize(sid);
@@ -1094,6 +1104,7 @@ export function saveNewStitch() {
   if (!proj.customSettings.customStitches) proj.customSettings.customStitches = {};
   proj.customSettings.customStitches[sid] = { id: sid, label, color, category };
 
+  proj.lastModified = Date.now();
   saveData();
   backToSetupGrid();
 }
@@ -1114,6 +1125,7 @@ export function deleteCustomStitch(sid) {
       }
     });
 
+    proj.lastModified = Date.now();
     saveData();
     backToSetupGrid();
   });
@@ -1137,6 +1149,7 @@ export function saveProjectStitches(mode) {
   });
 
   part.customPalette = Array.from(planned);
+  proj.lastModified = Date.now();
   saveData();
   if (mode === 'create') state.flowState.newProjectFlow = false;
   state.flowState.setupMode = null;

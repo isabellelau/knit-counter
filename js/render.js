@@ -4,6 +4,7 @@ import { saveData } from './storage.js';
 import { renderTaskSlide, renderDynamicPalette,
          renderFilterToggle, renderBarRow,
          renderSpillHTML, getProjColor, getUnitLabel } from './stitch.js';
+import { setPageView } from './main.js';
 import { updateVoiceButton } from './voice.js';
 import { renderHighlightReel } from './highlight.js';
 import { getProjImage } from './image.js';
@@ -20,10 +21,10 @@ function getProjectInitial(name) {
   return name?.trim()?.[0]?.toUpperCase() || '🧶';
 }
 
-export function renderHome() {
+export async function renderHome() {
   try {
     // --- Nav Bar：首页状态 ---
-    document.documentElement.classList.add('home-view');
+    setPageView('home-view');
     const navBar       = document.getElementById('nav-bar');
     const navBack      = document.getElementById('nav-back');
     const navSmall     = document.getElementById('nav-small-title');
@@ -73,6 +74,13 @@ export function renderHome() {
     const activeProjs = state.data.projects.filter(p => !p.archived);
     const archivedProjs = state.data.projects.filter(p => p.archived);
 
+    const coverMap = new Map();
+    const allProjs = [...activeProjs, ...archivedProjs];
+    await Promise.all(allProjs.map(async p => {
+      const cover = await getProjImage(p.id);
+      if (cover) coverMap.set(p.id, cover);
+    }));
+
     html += `<div class="proj-list">`;
     if (activeProjs.length === 0 && archivedProjs.length === 0) {
       html += `<div style="text-align:center;color:var(--muted);font-size:14px;padding:40px 16px">还没有项目，点击下方创建第一个 🌸</div>`;
@@ -80,7 +88,7 @@ export function renderHome() {
     activeProjs.forEach(p => {
       const allRounds = (p.parts || []).reduce((s, pt) => s + (pt.rounds?.length || 0), 0);
       const allNeedles = (p.parts || []).reduce((s, pt) => s + (pt.rounds || []).reduce((ss, r) => ss + (r.seq?.length || 0), 0), 0);
-      const coverImg = getProjImage(p.id);
+      const coverImg = coverMap.get(p.id) || null;
       const coverHtml = coverImg
         ? `<img class="proj-thumb" src="${coverImg}" alt="">`
         : `<div class="proj-thumb proj-thumb--fallback"
@@ -114,7 +122,7 @@ export function renderHome() {
       archivedProjs.forEach(p => {
         const allRounds = (p.parts || []).reduce((s, pt) => s + (pt.rounds?.length || 0), 0);
         const allNeedles = (p.parts || []).reduce((s, pt) => s + (pt.rounds || []).reduce((ss, r) => ss + (r.seq?.length || 0), 0), 0);
-        const coverImgArc = getProjImage(p.id);
+        const coverImgArc = coverMap.get(p.id) || null;
         const coverHtmlArc = coverImgArc
           ? `<img class="proj-thumb" src="${coverImgArc}" alt="">`
           : `<div class="proj-thumb proj-thumb--fallback"
@@ -187,6 +195,7 @@ export function renderProject() {
         const trimmed = newName.trim();
         if (trimmed) {
           proj.name = trimmed;
+          proj.lastModified = Date.now();
           saveData();
           navSmall.textContent = trimmed;
           const lt = document.getElementById('large-title-text');
