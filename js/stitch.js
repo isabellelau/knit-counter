@@ -5,7 +5,7 @@ import { STITCH_LIB, STITCHES, SM, extractStitches, resolveColor } from '../stit
 import { updateVoiceButton } from './voice.js';
 import { getNextStitchSid, renderHighlightReel, expandInstructionFull } from './highlight.js';
 import { setActiveRound } from './round.js';
-import { t, term } from './i18n.js';
+import { t, term, getShowSymbol } from './i18n.js';
 
 export function getUnitLabel(proj) {
   const p = proj || getProj(state.curProjId);
@@ -179,7 +179,7 @@ export function renderSpillHTML(sid, idx, r, proj) {
     style="background:${bg};border-color:${info.color};color:${info.color}"
     onclick="stitchTap('${r.id}',${idx})">
     <span class="spill-idx">${idx + 1}</span>
-    <span class="spill-abbr">${esc(info.abbr)}</span>
+    <span class="spill-abbr">${esc(info.abbr)}${getShowSymbol() ? ` (${sid})` : ''}</span>
   </span>`;
 }
 
@@ -738,7 +738,7 @@ export function renderDynamicPalette(proj) {
     }
 
     html += `<button class="${btnClass}" data-sid="${sid}" style="background:${info.color};${btnExtra}" onclick="pushStitch('${sid}')">
-      ${state.voiceMode ? `<span style="font-size:22px;font-weight:900;line-height:1">${idx + 1}</span><br><small style="opacity:.8;font-size:11px">${esc(info.label)}(${sid})</small>` : `${esc(info.label)}<br><small style="opacity:.8">${sid}</small>`}
+      ${state.voiceMode ? `<span style="font-size:22px;font-weight:900;line-height:1">${idx + 1}</span><br><small style="opacity:.8;font-size:11px">${esc(info.label)}${getShowSymbol() ? `(${sid})` : ''}</small>` : `${esc(info.label)}${getShowSymbol() ? `<br><small style="opacity:.8">${sid}</small>` : ''}`}
     </button>`;
   });
 

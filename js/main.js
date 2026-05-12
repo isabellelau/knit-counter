@@ -39,7 +39,7 @@ import {
 import { pickCover, setProjectCover, removeProjectCover } from './image.js';
 import { expandInstruction, getNextStitchSid, renderHighlightReel } from './highlight.js';
 import { renderHome, renderProject } from './render.js';
-import { t, term, setLang, getLang, setNotation, getNotationKey, SUPPORTED_LANGS } from './i18n.js';
+import { t, term, setLang, getLang, setNotation, getNotationKey, SUPPORTED_LANGS, getShowSymbol, setShowSymbol } from './i18n.js';
 
 let _onboardStep = 0;
 const ONBOARD_KEY = 'knit_onboarded_v1';
@@ -195,7 +195,7 @@ const _globals = {
   pickCover, setProjectCover, removeProjectCover,
   expandInstruction, getNextStitchSid, renderHighlightReel,
   setPageView,
-  t, term, setLang, getLang, setNotation, getNotationKey,
+  t, term, setLang, getLang, setNotation, getNotationKey, getShowSymbol, setShowSymbol,
   onboardNext
 };
 Object.entries(_globals).forEach(([k, v]) => { window[k] = v; });

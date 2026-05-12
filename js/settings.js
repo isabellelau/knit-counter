@@ -2,7 +2,7 @@ import { state, getProj, clearDailyLog } from './state.js';
 import { showConfirmDialog, showToast, closeSheet } from './ui.js';
 import { saveData, checkStorageQuota } from './storage.js';
 import { getProjColor, ALL_THEMES, refreshBottomBar } from './stitch.js';
-import { t, setLang, getLang, setNotation, getNotationKey, SUPPORTED_LANGS, NOTATION_OPTIONS } from './i18n.js';
+import { t, setLang, getLang, setNotation, getNotationKey, SUPPORTED_LANGS, NOTATION_OPTIONS, getShowSymbol, setShowSymbol } from './i18n.js';
 import { COLOR_THEMES } from '../stitches.js';
 import { setPageView } from './main.js';
 import { removeProjectCover } from './image.js';
@@ -450,6 +450,22 @@ function _buildLangSubPageHTML() {
   }).join('');
 
   const curNotation = getNotationKey();
+
+  const showSymbol = getShowSymbol();
+  const isSymbolMode = curNotation === 'symbol';
+  const symbolToggleHTML = isSymbolMode ? '' : `
+    <div class="settings-divider"></div>
+    <div class="settings-row" onclick="toggleShowSymbol()" style="cursor:pointer">
+      <div style="flex:1;min-width:0">
+      <div style="font-size:var(--text-body);color:var(--text)">${t('settings_show_symbol')}</div>
+      <div style="font-size:var(--text-caption1);color:var(--muted);margin-top:2px">${t('settings_show_symbol_desc')}</div>
+      </div>
+      <span class="settings-toggle${showSymbol ? ' on' : ''}" id="settings-show-symbol-toggle">
+      <i class="settings-toggle-knob"></i>
+      </span>
+    </div>
+  `;
+
   const notationPills = NOTATION_OPTIONS.map(o => {
     const active = o.code === curNotation;
     return `<button class="settings-theme-card${active ? ' active' : ''}"
@@ -471,6 +487,7 @@ function _buildLangSubPageHTML() {
       ${notationPills}
     </div>
     <div class="settings-notation-desc">${t('settings_notation_desc')}</div>
+    ${symbolToggleHTML}
   `;
 }
 
@@ -496,6 +513,15 @@ function _buildAboutSubPageHTML() {
 window.switchLang = function(code) {
   setLang(code);
   location.reload();
+};
+
+window.toggleShowSymbol = function() {
+  const current = getShowSymbol();
+  setShowSymbol(!current);
+  const el = document.getElementById('settings-show-symbol-toggle');
+  if (el) el.classList.toggle('on', !current);
+  const proj = getProj(state.curProjId);
+  if (proj) renderDynamicPalette(proj);
 };
 
 window.switchNotation = function(code) {

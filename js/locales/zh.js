@@ -243,6 +243,8 @@ export default {
   settings_language: '语言 / Language',
   settings_notation: '针法显示',
   settings_notation_desc: '独立于界面语言，仅影响针法名称显示',
+  settings_show_symbol: '显示国际通用符号（X / V / A）',
+  settings_show_symbol_desc: '关闭后仅显示针法名称',
   settings_ui_theme: '界面主题',
   settings_ui_theme_desc: '切换整体 UI 配色',
   settings_stitch_theme: '针法配色',

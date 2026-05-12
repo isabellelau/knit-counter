@@ -59,6 +59,17 @@ export const SUPPORTED_LANGS = [
   { code: 'en', label: 'English' },
 ];
 
+const SYMBOL_KEY = 'knit_show_symbol';
+
+export function getShowSymbol() {
+  const val = localStorage.getItem(SYMBOL_KEY);
+  return val === null ? true : val === 'true';
+}
+
+export function setShowSymbol(val) {
+  localStorage.setItem(SYMBOL_KEY, String(val));
+}
+
 export const NOTATION_OPTIONS = [
   { code: 'symbol', label: '符号 X/V' },
   { code: 'zh', label: '中文' },

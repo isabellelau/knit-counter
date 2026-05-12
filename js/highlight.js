@@ -1,5 +1,6 @@
 import { state, getProj, getActivePart } from './state.js';
 import { extractStitches, ALIAS_TO_ID, STITCH_LIB, resolveColor } from '../stitches.js';
+import { getShowSymbol } from './i18n.js';
 
 // ── 针法 token 模式（ALIAS_TO_ID 全部 key，长优先，避免短缩写截断）──
 const STITCH_KEYS = Object.keys(ALIAS_TO_ID).sort((a, b) => b.length - a.length);
@@ -250,7 +251,7 @@ export function renderHighlightReel(proj) {
     else cls += ' highlight-reel-item--upcoming';
 
     const style = `--reel-color:${color}`;
-    return `<div class="${cls}" style="${style}" title="${label}">${abbr}</div>`;
+    return `<div class="${cls}" style="${style}" title="${label}">${abbr}${getShowSymbol() ? ` (${sid})` : ''}</div>`;
   }).join('');
 
   container.innerHTML = `<div class="highlight-reel"><div class="highlight-reel-track">${items}</div></div>`;
