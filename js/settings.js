@@ -1,7 +1,7 @@
 import { state, getProj, clearDailyLog } from './state.js';
 import { showConfirmDialog, showToast, closeSheet } from './ui.js';
 import { saveData, checkStorageQuota } from './storage.js';
-import { getProjColor, ALL_THEMES } from './stitch.js';
+import { getProjColor, ALL_THEMES, refreshBottomBar } from './stitch.js';
 import { COLOR_THEMES } from '../stitches.js';
 import { setPageView } from './main.js';
 import { removeProjectCover } from './image.js';
@@ -465,17 +465,7 @@ export function changeTheme(themeKey) {
 
   // 如果在项目页，刷新底部调色板
   if (state.curProjId) {
-    const proj = getProj(state.curProjId);
-    if (proj) {
-      const bar = document.getElementById("bottom-bar");
-      if (bar) {
-        let bhtml = window.renderDynamicPalette(proj);
-        bhtml += window.renderToggleRow();
-        bhtml += window.renderBarRow();
-        bar.innerHTML = bhtml;
-        window.updateVoiceButton();
-      }
-    }
+    refreshBottomBar();
   }
 }
 

@@ -2,9 +2,8 @@ import { state, uid, getProj, getActivePart } from './state.js';
 import { showConfirmDialog, showToast } from './ui.js';
 import { saveData } from './storage.js';
 import { normalizeRoundNums } from './pattern.js';
-import { getUnitLabel, renderDynamicPalette, renderFilterToggle, renderToggleRow, renderBarRow, renderTaskSlide, updateHighlightButton, renderImmersive } from './stitch.js';
+import { getUnitLabel, refreshBottomBar, renderFilterToggle, renderTaskSlide, updateHighlightButton, renderImmersive } from './stitch.js';
 import { getNextStitchSid, renderHighlightReel } from './highlight.js';
-import { updateVoiceButton } from './voice.js';
 
 export function addRound() {
   const proj = getProj(state.curProjId);
@@ -175,14 +174,7 @@ export function setActiveRound(proj, rid) {
     }
   }
 
-  const bar = document.getElementById("bottom-bar");
-  if (bar) {
-    let bhtml = renderDynamicPalette(proj);
-    bhtml += renderToggleRow();
-    bhtml += renderBarRow();
-    bar.innerHTML = bhtml;
-    updateVoiceButton();
-  }
+  refreshBottomBar(proj);
 
   const slideText = document.getElementById('task-slide-text');
   if (slideText) {
@@ -205,7 +197,6 @@ export function setActiveRound(proj, rid) {
     if (result.status === 'parse_error') {
       showToast('本圈图解需要校准 · 点击🪡编辑', null, 3000);
     }
-    updateHighlightButton();
   }
   renderHighlightReel(proj);
 }

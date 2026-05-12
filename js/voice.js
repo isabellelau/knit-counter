@@ -1,5 +1,6 @@
 import { state, NUMBER_MAP, getProj } from './state.js';
 import { showToast } from './ui.js';
+import { refreshBottomBar } from './stitch.js';
 
 let _audioCtx = null;
 
@@ -130,8 +131,7 @@ export async function toggleVoiceMode() {
     setVoicePulse(false);
     const proj = getProj(state.curProjId);
     if (proj) {
-      const bar = document.getElementById('bottom-bar');
-      bar.innerHTML = window.renderDynamicPalette(proj) + window.renderToggleRow() + window.renderBarRow();
+      refreshBottomBar(proj);
     }
     updateVoiceButton();
     return;
@@ -181,8 +181,7 @@ export async function toggleVoiceMode() {
   setVoicePulse(true);
   const proj = getProj(state.curProjId);
   if (proj) {
-    const bar = document.getElementById('bottom-bar');
-    bar.innerHTML = window.renderDynamicPalette(proj) + window.renderToggleRow() + window.renderBarRow();
+    refreshBottomBar(proj);
   }
   updateVoiceButton();
 }

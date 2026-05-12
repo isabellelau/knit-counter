@@ -20,9 +20,9 @@ import {
   saveStitchCustomize, resetStitchCustomize, backToSetupGrid, openNewStitchForm,
   saveNewStitch, deleteCustomStitch, saveProjectStitches, closeSetupSheet,
   triggerEdgeGlow, openInstructionEdit, saveRoundInstruction,
-  toggleHighlightMode, updateHighlightButton,
+  toggleHighlightMode, updateHighlightButton, updateImmersiveButton,
   toggleImmersiveMode, renderImmersive, renderToggleRow,
-  goNextRound
+  goNextRound, refreshBottomBar
 } from './stitch.js';
 import {
   addRound, toggleRound, deleteRound, undoDeleteRound, setActiveRound
@@ -185,8 +185,8 @@ const _globals = {
   toggleProjMenu, archiveProject, showArchiveSuccessSheet, handlePwaHintOptOut, showPwaTutorial, unarchiveProject,
   toggleVoiceMode, updateVoiceButton, setVoicePulse, playSound,
   openVoiceTutorial, toggleImmersiveMode, goNextRound,
-  renderDynamicPalette, renderFilterToggle, renderToggleRow, renderBarRow, triggerEdgeGlow, openInstructionEdit, saveRoundInstruction,
-  toggleHighlightMode, updateHighlightButton,
+  renderDynamicPalette, renderFilterToggle, renderToggleRow, renderBarRow, triggerEdgeGlow, openInstructionEdit, saveRoundInstruction, refreshBottomBar,
+  toggleHighlightMode, updateHighlightButton, updateImmersiveButton,
   openSettings, changeTheme, changeStitchTheme, toggleVoiceDefault, toggleVoiceSound, toggleHighlightEnabled, clearAllData,
   switchTab, renderSettings, updateTabNav,
   navigateToSubPage, goBackFromSubPage,

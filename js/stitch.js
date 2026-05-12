@@ -250,14 +250,7 @@ export function pushStitch(sid) {
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
   }
   renderHighlightReel(proj);
-  const bar = document.getElementById('bottom-bar');
-  if (bar && state.highlightMode) {
-    let bhtml = renderDynamicPalette(proj);
-    bhtml += renderToggleRow();
-    bhtml += renderBarRow();
-    bar.innerHTML = bhtml;
-    updateVoiceButton();
-  }
+  if (state.highlightMode) refreshBottomBar(proj);
 }
 
 export function undoStitch() {
@@ -289,14 +282,7 @@ export function undoStitch() {
     window.renderProject();
   }
   renderHighlightReel(proj);
-  const bar = document.getElementById('bottom-bar');
-  if (bar && state.highlightMode) {
-    let bhtml = renderDynamicPalette(proj);
-    bhtml += renderToggleRow();
-    bhtml += renderBarRow();
-    bar.innerHTML = bhtml;
-    updateVoiceButton();
-  }
+  if (state.highlightMode) refreshBottomBar(proj);
 }
 
 export function stitchTap(roundId, idx) {
@@ -731,12 +717,7 @@ export function toggleFilterByRound() {
   state.filterByRound = !state.filterByRound;
   const proj = getProj(state.curProjId);
   if (!proj) return;
-  const bar = document.getElementById('bottom-bar');
-  const paletteHtml = renderDynamicPalette(proj);
-  const toggleHtml = renderToggleRow();
-  const barRowHtml = renderBarRow();
-  bar.innerHTML = paletteHtml + toggleHtml + barRowHtml;
-  updateVoiceButton();
+  refreshBottomBar(proj);
 }
 
 export function renderFilterToggle() {
@@ -818,16 +799,9 @@ export function renderImmersive(proj) {
   /* 底部栏：三个按键 → 针法面板（针法永远在画面最底部） */
   const bar = document.getElementById("bottom-bar");
   if (bar) bar.style.display = "block";
-  let bhtml = `<div class="bar-row">
-    <button class="bar-btn" onclick="undoStitch()">↩ 撤销</button>
-    <button class="bar-btn primary" onclick="goNextRound()">下一圈 ›</button>
-    <button class="bar-btn" onclick="toggleImmersiveMode()">⊡ 退出</button>
-  </div>`;
-  bhtml += renderDynamicPalette(proj);
-  if (bar) bar.innerHTML = bhtml;
+  refreshBottomBar(proj);
   const barH = bar ? bar.offsetHeight : 0;
   if (barH) document.documentElement.style.setProperty('--bottom-bar-h', barH + 'px');
-  updateVoiceButton();
   renderHighlightReel(proj);
 }
 
@@ -889,15 +863,8 @@ export function toggleHighlightMode() {
   updateHighlightButton();
   const proj = getProj(state.curProjId);
   if (proj) {
-    const bar = document.getElementById('bottom-bar');
-    if (bar) {
-      const paletteHtml = renderDynamicPalette(proj);
-      const toggleHtml = renderToggleRow();
-      const barRowHtml = renderBarRow();
-      bar.innerHTML = paletteHtml + toggleHtml + barRowHtml;
-      updateVoiceButton();
-      renderHighlightReel(proj);
-    }
+    refreshBottomBar(proj);
+    renderHighlightReel(proj);
   }
 }
 
@@ -913,6 +880,48 @@ export function updateHighlightButton() {
     btn.style.color = '';
     btn.style.borderColor = '';
   }
+}
+
+export function updateImmersiveButton() {
+  const btn = document.getElementById('immersive-mode-btn');
+  if (!btn) return;
+  if (state.immersiveMode) {
+    btn.style.background = 'var(--accent)';
+    btn.style.color = '#fff';
+    btn.style.borderColor = 'var(--accent)';
+    btn.textContent = '⛶ 退出沉浸';
+  } else {
+    btn.style.background = '';
+    btn.style.color = '';
+    btn.style.borderColor = '';
+    btn.textContent = '⛶ 沉浸';
+  }
+}
+
+export function refreshBottomBar(proj) {
+  if (!proj) proj = getProj(state.curProjId);
+  if (!proj) return;
+
+  const bar = document.getElementById('bottom-bar');
+  if (!bar) return;
+
+  if (state.immersiveMode) {
+    let bhtml = `<div class="bar-row">
+      <button class="bar-btn" onclick="undoStitch()">↩ 撤销</button>
+      <button class="bar-btn primary" onclick="goNextRound()">下一圈 ›</button>
+      <button class="bar-btn" onclick="toggleImmersiveMode()">⊡ 退出</button>
+    </div>`;
+    bhtml += renderDynamicPalette(proj);
+    bar.innerHTML = bhtml;
+    return;
+  }
+
+  let bhtml = renderDynamicPalette(proj);
+  bhtml += renderToggleRow();
+  bhtml += renderBarRow();
+  bar.innerHTML = bhtml;
+  updateVoiceButton();
+  updateHighlightButton();
 }
 
 export function openStitchSetup(mode) {
@@ -1256,12 +1265,7 @@ export function saveProjectStitches(mode) {
   if (mode === 'create') {
     window.renderProject();
   } else {
-    const bar = document.getElementById('bottom-bar');
-    const paletteHtml = renderDynamicPalette(proj);
-    const toggleHtml = renderToggleRow();
-    const barRowHtml = renderBarRow();
-    bar.innerHTML = paletteHtml + toggleHtml + barRowHtml;
-    updateVoiceButton();
+    refreshBottomBar(proj);
   }
 }
 

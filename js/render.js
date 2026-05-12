@@ -1,11 +1,10 @@
 import { state, getProj, getActivePart, getEditingPartId, getTodayKey, getDailyLog, calcStreak } from './state.js';
 import { esc } from './ui.js';
 import { saveData } from './storage.js';
-import { renderTaskSlide, renderDynamicPalette,
-         renderFilterToggle, renderToggleRow, renderBarRow,
+import { renderTaskSlide, refreshBottomBar,
+         renderFilterToggle,
          renderSpillHTML, getProjColor, getUnitLabel } from './stitch.js';
 import { setPageView } from './main.js';
-import { updateVoiceButton } from './voice.js';
 import { renderHighlightReel } from './highlight.js';
 import { getProjImage } from './image.js';
 
@@ -299,13 +298,8 @@ export function renderProject() {
 
   const bar = document.getElementById("bottom-bar");
   if (bar) bar.style.display = "block";
-  let bhtml = renderDynamicPalette(proj);
-  bhtml += renderToggleRow();
-  bhtml += renderBarRow();
-
-  if (bar) bar.innerHTML = bhtml;
+  refreshBottomBar(proj);
   const barH = bar ? bar.offsetHeight : 0;
   if (barH) document.documentElement.style.setProperty('--bottom-bar-h', barH + 'px');
-  updateVoiceButton();
   renderHighlightReel(proj);
 }
