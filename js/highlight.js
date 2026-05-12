@@ -83,6 +83,14 @@ function tokenize(str) {
       continue;
     }
 
+    // unknown alphabetic token → 原样保留
+    const unknownMatch = str.slice(i).match(/^[A-Za-z]+/);
+    if (unknownMatch) {
+      tokens.push({ type: 'STITCH', value: unknownMatch[0].toUpperCase() });
+      i += unknownMatch[0].length;
+      continue;
+    }
+
     // 无法识别 → 跳过
     i++;
   }
@@ -92,7 +100,10 @@ function tokenize(str) {
 
 // ── 针法 ID 标准化 ──
 function normalizeStitchId(token) {
-  return ALIAS_TO_ID[token.toUpperCase()] || null;
+  const upper = token.toUpperCase();
+  if (ALIAS_TO_ID[upper]) return ALIAS_TO_ID[upper];
+  if (STITCH_LIB[upper]) return upper;
+  return upper;
 }
 
 // ═══════════════════════════════════════

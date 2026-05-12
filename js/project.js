@@ -77,7 +77,7 @@ export function showNewProjectDialog() {
       id: uid(), name: name.trim(),
       parts: [{ id: partId, title: t('default_part_title'), rawPattern: '', rounds: [r], activeRoundId: r.id, customPalette: null }],
       activePartId: partId,
-      customSettings: { names: {}, colors: {}, customStitches: {} },
+      customSettings: { names: {}, colors: {}, customStitches: { ...(state.data.settings.globalCustomStitches ?? {}) } },
       useRowTerms: false,
       lastModified: Date.now()
     };

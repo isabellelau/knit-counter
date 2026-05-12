@@ -9,6 +9,7 @@ export const state = {
       theme: "morandi",
       stitchTheme: "morandi",
       customColors: {},
+      globalCustomStitches: {},
       voiceEnabled: false,
       voiceSoundEnabled: false,
       highlightEnabled: false

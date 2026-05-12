@@ -139,6 +139,7 @@ export default {
   stitch_id_required: '请输入缩写 ID',
   stitch_id_conflict: '该 ID 与预设针法冲突，请换一个',
   stitch_id_exists: '该 ID 已存在',
+  add_to_global_library: '加入我的针法库（所有项目可用）',
   delete_custom_stitch_confirm: '确定要删除自定义针法「{name}」吗？',
 
   // ═════════════════════════════════════

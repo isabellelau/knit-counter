@@ -10,6 +10,7 @@
  *         localStorage keys (img_{projId}); proj.coverImage removed
  *   v3 — 新增 state.data.settings.highlightEnabled（智能高亮常驻开关，默认 false）
  *   v4 — 新增 project.lastModified（时间戳，为 CloudKit 同步冲突解决预留）
+ *   v5 — 新增 state.data.settings.globalCustomStitches（全局自定义针法库）
  *
  * Rule: whenever you change the shape of state.data, you MUST:
  *   1. Bump LATEST_SCHEMA by 1
@@ -85,7 +86,7 @@ const storageAdapter = {
 
 const STORAGE_KEY = 'crochet_v4';
 const OLD_KEYS = ['crochet_v3_fixed', 'crochet_v3'];
-const LATEST_SCHEMA = 4;
+const LATEST_SCHEMA = 5;
 
 // ═══════════════════════════════════════
 //  一次性迁移：localStorage → IndexedDB
@@ -222,7 +223,7 @@ export async function loadData() {
     state.data.projects = [];
   }
   if (!state.data.settings || typeof state.data.settings !== "object") {
-    state.data.settings = { theme: "morandi", customColors: {}, voiceEnabled: false };
+    state.data.settings = { theme: "morandi", customColors: {}, globalCustomStitches: {}, voiceEnabled: false };
   }
 
   // 1) 先跑 schema 迁移（v1→v2 可能把 coverImage 写入 localStorage img_*）
@@ -324,6 +325,14 @@ export function migrateData(d) {
       }
       delete p.coverImage;
     });
+  }
+
+  // v4 → v5: 补全全局自定义针法库
+  if (d.schemaVersion < 5) {
+    if (!d.settings) d.settings = {};
+    if (!d.settings.globalCustomStitches) {
+      d.settings.globalCustomStitches = {};
+    }
   }
 
   d.schemaVersion = LATEST_SCHEMA;

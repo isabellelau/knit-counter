@@ -139,6 +139,7 @@ export default {
   stitch_id_required: 'Please enter an abbreviation',
   stitch_id_conflict: 'This ID conflicts with a built-in stitch',
   stitch_id_exists: 'This ID is already in use',
+  add_to_global_library: 'Add to my stitch library (available for all projects)',
   delete_custom_stitch_confirm: 'Delete custom stitch "{name}"?',
 
   // ═════════════════════════════════════
