@@ -2,6 +2,7 @@ import { state, uid, getProj, getActivePart, isPartEmpty } from './state.js';
 import { showSheet, closeSheet, showToast, esc, showConfirmDialog } from './ui.js';
 import { saveData } from './storage.js';
 import { parsePattern, extractStitches } from '../stitches.js';
+import { setPageView } from './main.js';
 
 export function startImportFlow() {
   document.getElementById("sheet").classList.remove("show");
@@ -303,6 +304,7 @@ export function confirmImport(mode) {
   proj.lastModified = Date.now();
   saveData();
   closeSheet();
+  setPageView(null);
   window.renderProject();
   showToast('图解已同步至 ' + targetPart.title);
   setTimeout(() => {

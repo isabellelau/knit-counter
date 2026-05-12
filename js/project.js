@@ -83,6 +83,7 @@ export function showNewProjectDialog() {
     state.data.projects.push(proj);
     saveData();
     state.curProjId = String(proj.id);
+    setPageView(null);
     state.expandedRounds.clear();
     state.selectedStitch = null;
     state.flowState.newProjectFlow = true;
