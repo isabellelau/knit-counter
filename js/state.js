@@ -89,7 +89,7 @@ export function getTodayKey() {
 
 export function getDailyLog() {
   try {
-    return JSON.parse(localStorage.getItem(DAILY_LOG_KEY)) || {};
+    return JSON.parse(localStorage.getItem(DAILY_LOG_KEY) ?? '{}');
   } catch { return {}; }
 }
 
