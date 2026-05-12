@@ -50,6 +50,7 @@ export function setPageView(view) {
 
 // ── navigation ──
 function goHome() {
+  if (state.voiceMode) toggleVoiceMode();
   setPageView('home-view');
   state.curProjId = null; state.expandedRounds.clear(); state.selectedStitch = null;
   state.highlightMode = false;
