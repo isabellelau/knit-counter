@@ -2,7 +2,7 @@ import { state, uid, getProj, getActivePart } from './state.js';
 import { showConfirmDialog, showToast } from './ui.js';
 import { saveData } from './storage.js';
 import { normalizeRoundNums } from './pattern.js';
-import { getUnitLabel, renderDynamicPalette, renderToggleRow, renderBarRow, renderTaskSlide, updateHighlightButton } from './stitch.js';
+import { getUnitLabel, renderDynamicPalette, renderFilterToggle, renderToggleRow, renderBarRow, renderTaskSlide, updateHighlightButton, renderImmersive } from './stitch.js';
 import { getNextStitchSid, renderHighlightReel } from './highlight.js';
 import { updateVoiceButton } from './voice.js';
 
@@ -126,6 +126,11 @@ export function setActiveRound(proj, rid) {
   proj.lastModified = Date.now();
   saveData();
   state.highlightIndex = (part.rounds.find(r => r.id === rid) || {}).seq?.length || 0;
+
+  if (state.immersiveMode) {
+    renderImmersive(proj);
+    return;
+  }
 
   const oldIdx = part.rounds.findIndex(r => r.id === oldRid);
   const newIdx = part.rounds.findIndex(r => r.id === rid);

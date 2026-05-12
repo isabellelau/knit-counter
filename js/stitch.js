@@ -4,6 +4,7 @@ import { saveData } from './storage.js';
 import { STITCH_LIB, STITCHES, SM, extractStitches, resolveColor } from '../stitches.js';
 import { updateVoiceButton } from './voice.js';
 import { getNextStitchSid, renderHighlightReel, expandInstructionFull } from './highlight.js';
+import { setActiveRound } from './round.js';
 
 export function getUnitLabel(proj) {
   const p = proj || getProj(state.curProjId);
@@ -715,11 +716,13 @@ export function renderDynamicPalette(proj) {
     </button>`;
   });
 
-  // 增减按钮：高亮模式下 okl/round_complete 时禁用
-  const addBtnExtra = dimBtn ? 'opacity:0.3;pointer-events:none' : '';
-  html += `<button class="pal-btn palette-add-btn" style="background:var(--bg);color:var(--accent);border:2px dashed var(--accent);font-size:18px;${addBtnExtra}" onclick="openStitchSetup('edit')" title="增减针法">
-    ＋<br><small style="opacity:.7;font-size:11px">增减</small>
-  </button>`;
+  // 增减按钮：高亮模式下 okl/round_complete 时禁用；沉浸模式下隐藏
+  if (!state.immersiveMode) {
+    const addBtnExtra = dimBtn ? 'opacity:0.3;pointer-events:none' : '';
+    html += `<button class="pal-btn" style="background:var(--bg);color:var(--accent);border:2px dashed var(--accent);font-size:18px;${addBtnExtra}" onclick="openStitchSetup('edit')" title="增减针法">
+      ＋<br><small style="opacity:.7;font-size:11px">增减</small>
+    </button>`;
+  }
   html += `</div>`;
   return html;
 }
@@ -740,7 +743,7 @@ export function renderFilterToggle() {
   const dotBg = state.filterByRound ? 'var(--accent)' : 'var(--border)';
   const dotPos = state.filterByRound ? '18px' : '2px';
   const unit = getUnitLabel();
-  return `<div class="filter-toggle" style="display:flex;align-items:center;gap:6px;cursor:pointer" onclick="toggleFilterByRound()">
+  return `<div style="display:flex;align-items:center;justify-content:flex-end;padding:2px 4px 6px;gap:6px;cursor:pointer" onclick="toggleFilterByRound()">
     <span style="font-size:10px;color:var(--muted);user-select:none">仅显示本${unit}针法</span>
     <span style="display:inline-block;width:34px;height:20px;border-radius:10px;background:${dotBg};position:relative;transition:background .2s;flex-shrink:0">
       <span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;left:${dotPos};transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></span>
@@ -749,20 +752,16 @@ export function renderFilterToggle() {
 }
 
 export function renderImmersiveToggle() {
-  const dotBg = state.immersiveMode ? 'var(--accent)' : 'var(--border)';
-  const dotPos = state.immersiveMode ? '18px' : '2px';
-  return `<div class="immersive-toggle" style="display:flex;align-items:center;gap:6px;cursor:pointer" onclick="toggleImmersiveMode()">
-    <span style="font-size:10px;color:var(--muted);user-select:none">沉浸模式</span>
-    <span style="display:inline-block;width:34px;height:20px;border-radius:10px;background:${dotBg};position:relative;transition:background .2s;flex-shrink:0">
-      <span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;left:${dotPos};transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></span>
-    </span>
-  </div>`;
+  const active = state.immersiveMode;
+  return `<button class="bar-btn" id="immersive-mode-btn" onclick="toggleImmersiveMode()" style="font-size:11px;padding:4px 8px;${active ? 'background:var(--accent);color:#fff;border-color:var(--accent)' : ''}">
+    ${active ? '⛶ 退出沉浸' : '⛶ 沉浸'}
+  </button>`;
 }
 
 export function renderToggleRow() {
-  return `<div class="filter-row" style="display:flex;align-items:center;justify-content:flex-end;padding:2px 4px 6px;gap:16px">
-    ${renderFilterToggle()}
+  return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
     ${renderImmersiveToggle()}
+    ${renderFilterToggle()}
   </div>`;
 }
 
@@ -780,6 +779,89 @@ export function renderBarRow() {
     </button>
     <button class="bar-btn primary" onclick="addRound()">＋ 新一${unit}</button>
   </div>`;
+}
+
+export function renderImmersive(proj) {
+  const part = getActivePart(proj);
+  const unit = getUnitLabel(proj);
+  const activeRid = part && part.rounds.length ? (part.rounds.find(r => r.id === part.activeRoundId)?.id || part.rounds[part.rounds.length - 1].id) : null;
+  const r = part?.rounds.find(r => r.id === activeRid);
+  if (!r) return;
+
+  let html = '';
+
+  /* ① task-slide */
+  html += `<div class="sticky-wrap">`;
+  html += renderTaskSlide(proj);
+  html += `<div id="highlight-reel-container"></div>`;
+  html += `</div>`;
+
+  /* ③ 当前活跃圈卡片 */
+  html += `<div class="rounds-wrap">`;
+  const total = r.seq.length;
+  const dots = r.seq.slice(-8).map(sid => `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${getProjColor(sid, proj)};margin-right:2px"></span>`).join("");
+
+  html += `<div class="round-card" id="round-${r.id}">
+    <div class="round-hdr">
+      <div class="round-badge active">${r.isTextCard ? "文" : (r.roundNum === 0 ? "起" : r.roundNum)}</div>
+      <div class="round-info">
+        <div class="round-label">${r.isTextCard ? (r.instruction || "备注") : (r.roundNum === 0 ? "起针" : `第 ${r.roundNum} ${unit}`)} <span style='font-size:11px;font-weight:var(--weight-semibold);background:var(--accent);color:#fff;border-radius:6px;padding:2px 7px;margin-left:6px'>编辑中</span></div>
+        <div class="round-count">${total} 针 ${dots}</div>
+      </div>
+      <button class="round-edit-btn" onclick="showToast('请退出沉浸模式后编辑图解')" title="编辑图解" style="font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer;padding:2px 6px;white-space:nowrap"><span style="font-size:13px;color:var(--muted);letter-spacing:1px;">🪡</span></button>
+    </div>
+  </div>`;
+  html += `</div>`;
+
+  document.getElementById("screen-content").innerHTML = html;
+
+  /* 底部栏：三个按键 → 针法面板（针法永远在画面最底部） */
+  const bar = document.getElementById("bottom-bar");
+  if (bar) bar.style.display = "block";
+  let bhtml = `<div class="bar-row">
+    <button class="bar-btn" onclick="undoStitch()">↩ 撤销</button>
+    <button class="bar-btn primary" onclick="goNextRound()">下一圈 ›</button>
+    <button class="bar-btn" onclick="toggleImmersiveMode()">⊡ 退出</button>
+  </div>`;
+  bhtml += renderDynamicPalette(proj);
+  if (bar) bar.innerHTML = bhtml;
+  const barH = bar ? bar.offsetHeight : 0;
+  if (barH) document.documentElement.style.setProperty('--bottom-bar-h', barH + 'px');
+  updateVoiceButton();
+  renderHighlightReel(proj);
+}
+
+export function goNextRound() {
+  const proj = getProj(state.curProjId);
+  const part = getActivePart(proj);
+  if (!part) return;
+
+  const rounds = part.rounds;
+  const currentIndex = rounds.findIndex(r => r.id === part.activeRoundId);
+  const nextRound = rounds[currentIndex + 1];
+
+  if (nextRound) {
+    setActiveRound(proj, nextRound.id);
+  } else {
+    showToast('已经是最后一圈了，请退出沉浸模式添加新圈');
+  }
+}
+
+export function toggleImmersiveMode() {
+  state.immersiveMode = !state.immersiveMode;
+  const proj = getProj(state.curProjId);
+  if (!proj) return;
+  const navBar = document.getElementById('nav-bar');
+  const html = document.documentElement;
+  if (state.immersiveMode) {
+    if (navBar) navBar.style.display = 'none';
+    html.classList.add('immersive-mode');
+    renderImmersive(proj);
+  } else {
+    if (navBar) navBar.style.display = '';
+    html.classList.remove('immersive-mode');
+    window.renderProject();
+  }
 }
 
 // ═════════════════════════════════════
@@ -831,34 +913,6 @@ export function updateHighlightButton() {
     btn.style.color = '';
     btn.style.borderColor = '';
   }
-}
-
-export function toggleImmersiveMode() {
-  state.immersiveMode = !state.immersiveMode;
-
-  const proj = getProj(state.curProjId);
-  const part = getActivePart(proj);
-  if (state.immersiveMode && part?.activeRoundId) {
-    state.expandedRounds.add(part.activeRoundId);
-  }
-
-  // 先 toggle class
-  document.documentElement.classList.toggle('immersive-mode', state.immersiveMode);
-  console.log('immersive-mode class present:', document.documentElement.classList.contains('immersive-mode'));
-
-  updateImmersiveButton();
-
-  // renderProject 之后再确认 class 还在
-  if (proj) {
-    window.renderProject();
-    console.log('after renderProject, immersive-mode:', document.documentElement.classList.contains('immersive-mode'));
-  }
-}
-
-export function updateImmersiveButton() {
-  const btn = document.querySelector('.immersive-btn');
-  if (!btn) return;
-  btn.style.color = state.immersiveMode ? 'var(--accent)' : 'var(--muted)';
 }
 
 export function openStitchSetup(mode) {

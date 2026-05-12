@@ -1989,6 +1989,10 @@ html.settings-view #screen-content {
   padding-top: calc(env(safe-area-inset-top) + 16px);
 }
 
+html.immersive-mode #screen-content {
+  padding-top: calc(env(safe-area-inset-top) + 16px);
+}
+
 /* ── 智能高亮 ── */
 .palette-btn--highlight {
   animation: palette-pulse 1.8s ease-in-out infinite;
@@ -2089,25 +2093,12 @@ html.settings-view #screen-content {
   line-height: 1.4;
 }
 
-/* 沉浸模式隐藏元素 */
-html.immersive-mode .nav-bar { display: none; }
-html.immersive-mode .part-tabs-wrap { display: none; }
-html.immersive-mode .rounds-wrap .round-card:not(.active) { display: none !important; }
-html.immersive-mode .task-slide-text { display: none; }
-
-/* 沉浸模式下活跃圈卡片强制展开 */
-html.immersive-mode .rounds-wrap .round-card.active .round-body {
-  display: block !important;
+html.immersive-mode .round-card.active {
+  margin-top: 16px;
 }
 
-/* 针法按钮放大 */
-html.immersive-mode .pal-btn {
-  height: 80px;
-  font-size: 15px;
-  border-radius: 16px;
+html.immersive-mode .sticky-wrap {
+  position: static;
+  margin: 0 12px 16px;
 }
 
-/* 增减虚线按钮隐藏 */
-html.immersive-mode .palette-add-btn {
-  display: none;
-}
