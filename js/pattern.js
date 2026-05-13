@@ -15,6 +15,12 @@ export function startImportFlow() {
 export function startManualFlow() {
   document.getElementById("sheet").classList.remove("show");
   document.getElementById("overlay").classList.remove("show");
+  window.openMultiRoundEditor(state.curProjId);
+}
+
+export function startStitchOnlyFlow() {
+  document.getElementById("sheet").classList.remove("show");
+  document.getElementById("overlay").classList.remove("show");
   window.openStitchSetup('create');
 }
 

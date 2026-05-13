@@ -7,7 +7,7 @@
   <title>织影</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#C07A45">
-  <meta name="version" content="1.103">
+  <meta name="version" content="1.104">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -124,15 +124,16 @@
 
   <!-- Tab Navigation -->
   <div id="tab-nav">
-    <button id="tab-projects" class="tab-btn active" data-tab="projects" onclick="switchTab('projects')">
+    <button class="tab-btn" id="tab-projects" onclick="switchTab('projects')">
       <span class="tab-icon">⊞</span>
-      <span class="tab-label">项目</span>
     </button>
-    <button id="tab-settings" class="tab-btn" data-tab="settings" onclick="switchTab('settings')">
+    <div class="tab-notch"></div>
+    <button class="tab-btn" id="tab-settings" onclick="switchTab('settings')">
       <span class="tab-icon">⚙︎</span>
-      <span class="tab-label">设置</span>
     </button>
   </div>
+
+  <button id="home-fab" onclick="showNewProjectDialog()" style="display:none">＋</button>
 
   <!-- Overlay + action sheet -->
   <div class="overlay" id="overlay" onclick="closeSheet()"></div>

@@ -1,7 +1,7 @@
 /**
  * STORAGE SCHEMA VERSIONING
  * =========================
- * Current version: LATEST_SCHEMA (currently 7)
+ * Current version: LATEST_SCHEMA (currently 8)
  *
  * Version history:
  *   v1 — initial versioned schema; added schemaVersion field;
@@ -15,6 +15,7 @@
  *   v7 — 针法库全面全局化：合并项目级 customStitches/names/colors 到
  *         全局 globalCustomStitches / globalStitchCustomizations，
  *         废弃项目级 customSettings 的针法定义字段
+ *   v8 — 新增 project.refImages（参考图，数组存储 IndexedDB covers key）
  *
  * Rule: whenever you change the shape of state.data, you MUST:
  *   1. Bump LATEST_SCHEMA by 1
@@ -90,7 +91,7 @@ export const storageAdapter = {
 
 const STORAGE_KEY = 'crochet_v4';
 const OLD_KEYS = ['crochet_v3_fixed', 'crochet_v3'];
-const LATEST_SCHEMA = 7;
+const LATEST_SCHEMA = 8;
 
 // ═══════════════════════════════════════
 //  一次性迁移：localStorage → IndexedDB
@@ -401,6 +402,13 @@ export function migrateData(d) {
       delete p.customSettings.customStitches;
       delete p.customSettings.names;
       delete p.customSettings.colors;
+    });
+  }
+
+  // v7 → v8: 补全 refImages
+  if (d.schemaVersion < 8) {
+    d.projects.forEach(p => {
+      if (!Array.isArray(p.refImages)) p.refImages = [];
     });
   }
 

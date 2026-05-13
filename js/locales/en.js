@@ -69,6 +69,9 @@ export default {
   archived_title: '"{name}" archived',
   set_cover: 'Set cover',
   remove_cover: 'Remove cover',
+  add_ref_image: 'Add reference image',
+  manage_ref_images: 'Manage reference images',
+  ref_images_title: 'Reference images ({n})',
   default_part_title: 'Main',
   toggle_row_terms: 'Switch row/round',
 
@@ -237,9 +240,11 @@ export default {
   entry_choice_title: 'How would you like to start?',
   entry_paste_auto: 'Paste a pattern (auto)',
   entry_paste_auto_sub: 'Automatically detect stitches and get started quickly',
-  entry_manual: 'Manually (pick stitches)',
-  entry_manual_sub: 'Choose which stitches you need',
+  entry_manual: 'Enter pattern manually',
+  entry_manual_sub: 'Tap to input round by round, no original pattern needed',
   entry_skip: 'Skip (use all stitches)',
+  entry_stitch_only: 'Skip pattern, pick stitches',
+  entry_stitch_only_sub: 'Open stitch setup to manually choose which stitches you need',
 
   // ═════════════════════════════════════
   //  Settings
@@ -376,4 +381,22 @@ export default {
   //  Dialog
   // ═════════════════════════════════════
   dialog_confirm_title: 'Confirm',
+
+  // ═════════════════════════════════════
+  //  Tap-based instruction editor
+  // ═════════════════════════════════════
+  instr_editor_kb_toggle: 'Keyboard ⌨',
+  instr_editor_tap_toggle: 'Tap ⊞',
+  instr_editor_stitches_label: 'Stitches',
+  instr_editor_space: 'Space',
+  instr_editor_clear_btn: 'Clear',
+
+  // ═════════════════════════════════════
+  //  Multi-round instruction editor
+  // ═════════════════════════════════════
+  multi_round_editor_title: 'Multi-Round Editor',
+  multi_round_prev_round: '↑Prev',
+  multi_round_next_round: '↓Next',
+  multi_round_nav_indicator: 'Round {n} / {total}',
+  multi_round_nav_prev_empty: '—',
 };

@@ -69,6 +69,9 @@ export default {
   archived_title: '「{name}」已归档',
   set_cover: '设置封面',
   remove_cover: '移除封面',
+  add_ref_image: '添加参考图',
+  manage_ref_images: '管理参考图',
+  ref_images_title: '参考图（{n} 张）',
   default_part_title: '主图解',
   toggle_row_terms: '切换圈行',
 
@@ -237,9 +240,11 @@ export default {
   entry_choice_title: '选择创建方式',
   entry_paste_auto: '粘贴图解（自动配置）',
   entry_paste_auto_sub: '自动识别针法，快速开始钩织',
-  entry_manual: '手动创建（自定义针法）',
-  entry_manual_sub: '自行选择需要的针法组合',
+  entry_manual: '手动输入图解',
+  entry_manual_sub: '用点按键盘逐圈输入，无需粘贴原文',
   entry_skip: '跳过（使用全部针法）',
+  entry_stitch_only: '不使用文字图解，直接选择针法',
+  entry_stitch_only_sub: '进入针法配置面板，手动挑选需要的针法',
 
   // ═════════════════════════════════════
   //  设置页
@@ -376,4 +381,22 @@ export default {
   //  确认/对话框
   // ═════════════════════════════════════
   dialog_confirm_title: '确认操作',
+
+  // ═════════════════════════════════════
+  //  点按式图解编辑器
+  // ═════════════════════════════════════
+  instr_editor_kb_toggle: '键盘 ⌨',
+  instr_editor_tap_toggle: '点按 ⊞',
+  instr_editor_stitches_label: '针法',
+  instr_editor_space: '空格',
+  instr_editor_clear_btn: '清空',
+
+  // ═════════════════════════════════════
+  //  多圈图解编辑器
+  // ═════════════════════════════════════
+  multi_round_editor_title: '多圈图解编辑器',
+  multi_round_prev_round: '↑上一圈',
+  multi_round_next_round: '↓下一圈',
+  multi_round_nav_indicator: '第 {n} 圈 / 共 {total} 圈',
+  multi_round_nav_prev_empty: '—',
 };

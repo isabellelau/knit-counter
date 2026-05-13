@@ -39,6 +39,11 @@ export function renderSettings() {
   _settingsMode = 'page';
   document.getElementById("bottom-bar")?.style.setProperty("display", "none");
 
+  const fab = document.getElementById('home-fab');
+  const tabNav = document.getElementById('tab-nav');
+  if (fab) fab.style.display = 'none';
+  if (tabNav) { tabNav.style.display = ''; tabNav.classList.remove('has-notch'); }
+
   _resetNavBarToSettingsRoot();
   _injectProfileHeader();
 
@@ -686,6 +691,10 @@ window.switchNotation = function(code) {
   document.querySelectorAll('[data-notation]').forEach(el => {
     el.classList.toggle('active', el.dataset.notation === code);
   });
+  // Refresh project view if on a project page
+  if (state.curProjId) {
+    window.renderProject();
+  }
   // Re-render current settings view
   if (_settingsStack.length > 0) {
     const currentKey = _settingsStack.pop();

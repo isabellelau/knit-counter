@@ -35,7 +35,7 @@ export async function renderHome() {
     if (navSmall)   { navSmall.textContent = t('app_name'); navSmall.classList.remove('visible'); navSmall.onclick = null; }
     if (navActions) navActions.innerHTML = '';
 
-    document.getElementById("tab-nav")?.style.setProperty("display", "flex");
+    document.getElementById("tab-nav")?.style.setProperty("display", "");
 
     const totalProjs = state.data.projects.length;
     const totalNeedles = state.data.projects.reduce((sum, p) =>
@@ -148,15 +148,14 @@ export async function renderHome() {
       html += `</div>`;
     }
 
-    html += `
-    <div class="home-footer">
-      <button class="home-new-btn" onclick="showNewProjectDialog()">
-        ${t('home_new_project_btn')}
-      </button>
-    </div>`;
-
     document.getElementById("screen-content").innerHTML = html;
     document.getElementById("bottom-bar")?.style.setProperty("display", "none");
+
+    // FAB + notch: visible on home
+    const fab = document.getElementById('home-fab');
+    const tabNav = document.getElementById('tab-nav');
+    if (fab) fab.style.display = '';
+    if (tabNav) tabNav.classList.add('has-notch');
   } catch (e) {
     alert('renderHome error: ' + e.message + '\n' + e.stack);
   }
@@ -223,10 +222,15 @@ export function renderProject() {
         <span class="toggle-mode-dot">◉</span> <span class="toggle-mode-label">${unit}</span>
       </button>
       <button class="nav-btn" onclick="openSettings()" aria-label="${t('settings')}">⚙️</button>
+      <button class="nav-btn" onclick="showRefImagesSheet('${proj.id}')" aria-label="${t('ref_images_title')}">🖼</button>
     `;
   }
 
   document.getElementById("tab-nav")?.style.setProperty("display", "none");
+  const fab = document.getElementById('home-fab');
+  const tabNav = document.getElementById('tab-nav');
+  if (fab) fab.style.display = 'none';
+  if (tabNav) tabNav.classList.remove('has-notch');
 
   // 活跃圈 id：以 activeRoundId 为准，找不到则 fallback 到最后一圈
   const activeRid = part && part.rounds.length ? (part.rounds.find(r => r.id === part.activeRoundId)?.id || part.rounds[part.rounds.length - 1].id) : null;

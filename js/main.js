@@ -10,7 +10,8 @@ import {
   openPatternPasteSheet, cancelPasteSheet, handleParsePattern,
   showLoading, hideLoading, loadTesseract, handleOCR,
   openParseConfirmSheet, removeParsedItem, confirmImport,
-  updateCurrentPart, addNewPart, normalizeRoundNums
+  updateCurrentPart, addNewPart, normalizeRoundNums,
+  startStitchOnlyFlow,
 } from './pattern.js';
 import {
   getUnitLabel, toggleRowTerms, getProjColor, renderSpillHTML, renderTaskSlide,
@@ -22,7 +23,10 @@ import {
   triggerEdgeGlow, openInstructionEdit, saveRoundInstruction,
   toggleHighlightMode, updateHighlightButton, updateImmersiveButton,
   toggleImmersiveMode, renderImmersive, renderToggleRow,
-  goNextRound, refreshBottomBar
+  goNextRound, refreshBottomBar,
+  instrEditorInsert, instrEditorInsertNum, instrEditorInsertSymbol,
+  instrEditorBackspace, instrEditorClear, instrEditorConfirm, instrEditorToggleKB,
+  openMultiRoundEditor, instrEditorPrevRound, instrEditorNextRound, instrEditorConfirmMulti
 } from './stitch.js';
 import {
   addRound, toggleRound, deleteRound, undoDeleteRound, setActiveRound
@@ -36,7 +40,7 @@ import {
   archiveProject, showArchiveSuccessSheet, unarchiveProject, importData,
   handlePwaHintOptOut, showPwaTutorial
 } from './project.js';
-import { pickCover, setProjectCover, removeProjectCover } from './image.js';
+import { pickCover, setProjectCover, removeProjectCover, addRefImage, removeRefImage, getRefImage, showRefImagesSheet, openRefImageViewer, pickRefImages } from './image.js';
 import { expandInstruction, getNextStitchSid, renderHighlightReel } from './highlight.js';
 import { renderHome, renderProject } from './render.js';
 import { t, term, setLang, getLang, setNotation, getNotationKey, SUPPORTED_LANGS, getShowSymbol, setShowSymbol } from './i18n.js';
@@ -75,7 +79,7 @@ function goHome() {
   state.highlightIndex = 0;
   state.flowState.projMenuId = null;
   document.getElementById("bottom-bar")?.style.setProperty("display", "none");
-  document.getElementById("tab-nav")?.style.setProperty("display", "flex");
+  document.getElementById("tab-nav")?.style.setProperty("display", "");
   state.currentTab = 'projects';
   updateTabNav();
   const screen = document.getElementById("screen");
@@ -85,13 +89,28 @@ function goHome() {
 }
 
 function switchTab(tab) {
+  if (state.currentTab === tab) return;
   state.currentTab = tab;
   updateTabNav();
-  if (tab === 'projects') {
-    renderHome();
-  } else if (tab === 'settings') {
-    renderSettings();
+
+  const content = document.getElementById('screen-content');
+  if (content) {
+    content.style.opacity = '0';
+    content.style.transition = 'opacity 0.18s';
   }
+
+  requestAnimationFrame(() => {
+    if (tab === 'projects') {
+      renderHome();
+    } else if (tab === 'settings') {
+      renderSettings();
+    }
+    if (content) {
+      requestAnimationFrame(() => {
+        content.style.opacity = '1';
+      });
+    }
+  });
 }
 
 function updateTabNav() {
@@ -172,7 +191,7 @@ const _globals = {
   showSheet, closeSheet, openPatternPasteSheet,
   handleParsePattern, handleOCR, removeParsedItem, confirmImport, updateCurrentPart, addNewPart,
   showLoading, hideLoading, loadTesseract,
-  startImportFlow, startManualFlow, dismissEntryChoice,
+  startImportFlow, startManualFlow, startStitchOnlyFlow, dismissEntryChoice,
   toggleSelectAllInSetup, startImportFromSetup, cancelPasteSheet,
   normalizeRoundNums,
   renameProject,
@@ -187,6 +206,8 @@ const _globals = {
   toggleVoiceMode, updateVoiceButton, setVoicePulse, playSound,
   openVoiceTutorial, toggleImmersiveMode, goNextRound,
   renderDynamicPalette, renderFilterToggle, renderToggleRow, renderBarRow, triggerEdgeGlow, openInstructionEdit, saveRoundInstruction, refreshBottomBar,
+  instrEditorInsert, instrEditorInsertNum, instrEditorInsertSymbol, instrEditorBackspace, instrEditorClear, instrEditorConfirm, instrEditorToggleKB,
+  openMultiRoundEditor, instrEditorPrevRound, instrEditorNextRound, instrEditorConfirmMulti,
   toggleHighlightMode, updateHighlightButton, updateImmersiveButton,
   openSettings, changeTheme, changeStitchTheme, toggleVoiceDefault, toggleVoiceSound, toggleHighlightEnabled, clearAllData,
   switchTab, renderSettings, updateTabNav,
@@ -194,7 +215,7 @@ const _globals = {
   editProfileName, pickProfileAvatar, showAvatarSheet,
   openGlobalStitchLibrary, openGlobalStitchCustomize, saveGlobalStitchCustomize, resetGlobalStitchCustomize, deleteGlobalCustomStitch, openGlobalNewStitchForm, saveGlobalNewStitch,
   editExpectedCount,
-  pickCover, setProjectCover, removeProjectCover,
+  pickCover, setProjectCover, removeProjectCover, addRefImage, removeRefImage, getRefImage, showRefImagesSheet, openRefImageViewer, pickRefImages,
   expandInstruction, getNextStitchSid, renderHighlightReel,
   setPageView,
   t, term, setLang, getLang, setNotation, getNotationKey, getShowSymbol, setShowSymbol,
@@ -248,7 +269,6 @@ function initStaticText() {
 initStaticText();
 
 
-document.getElementById("tab-nav")?.style.setProperty("display", "flex");
 // 恢复上次的主题设置
 const savedTheme = state.data?.settings?.theme || 'morandi';
 const html = document.documentElement;

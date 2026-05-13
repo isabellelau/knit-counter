@@ -78,7 +78,8 @@ export function showNewProjectDialog() {
       parts: [{ id: partId, title: t('default_part_title'), rawPattern: '', rounds: [r], activeRoundId: r.id, customPalette: null }],
       activePartId: partId,
       useRowTerms: false,
-      lastModified: Date.now()
+      lastModified: Date.now(),
+      refImages: []
     };
     state.data.projects.push(proj);
     saveData();
@@ -106,6 +107,8 @@ export async function toggleProjMenu(id, e) {
   const coverImg = await getProjImage(id);
   const isArchived = proj.archived;
 
+  const hasRefImages = Array.isArray(proj.refImages) && proj.refImages.length > 0;
+
   const coverActions = `
     <button class="sheet-item" onclick="pickCover('${id}');closeSheet()">
       <span class="sheet-item-icon">🖼️</span> ${t('set_cover')}
@@ -113,6 +116,13 @@ export async function toggleProjMenu(id, e) {
     ${coverImg ? `
     <button class="sheet-item" onclick="removeProjectCover('${id}');closeSheet()">
       <span class="sheet-item-icon">🗑️</span> ${t('remove_cover')}
+    </button>` : ''}
+    <button class="sheet-item" onclick="pickRefImages('${id}')">
+      <span class="sheet-item-icon">🖼</span> ${t('add_ref_image')}
+    </button>
+    ${hasRefImages ? `
+    <button class="sheet-item" onclick="showRefImagesSheet('${id}')">
+      <span class="sheet-item-icon">📋</span> ${t('manage_ref_images')}
     </button>` : ''}
   `;
 

@@ -26,8 +26,7 @@ function resolveLabel(sid) {
   if (globalCustoms?.names?.[sid]) return globalCustoms.names[sid];
   const cs = state.data?.settings?.globalCustomStitches?.[sid];
   if (cs?.label) return cs.label;
-  const s = STITCH_LIB[sid];
-  return s ? s.label : sid;
+  return term(sid);
 }
 
 export const ALL_THEMES = {
@@ -116,21 +115,379 @@ export function openInstructionEdit(roundId) {
   const r = findRound(proj, roundId);
   if (!r) return;
 
+  const part = getActivePart(proj);
+  state.flowState.instructionBuffer = r.instruction || '';
+  state.flowState.instructionEditRoundId = roundId;
+
+  // Build stitch list (same logic as bottom palette)
+  let displayIds;
+  if (part && part.customPalette && part.customPalette.length > 0) {
+    displayIds = part.customPalette.filter(sid => STITCH_LIB[sid] || getCustomStitchesGlobal()[sid]);
+  } else {
+    const hasPattern = part && part.rounds.some(r => r.instruction && r.instruction.trim());
+    if (hasPattern) {
+      const planned = new Set();
+      part.rounds.forEach(r => {
+        if (r.instruction) extractStitches(r.instruction).forEach(sid => planned.add(sid));
+      });
+      displayIds = Array.from(planned);
+    } else {
+      displayIds = ['CH', 'X', 'V', 'A', 'T', 'F', 'SL'];
+    }
+  }
+  if (!part || !part.customPalette || part.customPalette.length === 0) {
+    Object.keys(getCustomStitchesGlobal()).forEach(sid => {
+      if (!displayIds.includes(sid)) displayIds.push(sid);
+    });
+  }
+  displayIds = [...new Set(displayIds)];
+
+  const buf = state.flowState.instructionBuffer;
+  const placeholder = esc(t('instruction_placeholder'));
+
+  const stitchBtns = displayIds.map(sid => {
+    const info = getStitchInfo(sid);
+    if (!info) return '';
+    return `<button class="instr-editor-stitch-btn" style="background:${info.color}" onclick="instrEditorInsert('${sid}')">${sid}</button>`;
+  }).join('');
+
+  const numBtns = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map(n =>
+    `<button class="instr-editor-num-btn" onclick="instrEditorInsertNum('${n}')">${n}</button>`
+  ).join('');
+
   const html = `<div class="sheet-handle"></div>
 <div class="sheet-title">${t('edit_instruction')}</div>
-<div style="padding:0 16px 12px">
-  <textarea id="instruction-edit-area"
-    style="width:100%;min-height:120px;
-    border:1px solid var(--accent);border-radius:8px;
-    padding:10px;font-size:14px;font-family:inherit;
-    resize:vertical;box-sizing:border-box"
-    placeholder="${esc(t('instruction_placeholder'))}">${esc(r.instruction || '')}</textarea>
+
+<div class="instr-editor-preview-wrap">
+  <div class="instr-editor-preview-bar">
+    <div class="instr-editor-preview" id="instr-editor-preview">${buf ? esc(buf) : `<span class="instr-editor-placeholder">${placeholder}</span>`}</div>
+    <textarea id="instruction-edit-area" class="instr-editor-textarea" style="display:none" placeholder="${placeholder}">${esc(buf)}</textarea>
+    <button class="instr-editor-kb-toggle" id="instr-editor-kb-toggle" onclick="instrEditorToggleKB()">${t('instr_editor_kb_toggle')}</button>
+  </div>
 </div>
-<button class="sheet-cancel" style="background:var(--accent);color:#fff"
-  onclick="saveRoundInstruction('${roundId}')">${t('save')}</button>
-<button class="sheet-cancel" onclick="closeSheet()">${t('cancel')}</button>`;
+
+<div class="instr-editor-tap-area" id="instr-editor-tap-area">
+  <div class="instr-editor-section-label">${t('instr_editor_stitches_label')}</div>
+  <div class="instr-editor-stitch-grid">${stitchBtns}</div>
+
+  <div class="instr-editor-numpad">${numBtns}</div>
+
+  <div class="instr-editor-symbols">
+    <button class="instr-editor-sym-btn" onclick="instrEditorInsertSymbol('(')">(</button>
+    <button class="instr-editor-sym-btn" onclick="instrEditorInsertSymbol(')')">)</button>
+    <button class="instr-editor-sym-btn" onclick="instrEditorInsertSymbol(',')">,</button>
+    <button class="instr-editor-sym-btn" onclick="instrEditorInsertSymbol('×')">×</button>
+    <button class="instr-editor-sym-btn" onclick="instrEditorInsertSymbol(' ')">${t('instr_editor_space')}</button>
+    <button class="instr-editor-sym-btn instr-editor-sym-btn--action" onclick="instrEditorBackspace()">←</button>
+    <button class="instr-editor-sym-btn instr-editor-sym-btn--danger" onclick="instrEditorClear()">${t('instr_editor_clear_btn')}</button>
+    <button class="instr-editor-sym-btn instr-editor-sym-btn--confirm" onclick="instrEditorConfirm('${roundId}')">${t('confirm')}</button>
+  </div>
+</div>
+
+<div style="padding:0 14px 10px">
+  <button class="sheet-cancel" onclick="closeSheet()">${t('cancel')}</button>
+</div>`;
 
   showSheet(html);
+}
+
+function _refreshInstrPreview() {
+  const preview = document.getElementById('instr-editor-preview');
+  if (!preview) return;
+  const buf = state.flowState.instructionBuffer || '';
+  if (buf.length === 0) {
+    preview.innerHTML = `<span class="instr-editor-placeholder">${esc(t('instruction_placeholder'))}</span>`;
+  } else {
+    preview.textContent = buf;
+  }
+  preview.scrollLeft = preview.scrollWidth;
+  const textarea = document.getElementById('instruction-edit-area');
+  if (textarea && textarea.style.display !== 'none') {
+    textarea.value = buf;
+  }
+  _refreshMultiRoundNav();
+}
+
+export function instrEditorInsert(sid) {
+  state.flowState.instructionBuffer = (state.flowState.instructionBuffer || '') + sid;
+  _refreshInstrPreview();
+}
+
+export function instrEditorInsertNum(n) {
+  state.flowState.instructionBuffer = (state.flowState.instructionBuffer || '') + String(n);
+  _refreshInstrPreview();
+}
+
+export function instrEditorInsertSymbol(c) {
+  state.flowState.instructionBuffer = (state.flowState.instructionBuffer || '') + c;
+  _refreshInstrPreview();
+}
+
+export function instrEditorBackspace() {
+  const buf = state.flowState.instructionBuffer || '';
+  state.flowState.instructionBuffer = buf.slice(0, -1);
+  _refreshInstrPreview();
+}
+
+export function instrEditorClear() {
+  state.flowState.instructionBuffer = '';
+  _refreshInstrPreview();
+}
+
+export function instrEditorConfirm(roundId) {
+  const textarea = document.getElementById('instruction-edit-area');
+  if (textarea) {
+    if (textarea.style.display === 'none') {
+      textarea.value = state.flowState.instructionBuffer || '';
+    } else {
+      state.flowState.instructionBuffer = textarea.value;
+    }
+  }
+  saveRoundInstruction(roundId);
+}
+
+export function instrEditorToggleKB() {
+  const tapArea = document.getElementById('instr-editor-tap-area');
+  const textarea = document.getElementById('instruction-edit-area');
+  const preview = document.getElementById('instr-editor-preview');
+  const toggleBtn = document.getElementById('instr-editor-kb-toggle');
+  if (!tapArea || !textarea || !preview || !toggleBtn) return;
+
+  const isKbMode = textarea.style.display !== 'none';
+
+  if (isKbMode) {
+    state.flowState.instructionBuffer = textarea.value;
+    tapArea.style.display = '';
+    textarea.style.display = 'none';
+    preview.style.display = '';
+    toggleBtn.textContent = t('instr_editor_kb_toggle');
+    _refreshInstrPreview();
+  } else {
+    textarea.value = state.flowState.instructionBuffer || '';
+    tapArea.style.display = 'none';
+    textarea.style.display = '';
+    preview.style.display = 'none';
+    toggleBtn.textContent = t('instr_editor_tap_toggle');
+    textarea.focus();
+  }
+}
+
+// ═════════════════════════════════════
+//  Multi-round instruction editor
+// ═════════════════════════════════════
+
+function _persistInstrBuffer(roundId) {
+  const proj = getProj(state.curProjId);
+  const r = findRound(proj, roundId);
+  if (!r) return false;
+  const textarea = document.getElementById('instruction-edit-area');
+  if (textarea && textarea.style.display !== 'none') {
+    state.flowState.instructionBuffer = textarea.value;
+  }
+  r.instruction = (state.flowState.instructionBuffer || '').trim();
+  r.expectedCount = null;
+  proj.lastModified = Date.now();
+  saveData();
+  return true;
+}
+
+function _refreshMultiRoundNav() {
+  const navPrev = document.getElementById('mr-nav-prev');
+  const navCurrent = document.getElementById('mr-nav-current');
+  const navIndicator = document.getElementById('mr-nav-indicator');
+  if (!navPrev || !navCurrent || !navIndicator) return;
+
+  const proj = getProj(state.curProjId);
+  const part = getActivePart(proj);
+  if (!part) return;
+
+  const rounds = part.rounds;
+  const currentRoundId = state.flowState.instructionEditRoundId;
+  const currentIdx = rounds.findIndex(r => r.id === currentRoundId);
+  if (currentIdx < 0) return;
+
+  if (currentIdx > 0) {
+    const prev = rounds[currentIdx - 1];
+    navPrev.textContent = `R${prev.roundNum || currentIdx}: ${prev.instruction || t('multi_round_nav_prev_empty')}`;
+  } else {
+    navPrev.textContent = `R0: ${t('multi_round_nav_prev_empty')}`;
+  }
+
+  const buf = state.flowState.instructionBuffer || '';
+  const cur = rounds[currentIdx];
+  const rn = cur.roundNum || (currentIdx + 1);
+  navCurrent.innerHTML = `<span class="mr-nav-current-label">R${rn}:</span> ${esc(buf)}<span class="mr-nav-cursor">|</span>`;
+
+  navIndicator.textContent = t('multi_round_nav_indicator')
+    .replace('{n}', rn)
+    .replace('{total}', rounds.length);
+}
+
+export function openMultiRoundEditor(projId) {
+  const proj = getProj(projId);
+  if (!proj) return;
+  const part = getActivePart(proj);
+  if (!part) return;
+
+  if (part.rounds.length === 0) {
+    const r = { id: uid(), seq: [], instruction: '', isTextCard: false };
+    part.rounds.push(r);
+    if (window.normalizeRoundNums) window.normalizeRoundNums(part.rounds);
+    state.expandedRounds.add(r.id);
+    part.activeRoundId = r.id;
+    proj.lastModified = Date.now();
+    saveData();
+  }
+
+  const activeRoundId = part.activeRoundId || part.rounds[0].id;
+  const activeRound = part.rounds.find(r => r.id === activeRoundId);
+
+  state.flowState.instructionBuffer = activeRound ? (activeRound.instruction || '') : '';
+  state.flowState.instructionEditRoundId = activeRoundId;
+
+  let displayIds;
+  if (part.customPalette && part.customPalette.length > 0) {
+    displayIds = part.customPalette.filter(sid => STITCH_LIB[sid] || getCustomStitchesGlobal()[sid]);
+  } else {
+    const hasPattern = part.rounds.some(r => r.instruction && r.instruction.trim());
+    if (hasPattern) {
+      const planned = new Set();
+      part.rounds.forEach(r => {
+        if (r.instruction) extractStitches(r.instruction).forEach(sid => planned.add(sid));
+      });
+      displayIds = Array.from(planned);
+    } else {
+      displayIds = ['CH', 'X', 'V', 'A', 'T', 'F', 'SL'];
+    }
+  }
+  if (!part.customPalette || part.customPalette.length === 0) {
+    Object.keys(getCustomStitchesGlobal()).forEach(sid => {
+      if (!displayIds.includes(sid)) displayIds.push(sid);
+    });
+  }
+  displayIds = [...new Set(displayIds)];
+
+  const buf = state.flowState.instructionBuffer;
+  const placeholder = esc(t('instruction_placeholder'));
+
+  const stitchBtns = displayIds.map(sid => {
+    const info = getStitchInfo(sid);
+    if (!info) return '';
+    return `<button class="instr-editor-stitch-btn" style="background:${info.color}" onclick="instrEditorInsert('${sid}')">${sid}</button>`;
+  }).join('');
+
+  const numBtns = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map(n =>
+    `<button class="instr-editor-num-btn" onclick="instrEditorInsertNum('${n}')">${n}</button>`
+  ).join('');
+
+  const html = `<div class="sheet-handle"></div>
+<div class="sheet-title">${t('multi_round_editor_title')}</div>
+
+<div class="multi-round-editor-nav">
+  <div class="mr-nav-prev" id="mr-nav-prev"></div>
+  <div class="mr-nav-current" id="mr-nav-current"></div>
+  <div class="mr-nav-indicator" id="mr-nav-indicator"></div>
+</div>
+
+<div class="instr-editor-preview-wrap">
+  <div class="instr-editor-preview-bar">
+    <div class="instr-editor-preview" id="instr-editor-preview">${buf ? esc(buf) : `<span class="instr-editor-placeholder">${placeholder}</span>`}</div>
+    <textarea id="instruction-edit-area" class="instr-editor-textarea" style="display:none" placeholder="${placeholder}">${esc(buf)}</textarea>
+    <button class="instr-editor-kb-toggle" id="instr-editor-kb-toggle" onclick="instrEditorToggleKB()">${t('instr_editor_kb_toggle')}</button>
+  </div>
+</div>
+
+<div class="instr-editor-tap-area" id="instr-editor-tap-area">
+  <div class="instr-editor-section-label">${t('instr_editor_stitches_label')}</div>
+  <div class="instr-editor-stitch-grid">${stitchBtns}</div>
+
+  <div class="instr-editor-numpad">${numBtns}</div>
+
+  <div class="instr-editor-symbols">
+    <button class="instr-editor-sym-btn" onclick="instrEditorInsertSymbol('(')">(</button>
+    <button class="instr-editor-sym-btn" onclick="instrEditorInsertSymbol(')')">)</button>
+    <button class="instr-editor-sym-btn" onclick="instrEditorInsertSymbol(',')">,</button>
+    <button class="instr-editor-sym-btn" onclick="instrEditorInsertSymbol('×')">×</button>
+    <button class="instr-editor-sym-btn" onclick="instrEditorInsertSymbol(' ')">${t('instr_editor_space')}</button>
+    <button class="instr-editor-sym-btn instr-editor-sym-btn--action" onclick="instrEditorBackspace()">←</button>
+    <button class="instr-editor-sym-btn instr-editor-sym-btn--danger" onclick="instrEditorClear()">${t('instr_editor_clear_btn')}</button>
+    <button class="instr-editor-sym-btn instr-editor-sym-btn--nav" onclick="instrEditorPrevRound()">${t('multi_round_prev_round')}</button>
+    <button class="instr-editor-sym-btn instr-editor-sym-btn--nav" onclick="instrEditorNextRound()">${t('multi_round_next_round')}</button>
+    <button class="instr-editor-sym-btn instr-editor-sym-btn--confirm" onclick="instrEditorConfirmMulti()">${t('confirm')}</button>
+  </div>
+</div>
+
+<div style="padding:0 14px 10px">
+  <button class="sheet-cancel" onclick="closeSheet()">${t('cancel')}</button>
+</div>`;
+
+  showSheet(html);
+  _refreshMultiRoundNav();
+}
+
+export function instrEditorPrevRound() {
+  const proj = getProj(state.curProjId);
+  const part = getActivePart(proj);
+  if (!part) return;
+
+  const currentRoundId = state.flowState.instructionEditRoundId;
+  const rounds = part.rounds;
+  const currentIdx = rounds.findIndex(r => r.id === currentRoundId);
+  if (currentIdx <= 0) return;
+
+  _persistInstrBuffer(currentRoundId);
+
+  const prevRound = rounds[currentIdx - 1];
+  state.flowState.instructionEditRoundId = prevRound.id;
+  state.flowState.instructionBuffer = prevRound.instruction || '';
+
+  _refreshInstrPreview();
+}
+
+export function instrEditorNextRound() {
+  const proj = getProj(state.curProjId);
+  const part = getActivePart(proj);
+  if (!part) return;
+
+  const currentRoundId = state.flowState.instructionEditRoundId;
+  const rounds = part.rounds;
+  const currentIdx = rounds.findIndex(r => r.id === currentRoundId);
+
+  _persistInstrBuffer(currentRoundId);
+
+  if (currentIdx >= rounds.length - 1) {
+    const r = { id: uid(), seq: [], instruction: '', isTextCard: false };
+    part.rounds.push(r);
+    if (window.normalizeRoundNums) window.normalizeRoundNums(part.rounds);
+    state.expandedRounds.add(r.id);
+    part.activeRoundId = r.id;
+    proj.lastModified = Date.now();
+    saveData();
+
+    state.flowState.instructionEditRoundId = r.id;
+    state.flowState.instructionBuffer = '';
+  } else {
+    const nextRound = rounds[currentIdx + 1];
+    state.flowState.instructionEditRoundId = nextRound.id;
+    state.flowState.instructionBuffer = nextRound.instruction || '';
+  }
+
+  _refreshInstrPreview();
+}
+
+export function instrEditorConfirmMulti() {
+  const roundId = state.flowState.instructionEditRoundId;
+  if (!roundId) return;
+
+  const textarea = document.getElementById('instruction-edit-area');
+  if (textarea) {
+    if (textarea.style.display === 'none') {
+      textarea.value = state.flowState.instructionBuffer || '';
+    } else {
+      state.flowState.instructionBuffer = textarea.value;
+    }
+  }
+  saveRoundInstruction(roundId);
 }
 
 export function saveRoundInstruction(roundId) {
@@ -138,10 +495,15 @@ export function saveRoundInstruction(roundId) {
   const r = findRound(proj, roundId);
   if (!r) return;
 
+  let newValue;
   const textarea = document.getElementById('instruction-edit-area');
-  if (!textarea) return;
-
-  const newValue = textarea.value.trim();
+  if (textarea) {
+    newValue = textarea.value.trim();
+  }
+  if (!newValue && state.flowState.instructionBuffer) {
+    newValue = state.flowState.instructionBuffer.trim();
+  }
+  if (newValue == null) return;
   r.instruction = newValue;
   r.expectedCount = null;
   proj.lastModified = Date.now();
@@ -164,6 +526,9 @@ export function saveRoundInstruction(roundId) {
     renderDynamicPalette(proj);
     renderHighlightReel(proj);
   }
+
+  state.flowState.instructionBuffer = null;
+  state.flowState.instructionEditRoundId = null;
 }
 
 export function getRoundStitches(round) {
