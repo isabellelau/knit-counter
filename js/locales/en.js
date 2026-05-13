@@ -22,8 +22,18 @@ export default {
   restored: 'Restored',
   more_actions: 'More',
   loading: 'Loading…',
-  app_name: 'Knit',
+  app_name: 'StitchEcho',
   unnamed: 'Untitled',
+
+  // ═════════════════════════════════════
+  //  Profile card
+  // ═════════════════════════════════════
+  profile_default_name: 'Knitter',
+  profile_change_avatar: 'Change avatar',
+  profile_remove_avatar: 'Remove avatar',
+  profile_edit_title: 'Edit nickname',
+  profile_edit_placeholder: 'Enter your nickname',
+  profile_edit_save: 'Save',
 
   // ═════════════════════════════════════
   //  Navigation
@@ -36,11 +46,11 @@ export default {
   // ═════════════════════════════════════
   //  Home
   // ═════════════════════════════════════
-  home_empty_moti: 'Every stitch counts.',
+  home_empty_moti: 'Every stitch matters. Start when you\'re ready.',
   home_today_label: 'Today',
   home_total_stitches: '{count} sts',
   home_total_projects: '{count} projects',
-  home_streak_days: '{count} days',
+  home_total_days: '{count} days total',
   home_empty: 'No projects yet. Tap below to create your first one 🌸',
   home_archived_section: '📦 Archived',
   home_new_project_btn: '+ New project',
@@ -263,6 +273,7 @@ export default {
   stitch_theme_float: 'Float',
   stitch_theme_float_sub: 'Soft pastels',
   settings_stitch_assist: 'Stitch assistant',
+  settings_stitch_library: 'Stitch library',
   settings_pro_badge: 'PRO',
   settings_permissions_placeholder: 'Microphone, notifications, and other permissions will be configurable here.',
   settings_stats: 'Stats',
@@ -289,7 +300,7 @@ export default {
   import_read_failed: '❌ Could not read the file',
   storage_quota: 'Storage is full — try removing some cover images',
   storage_usage: '{used} MB / {quota} MB used · consider exporting a backup and cleaning up',
-  export_filename: 'Knit_backup_{date}.json',
+  export_filename: 'StitchEcho_backup_{date}.json',
 
   // ═════════════════════════════════════
   //  Cover image

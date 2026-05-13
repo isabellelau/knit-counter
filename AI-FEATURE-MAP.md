@@ -922,9 +922,10 @@ knit/
 - 保存封面: `js/image.js:48-57` — `setProjectCover(projectId, input)`
 - 移除封面: `js/image.js:59-67` — `removeProjectCover(projectId)`
 - 读取封面: `js/image.js:40-45` — `getProjImage(projId)`
-- 存储位置: localStorage key `img_{projId}`（base64，独立于主 JSON）
+- 存储位置: IndexedDB covers store（`img_{projId}`），独立于主 JSON
+- 本地头像: `js/image.js:153-168` — `getProfileAvatar()` / `setProfileAvatar()` / `removeProfileAvatar()`，存储于 storageAdapter key `profile_avatar`
 - 渲染显示: `js/render.js:66-73`（首页封面/色块占位）
-- 入口: 项目卡片菜单"🖼 设置封面" + "🗑 移除封面"
+- 入口: 项目卡片菜单"🖼 设置封面" + "🗑 移除封面"；设置页身份卡头像
 
 **视觉标识**:
 - 项目卡片左侧：有封面显示 48×48 圆角图片，无封面显示首字大写色块（COVER_COLORS 之一）
@@ -944,18 +945,22 @@ knit/
 - 别名: "settings page"、"设置中心"、"偏好设置"
 
 **代码位置**:
-- Sheet 版: `js/settings.js:7-74` — `openSettings()`（从项目页头部按钮调用）
-- 全页版: `js/settings.js:76-164` — `renderSettings()`（通过 Tab Bar 切换调用）
+- Sheet 版: `js/settings.js:26-33` — `openSettings()`（从项目页头部按钮调用）
+- 全页版: `js/settings.js:36-45` — `renderSettings()`（通过 Tab Bar 切换调用）
+- 身份卡: `js/settings.js:71-93` — `_buildSettingsListInnerHTML()` 中 `.profile-card` HTML
+- 头像加载: `js/settings.js:47-54` — `_loadProfileAvatar()`
 - 入口: 底部标签栏 ⚙︎ + 项目页 Nav Bar ⚙️ 按钮
 
 **视觉标识**:
-- 分区：外观（2 列主题卡片）、语音（开关 + 使用说明入口）、数据管理（统计 + 导出/导入/清空）、安装（安装教程）、关于（版本号）
-- 主题选中态：`outline: 2px solid var(--accent)`
+- 顶部本地身份卡：圆形头像（48px）+ 昵称 + N个项目·累计N针统计
+- 分区：外观（2列主题卡片）、语言（语言/针法显示切换）、数据管理（导出/导入/清空）、进阶功能、关于
+- 头像未上传时显示 🧶 emoji 占位，上传后显示圆形裁剪图片
+- 点击昵称弹出 Dialog 编辑，点击头像上传图片，长按/右键弹出 Sheet 更换/移除
 
 **修改指引**:
-- 修改版本号显示: 编辑 `js/settings.js:158` — "钩织计数本 v0.1"
-- 修改设置项顺序: 编辑 `js/settings.js:76-164` 中 html 拼接顺序
-- 新增设置项: 在 `js/settings.js` 中参照现有模式添加
+- 修改身份卡样式: 编辑 `styles.css` 中 `.profile-card` 系列
+- 修改默认昵称: 编辑 locale 文件 `profile_default_name` 键
+- 修改头像压缩尺寸: 编辑 `js/settings.js` 中 `pickProfileAvatar()` 的 FileReader 逻辑
 
 
 ### 应用设置 - 语音默认开关 & 音效开关
@@ -1052,7 +1057,7 @@ knit/
 **数据结构概览**:
 ```
 state.data = {
-  schemaVersion: LATEST_SCHEMA,     // 当前 schema 版本号（2）
+  schemaVersion: LATEST_SCHEMA,     // 当前 schema 版本号（6）
   projects: [{
     id, name, archived,
     useRowTerms,                    // 用"行"还是"圈"
@@ -1079,7 +1084,8 @@ state.data = {
     theme: "morandi",               // "morandi"|"night"
     customColors: {},               // 全局自定义颜色
     voiceEnabled: false,            // 进入项目默认开启语音
-    voiceSoundEnabled: false        // 语音模式音效
+    voiceSoundEnabled: false,       // 语音模式音效
+    profile: { name: '' }           // 本地昵称（空字符串=使用默认值）
   }
 }
 ```
@@ -1097,10 +1103,10 @@ state.data = {
 - 别名: "data migration"、"格式转换"、"数据升级脚本"
 
 **代码位置**:
-- 迁移函数: `js/storage.js:142-216` — `migrateData(d)`
-- 调用时机: `js/storage.js:131` — `loadData()` 读取数据后立即调用
-- schema 版本常量: `js/storage.js:52` — `LATEST_SCHEMA`（当前值为 2）
-- 版本历史: `js/storage.js:1-17` — 文件头注释块
+- 迁移函数: `js/storage.js:248-348` — `migrateData(d)`
+- 调用时机: `js/storage.js:234` — `loadData()` 读取数据后立即调用
+- schema 版本常量: `js/storage.js:90` — `LATEST_SCHEMA`（当前值为 6）
+- 版本历史: `js/storage.js:1-20` — 文件头注释块
 - 旧 ID 映射: `stitches.js:42-45` — `OLD_ID_MAP`
 
 **版本门控迁移规则**（每次改数据形状必须遵循）:
@@ -1119,11 +1125,21 @@ state.data = {
 - **v1 → v2** (schemaVersion < 2):
   - `proj.coverImage`（base64）迁移到独立 localStorage key `img_{projId}`
   - 从项目对象中删除 `coverImage` 字段
+  - 随后由 `migrateFromLocalStorage()` 迁入 IndexedDB covers store
+- **v2 → v3** (schemaVersion < 3):
+  - 补全 `settings.highlightEnabled` 字段（默认 false）
+- **v3 → v4** (schemaVersion < 4):
+  - 补全所有项目的 `lastModified` 时间戳
+- **v4 → v5** (schemaVersion < 5):
+  - 补全 `settings.globalCustomStitches` 字段
+- **v5 → v6** (schemaVersion < 6):
+  - 补全 `settings.profile` 字段（`{ name: '' }`）
+  - 本地头像单独存取于 storageAdapter key `profile_avatar`
 
 **修改指引**:
-- 添加新的数据迁移规则: 编辑 `js/storage.js:142-216`
+- 添加新的数据迁移规则: 编辑 `js/storage.js:248-348`
 - 添加旧 ID 映射: 编辑 `stitches.js:42-45` — `OLD_ID_MAP`
-- 修改当前 schema 版本: 编辑 `js/storage.js:52` — `LATEST_SCHEMA`
+- 修改当前 schema 版本: 编辑 `js/storage.js:90` — `LATEST_SCHEMA`
 
 
 ### 基础设施 - 针法库定义

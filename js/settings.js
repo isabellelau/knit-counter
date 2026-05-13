@@ -1,23 +1,26 @@
 import { state, getProj, clearDailyLog } from './state.js';
-import { showConfirmDialog, showToast, closeSheet } from './ui.js';
+import { showSheet, showConfirmDialog, showToast, closeSheet } from './ui.js';
 import { saveData, checkStorageQuota } from './storage.js';
-import { getProjColor, ALL_THEMES, refreshBottomBar } from './stitch.js';
+import { getProjColor, getCustomStitchesGlobal, getStitchInfo, ALL_THEMES, refreshBottomBar, saveStitchCustomize, resetStitchCustomize, deleteCustomStitch, saveNewStitch } from './stitch.js';
 import { t, setLang, getLang, setNotation, getNotationKey, SUPPORTED_LANGS, NOTATION_OPTIONS, getShowSymbol, setShowSymbol } from './i18n.js';
-import { COLOR_THEMES } from '../stitches.js';
+import { STITCH_LIB, COLOR_THEMES } from '../stitches.js';
 import { setPageView } from './main.js';
-import { removeProjectCover } from './image.js';
+import { removeProjectCover, getProfileAvatar, setProfileAvatar, removeProfileAvatar } from './image.js';
 
 let _settingsStack = [];
 let _settingsMode = 'page'; // 'page' | 'sheet'
 
-const SUBPAGE_TITLES = {
-  color: t('settings_color'),
-  permissions: t('settings_permissions'),
-  data: t('settings_data'),
-  advanced: t('settings_advanced'),
-  about: t('settings_about'),
-  lang: t('settings_language')
-};
+function _getSubPageTitle(key) {
+  const titles = {
+    color: t('settings_color'),
+    permissions: t('settings_permissions'),
+    data: t('settings_data'),
+    advanced: t('settings_advanced'),
+    about: t('settings_about'),
+    lang: t('settings_language')
+  };
+  return titles[key] || '';
+}
 
 // ── Sheet 版（从项目页头部按钮调用，保留兼容）──
 export function openSettings() {
@@ -27,6 +30,7 @@ export function openSettings() {
   document.getElementById("sheet").innerHTML = html;
   document.getElementById("sheet").classList.add("show");
   document.getElementById("overlay").classList.add("show");
+  _loadProfileAvatar();
 }
 
 // ── 全页版（从 Tab Bar 切换调用）──
@@ -36,9 +40,22 @@ export function renderSettings() {
   document.getElementById("bottom-bar")?.style.setProperty("display", "none");
 
   _resetNavBarToSettingsRoot();
+  _injectProfileHeader();
 
   _settingsStack = [];
   _renderSettingsList();
+  _loadProfileAvatar();
+}
+
+async function _loadProfileAvatar() {
+  const wrap = document.querySelector('.profile-header-avatar-wrap');
+  if (!wrap) return;
+  try {
+    const base64 = await getProfileAvatar();
+    if (base64) {
+      wrap.innerHTML = `<img class="profile-header-avatar-img" src="${base64}" alt="">`;
+    }
+  } catch { /* 静默失败 */ }
 }
 
 function _resetNavBarToSettingsRoot() {
@@ -50,7 +67,7 @@ function _resetNavBarToSettingsRoot() {
   const largeSubEl   = document.getElementById('large-title-sub');
   const largeTitleWrap = document.getElementById('large-title-wrap');
 
-  if (navBack)    { navBack.classList.remove('visible'); navBack.onclick = null; }
+  if (navBack)    { navBack.classList.remove('visible'); navBack.onclick = () => window.goHome && window.goHome(); }
   if (navBar)     navBar.classList.remove('hidden');
   if (navSmall)   { navSmall.textContent = t('settings'); navSmall.classList.remove('visible'); navSmall.onclick = null; navSmall.style.cursor = ''; }
   if (navActions) navActions.innerHTML = '';
@@ -59,6 +76,30 @@ function _resetNavBarToSettingsRoot() {
   if (largeTitleEl)  largeTitleEl.contentEditable = 'false';
   if (largeSubEl)    largeSubEl.textContent = '';
   if (largeTitleWrap) largeTitleWrap.style.display = '';
+}
+
+function _buildProfileHeaderHTML() {
+  const profileName = state.data.settings.profile?.name || t('profile_default_name');
+  const totalProjs = state.data.projects.length;
+  const totalNeedles = state.data.projects.reduce((sum, p) =>
+    sum + (p.parts || []).reduce((s, pt) =>
+      s + (pt.rounds || []).reduce((ss, r) => ss + (r.seq?.length || 0), 0), 0), 0);
+  return `
+    <div class="profile-header">
+      <div class="profile-header-avatar-wrap" id="profile-header-avatar-wrap" onclick="pickProfileAvatar()" oncontextmenu="showAvatarSheet(event)">
+        <span class="profile-header-avatar-emoji">🧶</span>
+      </div>
+      <div class="profile-header-name" onclick="editProfileName()">${profileName}</div>
+      <div class="profile-header-stats">${t('home_total_projects').replace('{count}', totalProjs)} · ${t('home_total_stitches').replace('{count}', totalNeedles.toLocaleString())}</div>
+    </div>
+  `;
+}
+
+function _injectProfileHeader() {
+  const wrap = document.getElementById('large-title-wrap');
+  if (wrap) {
+    wrap.innerHTML = _buildProfileHeaderHTML();
+  }
 }
 
 // ═════════════════════════════════════
@@ -75,6 +116,14 @@ function _buildSettingsListInnerHTML() {
         <span class="settings-row-label">${t('settings_color')}</span>
         <div class="settings-row-extra">
           <span class="settings-row-value">${themeName}</span>
+          <span class="settings-row-chevron">›</span>
+        </div>
+      </div>
+
+      <div class="settings-row" onclick="openGlobalStitchLibrary()">
+        <div class="settings-row-icon" style="background:var(--accent-bg);color:var(--accent)">🧶</div>
+        <span class="settings-row-label">${t('settings_stitch_library')}</span>
+        <div class="settings-row-extra">
           <span class="settings-row-chevron">›</span>
         </div>
       </div>
@@ -140,7 +189,7 @@ function _renderSubPageIntoRoot(html, animClass) {
   const key = _settingsStack[_settingsStack.length - 1];
   let subhead = '';
   if (key) {
-    const title = SUBPAGE_TITLES[key] || '';
+    const title = _getSubPageTitle(key);
     subhead = `
     <div class="settings-subhead">
       <button class="settings-subhead-back" onclick="goBackFromSubPage()">
@@ -188,7 +237,7 @@ function _renderSettingsList(animDir) {
 export function navigateToSubPage(key) {
   _settingsStack.push(key);
 
-  const title = SUBPAGE_TITLES[key] || '';
+  const title = _getSubPageTitle(key);
 
   if (_settingsMode === 'page') {
     const lt = document.getElementById('large-title-wrap');
@@ -246,6 +295,7 @@ export function goBackFromSubPage() {
   if (_settingsMode === 'page') {
     if (_settingsStack.length === 0) {
       _resetNavBarToSettingsRoot();
+      _injectProfileHeader();
       _renderSettingsList('back');
     } else {
       _renderSubPageIntoRoot(_buildSettingsListInnerHTML(), 'back');
@@ -259,6 +309,7 @@ export function goBackFromSubPage() {
       page.addEventListener('animationend', () => page.classList.remove('back'), { once: true });
     }
   }
+  _loadProfileAvatar();
 }
 
 // ═════════════════════════════════════
@@ -510,9 +561,113 @@ function _buildAboutSubPageHTML() {
   `;
 }
 
+// ═════════════════════════════════════
+//  本地身份卡操作
+// ═════════════════════════════════════
+
+function _refreshProfileHeader() {
+  const nameEl = document.querySelector('.profile-header-name');
+  if (nameEl) {
+    nameEl.textContent = state.data.settings.profile?.name || t('profile_default_name');
+  }
+}
+
+export function editProfileName() {
+  const currentName = state.data.settings.profile?.name || '';
+  document.getElementById('dlg-title').textContent = t('profile_edit_title');
+  document.getElementById('dlg-input').value = currentName;
+  document.getElementById('dlg-input').placeholder = t('profile_edit_placeholder');
+  document.getElementById('dlg-input').style.display = '';
+  document.getElementById('dlg-msg').style.display = 'none';
+  const okBtn = document.querySelector('#dialog .dialog-btn.ok');
+  if (okBtn) okBtn.textContent = t('profile_edit_save');
+  state.dlgCallback = (newName) => {
+    const trimmed = newName.trim();
+    if (!state.data.settings.profile) state.data.settings.profile = {};
+    state.data.settings.profile.name = trimmed;
+    saveData();
+    _refreshProfileHeader();
+    if (window.initStaticText) window.initStaticText();
+  };
+  state.confirmCallback = null;
+  document.getElementById('dialog').classList.add('show');
+  setTimeout(() => document.getElementById('dlg-input').focus(), 100);
+}
+
+export function pickProfileAvatar() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    try {
+      // 读取为 base64
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          await setProfileAvatar(reader.result);
+          const wrap = document.querySelector('.profile-header-avatar-wrap');
+          if (wrap) {
+            wrap.innerHTML = `<img class="profile-header-avatar-img" src="${reader.result}" alt="">`;
+          }
+          showToast(t('cover_updated'));
+        } catch {
+          showToast(t('cover_process_failed'));
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      showToast(t('cover_process_failed'));
+    }
+  };
+  input.click();
+}
+
+export function showAvatarSheet(event) {
+  event.preventDefault();
+  let html = `<div class="sheet-handle"></div>
+    <div class="sheet-title">${t('profile_change_avatar')}</div>
+    <div style="padding:8px 16px;display:flex;flex-direction:column;gap:8px">
+      <button class="sheet-item" onclick="pickProfileAvatar();closeSheet()">${t('profile_change_avatar')}</button>`;
+  // 只有已有头像时才显示移除
+  if (document.querySelector('.profile-header-avatar-img')) {
+    html += `<button class="sheet-item" style="color:var(--danger)" onclick="removeProfileAvatar();closeSheet()">${t('profile_remove_avatar')}</button>`;
+  }
+  html += `<button class="sheet-cancel" onclick="closeSheet()">${t('cancel')}</button>`;
+  window.showSheet(html);
+}
+
+window.removeProfileAvatar = async function() {
+  await removeProfileAvatar();
+  const wrap = document.querySelector('.profile-header-avatar-wrap');
+  if (wrap) {
+    wrap.innerHTML = `<span class="profile-header-avatar-emoji">🧶</span>`;
+  }
+  showToast(t('cover_updated'));
+};
+
 window.switchLang = function(code) {
+  if (getLang() === code) return;
   setLang(code);
-  location.reload();
+  if (window.initStaticText) window.initStaticText();
+  // Update language pill selection
+  document.querySelectorAll('[data-lang]').forEach(el => {
+    el.classList.toggle('active', el.dataset.lang === code);
+  });
+  // Re-render current settings view
+  if (_settingsStack.length > 0) {
+    const currentKey = _settingsStack.pop();
+    navigateToSubPage(currentKey);
+  } else if (_settingsMode === 'sheet') {
+    document.getElementById('sheet').innerHTML =
+      `<div class="settings-page" id="settings-page">${_buildSettingsListInnerHTML()}</div>`;
+  } else {
+    _resetNavBarToSettingsRoot();
+    _injectProfileHeader();
+    _renderSettingsList();
+  }
+  _loadProfileAvatar();
 };
 
 window.toggleShowSymbol = function() {
@@ -525,8 +680,25 @@ window.toggleShowSymbol = function() {
 };
 
 window.switchNotation = function(code) {
+  if (getNotationKey() === code) return;
   setNotation(code);
-  location.reload();
+  // Update notation pill selection
+  document.querySelectorAll('[data-notation]').forEach(el => {
+    el.classList.toggle('active', el.dataset.notation === code);
+  });
+  // Re-render current settings view
+  if (_settingsStack.length > 0) {
+    const currentKey = _settingsStack.pop();
+    navigateToSubPage(currentKey);
+  } else if (_settingsMode === 'sheet') {
+    document.getElementById('sheet').innerHTML =
+      `<div class="settings-page" id="settings-page">${_buildSettingsListInnerHTML()}</div>`;
+  } else {
+    _resetNavBarToSettingsRoot();
+    _injectProfileHeader();
+    _renderSettingsList();
+  }
+  _loadProfileAvatar();
 };
 
 // ═════════════════════════════════════
@@ -588,4 +760,221 @@ export function clearAllData() {
     }
     showToast(t('settings_cleared'));
   });
+}
+
+// ═════════════════════════════════════
+//  全局针法库（设置页入口）
+// ═════════════════════════════════════
+
+export function openGlobalStitchLibrary() {
+  const categories = {
+    basic: t('category_basic'),
+    increase: t('category_increase'),
+    decrease: t('category_decrease'),
+    special: t('category_special')
+  };
+
+  const customByCat = { basic: [], increase: [], decrease: [], special: [] };
+  Object.values(getCustomStitchesGlobal()).forEach(cs => {
+    const cat = cs.category || 'basic';
+    if (customByCat[cat]) customByCat[cat].push(cs);
+    else customByCat.basic.push(cs);
+  });
+
+  let html = `<div class="sheet-handle"></div>
+    <div class="sheet-title">${t('settings_stitch_library')}</div>
+    <div style="max-height:60vh;overflow-y:auto;padding:0 14px">`;
+
+  Object.entries(categories).forEach(([cat, catLabel]) => {
+    const presetItems = Object.values(STITCH_LIB).filter(s => s.category === cat);
+    const customItems = customByCat[cat] || [];
+    const items = [...presetItems, ...customItems];
+    if (items.length === 0) return;
+
+    html += `<div class="sheet-section">${catLabel}</div>`;
+    items.forEach(s => {
+      const info = getStitchInfo(s.id);
+      if (!info) return;
+      const isCustom = !!getCustomStitchesGlobal()[s.id];
+      html += `<div class="sheet-item" onclick="openGlobalStitchCustomize('${s.id}')">
+        <div class="sheet-item-icon" style="background:${info.color};color:#fff;font-weight:700;font-size:14px">${info.abbr}</div>
+        <div><div class="sheet-item-label">${info.label}${isCustom ? ' <span style="color:#FACC15;font-size:9px">✦</span>' : ''}</div><div class="sheet-item-sub">${s.id}</div></div>
+        <span style="margin-left:auto;color:var(--muted);font-size:20px">›</span>
+      </div>`;
+    });
+  });
+
+  html += `</div>
+    <div style="padding:10px 14px">
+      <button class="bar-btn" style="width:100%;border-style:dashed;color:var(--accent);border-color:var(--accent)" onclick="openGlobalNewStitchForm()">${t('new_stitch')}</button>
+    </div>
+    <button class="sheet-cancel" onclick="closeSheet()">${t('close')}</button>`;
+
+  showSheet(html);
+}
+
+export function openGlobalStitchCustomize(sid) {
+  const info = getStitchInfo(sid);
+  if (!info) return;
+
+  const isCustom = !!getCustomStitchesGlobal()[sid];
+  let html = `<div class="sheet-handle"></div>
+    <div class="sheet-title">${t('customize_btn')} · <span style="font-weight:700">${info.label}</span> <small style="opacity:.5">(${sid})</small></div>
+    <div style="padding:12px 16px">
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600">${t('name_field')}</div>
+        <input id="global-custom-name" value="${info.label}" maxlength="20"
+          style="width:100%;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:14px;background:var(--bg);color:var(--text);outline:none;font-family:inherit">
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600">${t('color_field')}</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <input type="color" id="global-custom-color" value="${info.color}"
+            style="width:38px;height:38px;border:none;border-radius:8px;cursor:pointer;background:none;padding:0">
+          <span style="font-size:12px;color:var(--muted);font-family:monospace" id="global-color-hex">${info.color}</span>
+          <button class="bar-btn" style="flex:0;padding:6px 10px;font-size:11px" onclick="resetGlobalStitchCustomize('${sid}')">${t('reset_default')}</button>
+        </div>
+      </div>
+    </div>
+    ${isCustom ? `
+    <div style="padding:0 16px 8px">
+      <button class="bar-btn" style="width:100%;color:#E07070;border-color:#E07070" onclick="deleteGlobalCustomStitch('${sid}')">${t('delete_custom_stitch')}</button>
+    </div>` : ''}
+    <div style="padding:10px 16px;display:flex;gap:8px">
+      <button class="bar-btn" style="flex:1" onclick="openGlobalStitchLibrary()">${t('back_btn')}</button>
+      <button class="bar-btn primary" style="flex:2" onclick="saveGlobalStitchCustomize('${sid}')">${t('save_btn')}</button>
+    </div>`;
+
+  showSheet(html);
+
+  const colorInput = document.getElementById('global-custom-color');
+  const hexDisplay = document.getElementById('global-color-hex');
+  if (colorInput && hexDisplay) {
+    colorInput.addEventListener('input', () => { hexDisplay.textContent = colorInput.value; });
+  }
+}
+
+export function saveGlobalStitchCustomize(sid) {
+  const nameInput = document.getElementById('global-custom-name');
+  const colorInput = document.getElementById('global-custom-color');
+  const defaultLabel = STITCH_LIB[sid]?.label || sid;
+
+  const g = state.data.settings.globalStitchCustomizations;
+  if (!g.names) g.names = {};
+  if (!g.colors) g.colors = {};
+
+  if (nameInput && nameInput.value.trim() && nameInput.value.trim() !== defaultLabel) {
+    g.names[sid] = nameInput.value.trim();
+  } else {
+    delete g.names[sid];
+  }
+
+  if (colorInput) {
+    g.colors[sid] = colorInput.value;
+  }
+
+  saveData();
+  openGlobalStitchLibrary();
+}
+
+export function resetGlobalStitchCustomize(sid) {
+  const g = state.data.settings.globalStitchCustomizations;
+  if (g?.names) delete g.names[sid];
+  if (g?.colors) delete g.colors[sid];
+  saveData();
+  openGlobalStitchCustomize(sid);
+}
+
+export function deleteGlobalCustomStitch(sid) {
+  showConfirmDialog(t('delete_custom_stitch_confirm').replace('{name}', getStitchInfo(sid)?.label || sid), (ok) => {
+    if (!ok) return;
+    if (state.data.settings.globalCustomStitches?.[sid]) {
+      delete state.data.settings.globalCustomStitches[sid];
+    }
+    if (state.data.settings.globalStitchCustomizations?.names?.[sid]) {
+      delete state.data.settings.globalStitchCustomizations.names[sid];
+    }
+    if (state.data.settings.globalStitchCustomizations?.colors?.[sid]) {
+      delete state.data.settings.globalStitchCustomizations.colors[sid];
+    }
+    state.data.projects.forEach(p => {
+      p.parts.forEach(part => {
+        if (part.customPalette) {
+          part.customPalette = part.customPalette.filter(id => id !== sid);
+        }
+      });
+    });
+    saveData();
+    openGlobalStitchLibrary();
+  });
+}
+
+export function openGlobalNewStitchForm() {
+  let html = `<div class="sheet-handle"></div>
+    <div class="sheet-title">${t('new_stitch')}</div>
+    <div style="padding:12px 16px">
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600">${t('stitch_id_label')}</div>
+        <input id="new-stitch-id" placeholder="${t('stitch_id_placeholder')}" maxlength="10"
+          style="width:100%;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:14px;background:var(--bg);color:var(--text);outline:none;font-family:monospace;text-transform:uppercase"
+          oninput="this.value=this.value.replace(/[^a-zA-Z0-9]/g,'').toUpperCase()">
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600">${t('stitch_name_label')}</div>
+        <input id="new-stitch-label" placeholder="${t('stitch_name_placeholder')}" maxlength="16"
+          style="width:100%;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:14px;background:var(--bg);color:var(--text);outline:none;font-family:inherit">
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600">${t('color_field')}</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="color" id="new-stitch-color" value="#7DD3FC"
+            style="width:38px;height:38px;border:none;border-radius:8px;cursor:pointer;background:none;padding:0">
+          <span style="font-size:12px;color:var(--muted);font-family:monospace" id="new-color-hex">#7DD3FC</span>
+        </div>
+      </div>
+      <div style="margin-bottom:8px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600">${t('category_field')}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          ${[{v:'basic',l:t('cat_basic_short')},{v:'increase',l:t('cat_increase_short')},{v:'decrease',l:t('cat_decrease_short')},{v:'special',l:t('cat_special_short')}].map(c =>
+            `<label style="font-size:12px;color:var(--text);display:flex;align-items:center;gap:3px;cursor:pointer;padding:4px 8px;border:1px solid var(--border);border-radius:8px">
+              <input type="radio" name="new-stitch-cat" value="${c.v}" ${c.v==='basic'?'checked':''}> ${c.l}
+            </label>`
+          ).join('')}
+        </div>
+      </div>
+    </div>
+    <div style="padding:10px 16px;display:flex;gap:8px">
+      <button class="bar-btn" style="flex:1" onclick="openGlobalStitchLibrary()">${t('back_btn')}</button>
+      <button class="bar-btn primary" style="flex:2" onclick="saveGlobalNewStitch()">${t('create_btn')}</button>
+    </div>`;
+
+  showSheet(html);
+
+  const colorInput = document.getElementById('new-stitch-color');
+  const hexDisplay = document.getElementById('new-color-hex');
+  if (colorInput && hexDisplay) {
+    colorInput.addEventListener('input', () => { hexDisplay.textContent = colorInput.value; });
+  }
+}
+
+export function saveGlobalNewStitch() {
+  const idInput = document.getElementById('new-stitch-id');
+  const labelInput = document.getElementById('new-stitch-label');
+  const colorInput = document.getElementById('new-stitch-color');
+  const catRadio = document.querySelector('input[name="new-stitch-cat"]:checked');
+
+  const sid = idInput?.value?.trim().toUpperCase();
+  if (!sid) { alert(t('stitch_id_required')); return; }
+  if (STITCH_LIB[sid]) { alert(t('stitch_id_conflict')); return; }
+  if (state.data.settings.globalCustomStitches?.[sid]) { alert(t('stitch_id_exists')); return; }
+
+  const label = labelInput?.value?.trim() || sid;
+  const color = colorInput?.value || '#7DD3FC';
+  const category = catRadio?.value || 'basic';
+
+  if (!state.data.settings.globalCustomStitches) state.data.settings.globalCustomStitches = {};
+  state.data.settings.globalCustomStitches[sid] = { id: sid, label, color, category };
+
+  saveData();
+  openGlobalStitchLibrary();
 }

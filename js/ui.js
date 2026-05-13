@@ -137,5 +137,7 @@ export function confirmDialog() {
 
 export function closeDialog() {
   document.getElementById("dialog").classList.remove("show");
+  const okBtn = document.querySelector("#dialog .dialog-btn.ok");
+  if (okBtn) okBtn.textContent = t('confirm');
   if (state.confirmCallback) { state.confirmCallback(false); state.confirmCallback = null; }
 }

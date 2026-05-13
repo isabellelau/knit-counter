@@ -1,7 +1,7 @@
 import { state, getProj } from './state.js';
 import { showToast } from './ui.js';
 import { renderHome } from './render.js';
-import { openDB, saveData } from './storage.js';
+import { openDB, saveData, storageAdapter } from './storage.js';
 
 // ── Blob 内存缓存：避免重复 URL.createObjectURL ──
 const _coverCache = new Map(); // projId → { url, revoke }
@@ -147,4 +147,22 @@ export function pickCover(projectId) {
   input.accept = 'image/*';
   input.onchange = () => setProjectCover(projectId, input);
   input.click();
+}
+
+// ── 本地头像（storageAdapter key: profile_avatar）──
+
+export async function getProfileAvatar() {
+  try {
+    return await storageAdapter.get('profile_avatar');
+  } catch {
+    return null;
+  }
+}
+
+export async function setProfileAvatar(base64) {
+  await storageAdapter.set('profile_avatar', base64);
+}
+
+export async function removeProfileAvatar() {
+  await storageAdapter.remove('profile_avatar');
 }

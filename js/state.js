@@ -10,9 +10,14 @@ export const state = {
       stitchTheme: "morandi",
       customColors: {},
       globalCustomStitches: {},
+      globalStitchCustomizations: {
+        names: {},
+        colors: {}
+      },
       voiceEnabled: false,
       voiceSoundEnabled: false,
-      highlightEnabled: false
+      highlightEnabled: false,
+      profile: { name: '' }
     }
   },
   curProjId: null,
@@ -103,25 +108,9 @@ export function addDailyCount(n) {
   localStorage.setItem(DAILY_LOG_KEY, JSON.stringify(log));
 }
 
-export function calcStreak() {
+export function calcTotalDays() {
   const log = getDailyLog();
-  const today = new Date();
-  let streak = 0;
-  // 从昨天开始检查（今日可能还没记录完）
-  const d = new Date(today);
-  d.setDate(d.getDate() - 1);
-  while (true) {
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    const key = `${d.getFullYear()}-${mm}-${dd}`;
-    if (log[key] && log[key] > 0) {
-      streak++;
-      d.setDate(d.getDate() - 1);
-    } else {
-      break;
-    }
-  }
-  return streak;
+  return Object.keys(log).filter(k => log[k] > 0).length;
 }
 
 export function clearDailyLog() {

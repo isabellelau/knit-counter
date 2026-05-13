@@ -21,8 +21,11 @@ export function toggleRowTerms() {
   window.renderProject();
 }
 
-function resolveLabel(sid, proj) {
-  if (proj?.customSettings?.names?.[sid]) return proj.customSettings.names[sid];
+function resolveLabel(sid) {
+  const globalCustoms = state.data?.settings?.globalStitchCustomizations;
+  if (globalCustoms?.names?.[sid]) return globalCustoms.names[sid];
+  const cs = state.data?.settings?.globalCustomStitches?.[sid];
+  if (cs?.label) return cs.label;
   const s = STITCH_LIB[sid];
   return s ? s.label : sid;
 }
@@ -49,52 +52,50 @@ export const ALL_THEMES = {
   }
 };
 
-export function getAllCustomStitches(proj) {
-  const globalStitches = state.data?.settings?.globalCustomStitches ?? {};
-  const projStitches = proj?.customSettings?.customStitches ?? {};
-  return { ...globalStitches, ...projStitches };
+export function getCustomStitchesGlobal() {
+  return state.data?.settings?.globalCustomStitches ?? {};
 }
 
-export function getProjColor(sid, proj) {
-  if (!STITCH_LIB[sid] && !getAllCustomStitches(proj)[sid]) {
+export function getProjColor(sid) {
+  if (!STITCH_LIB[sid] && !getCustomStitchesGlobal()[sid]) {
     return 'var(--muted)';
   }
   const stitchKey = state.data?.settings?.stitchTheme || "morandi";
   const ext = ALL_THEMES[stitchKey];
   if (ext && ext[sid]) return ext[sid];
-  const color = resolveColor(sid, state.data.settings, proj?.customSettings);
+  const color = resolveColor(sid, state.data.settings);
   if (color !== '#ccc') return color;
-  const cs = getAllCustomStitches(proj)[sid];
+  const cs = getCustomStitchesGlobal()[sid];
   return cs?.color || (color !== '#ccc' ? color : '#A8A29E');
 }
 
-export function getStitchInfo(sid, proj) {
-  const cs = getAllCustomStitches(proj)[sid];
+export function getStitchInfo(sid) {
+  const cs = getCustomStitchesGlobal()[sid];
   const lib = STITCH_LIB[sid];
   if (!cs && !lib) return null;
   return {
     id: sid,
-    label: resolveLabel(sid, proj),
+    label: resolveLabel(sid),
     abbr: cs ? cs.id : (lib?.abbr || sid),
-    color: getProjColor(sid, proj),
+    color: getProjColor(sid),
     category: cs?.category || lib?.category || 'basic',
     isCustom: !!cs
   };
 }
 
-function getAllStitchesForProject(proj) {
+function getAllStitchesForProject() {
   const list = STITCHES.map(s => ({
     ...s,
-    label: resolveLabel(s.id, proj),
-    color: getProjColor(s.id, proj)
+    label: resolveLabel(s.id),
+    color: getProjColor(s.id)
   }));
-  const allCustomStitches = getAllCustomStitches(proj);
+  const allCustomStitches = getCustomStitchesGlobal();
   Object.values(allCustomStitches).forEach(cs => {
     list.push({
       id: cs.id,
-      label: resolveLabel(cs.id, proj),
+      label: resolveLabel(cs.id),
       abbr: cs.id,
-      color: getProjColor(cs.id, proj),
+      color: getProjColor(cs.id),
       category: cs.category || 'basic'
     });
   });
@@ -171,7 +172,7 @@ export function getRoundStitches(round) {
 }
 
 export function renderSpillHTML(sid, idx, r, proj) {
-  const info = getStitchInfo(sid, proj);
+  const info = getStitchInfo(sid);
   if (!info) return '';
   const sel = state.selectedStitch && state.selectedStitch.roundId === r.id && state.selectedStitch.idx === idx;
   const bg = info.color + "28";
@@ -179,7 +180,7 @@ export function renderSpillHTML(sid, idx, r, proj) {
     style="background:${bg};border-color:${info.color};color:${info.color}"
     onclick="stitchTap('${r.id}',${idx})">
     <span class="spill-idx">${idx + 1}</span>
-    <span class="spill-abbr">${esc(info.abbr)}${getShowSymbol() ? ` (${sid})` : ''}</span>
+    <span class="spill-abbr">${esc(info.label)}${getShowSymbol() ? ` (${sid})` : ''}</span>
   </span>`;
 }
 
@@ -190,7 +191,7 @@ export function updateRoundHeader(r, proj) {
   if (countEl) {
     const total = r.seq.length;
     const dots = r.seq.slice(-8).map(sid => {
-      const c = getProjColor(sid, proj);
+      const c = getProjColor(sid);
       return `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${c};margin-right:2px"></span>`;
     }).join("");
     countEl.innerHTML = `${total} ${term('stitches')} ${dots}`;
@@ -314,8 +315,8 @@ function openStitchSheet(roundId, idx) {
   const r = findRound(proj, roundId);
   const sid = r.seq[idx];
   const s = SM[sid];
-  const projColor = getProjColor(sid, proj);
-  const projLabel = resolveLabel(sid, proj);
+  const projColor = getProjColor(sid);
+  const projLabel = resolveLabel(sid);
 
   let html = `<div class="sheet-handle"></div>
   <div class="sheet-title">${t('stitch_detail_title').replace('{idx}', idx + 1)} · <span style="color:${projColor};font-weight:700">${esc(projLabel)}</span></div>`;
@@ -361,14 +362,14 @@ export function changeStitch(roundId, idx, sid) {
     if (seqWrap) {
       const spills = seqWrap.querySelectorAll('.spill');
       if (spills[idx]) {
-        const info = getStitchInfo(sid, proj);
+        const info = getStitchInfo(sid);
         if (info) {
           const bg = info.color + "28";
           spills[idx].style.background = bg;
           spills[idx].style.borderColor = info.color;
           spills[idx].style.color = info.color;
           const abbrEl = spills[idx].querySelector('.spill-abbr');
-          if (abbrEl) abbrEl.textContent = esc(info.abbr);
+          if (abbrEl) abbrEl.textContent = esc(info.label) + (getShowSymbol() ? ` (${sid})` : '');
         }
       }
     }
@@ -671,7 +672,7 @@ export function renderDynamicPalette(proj) {
 
   let displayIds;
   if (part.customPalette && part.customPalette.length > 0) {
-    displayIds = part.customPalette.filter(sid => STITCH_LIB[sid] || getAllCustomStitches(proj)[sid]);
+    displayIds = part.customPalette.filter(sid => STITCH_LIB[sid] || getCustomStitchesGlobal()[sid]);
   } else {
     const hasPattern = part.rounds.some(r => r.instruction && r.instruction.trim());
     if (hasPattern) {
@@ -696,7 +697,7 @@ export function renderDynamicPalette(proj) {
   }
 
   if (!part.customPalette || part.customPalette.length === 0) {
-    const customIds = Object.keys(getAllCustomStitches(proj));
+    const customIds = Object.keys(getCustomStitchesGlobal());
     if (customIds.length > 0) {
       displayIds = [...displayIds, ...customIds];
     }
@@ -719,7 +720,7 @@ export function renderDynamicPalette(proj) {
   const dimBtn = highlight && next && (next.status === 'ok' || next.status === 'round_complete');
   html += `<div class="palette">`;
   displayIds.forEach((sid, idx) => {
-    const info = getStitchInfo(sid, proj);
+    const info = getStitchInfo(sid);
     if (!info) return;
 
     let btnClass = 'pal-btn';
@@ -820,7 +821,7 @@ export function renderImmersive(proj) {
   /* ③ 当前活跃圈卡片 */
   html += `<div class="rounds-wrap">`;
   const total = r.seq.length;
-  const dots = r.seq.slice(-8).map(sid => `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${getProjColor(sid, proj)};margin-right:2px"></span>`).join("");
+  const dots = r.seq.slice(-8).map(sid => `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${getProjColor(sid)};margin-right:2px"></span>`).join("");
 
   html += `<div class="round-card" id="round-${r.id}">
     <div class="round-hdr">
@@ -993,7 +994,7 @@ export function openStitchSetup(mode) {
         });
       } else {
         Object.keys(STITCH_LIB).forEach(sid => selected.add(sid));
-        Object.keys(getAllCustomStitches(proj)).forEach(sid => selected.add(sid));
+        Object.keys(getCustomStitchesGlobal()).forEach(sid => selected.add(sid));
       }
     }
   }
@@ -1006,7 +1007,7 @@ export function openStitchSetup(mode) {
   };
 
   const customByCat = { basic: [], increase: [], decrease: [], special: [] };
-  const allCustomStitches2 = getAllCustomStitches(proj);
+  const allCustomStitches2 = getCustomStitchesGlobal();
   Object.values(allCustomStitches2).forEach(cs => {
     const cat = cs.category || 'basic';
     if (customByCat[cat]) customByCat[cat].push(cs);
@@ -1027,13 +1028,13 @@ export function openStitchSetup(mode) {
     html += `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:6px 0 12px">`;
     items.forEach(s => {
       const isSel = selected.has(s.id);
-      const color = getProjColor(s.id, proj);
-      const label = resolveLabel(s.id, proj);
+      const color = getProjColor(s.id);
+      const label = resolveLabel(s.id);
       const bg = isSel ? color : 'var(--bg)';
       const col = isSel ? '#fff' : 'var(--text)';
       const border = isSel ? color : 'var(--border)';
-      const hasCustom = !!(proj.customSettings?.names?.[s.id]) || !!(proj.customSettings?.colors?.[s.id]);
-      const isCustomStitch = !!getAllCustomStitches(proj)[s.id];
+      const hasCustom = !!(state.data.settings.globalStitchCustomizations?.names?.[s.id]) || !!(state.data.settings.globalStitchCustomizations?.colors?.[s.id]);
+      const isCustomStitch = !!getCustomStitchesGlobal()[s.id];
       const dotMark = (hasCustom || isCustomStitch) ? '<span style="position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;background:#FACC15;display:inline-block"></span>' : '';
       const borderStyle = isCustomStitch ? 'border-style:dashed' : '';
       html += `<button id="setup-btn-${s.id}" class="picker-btn"
@@ -1061,7 +1062,7 @@ export function openStitchSetup(mode) {
     if (r.instruction) {
       const tokens = extractStitches(r.instruction);
       tokens.forEach(sid => {
-        if (!STITCH_LIB[sid] && !getAllCustomStitches(proj)[sid]) {
+        if (!STITCH_LIB[sid] && !getCustomStitchesGlobal()[sid]) {
           unknownTokens.add(sid);
         }
       });
@@ -1115,8 +1116,8 @@ export function openStitchCustomize(sid) {
   state.flowState.setupSelections = selections;
   state.flowState.customizingSid = sid;
 
-  const currentLabel = resolveLabel(sid, proj);
-  const currentColor = getProjColor(sid, proj);
+  const currentLabel = resolveLabel(sid);
+  const currentColor = getProjColor(sid);
   const s = STITCH_LIB[sid];
 
   let html = `<div class="sheet-handle"></div>
@@ -1137,7 +1138,7 @@ export function openStitchCustomize(sid) {
           </div>
         </div>
       </div>
-      ${getAllCustomStitches(proj)[sid] ? `
+      ${getCustomStitchesGlobal()[sid] ? `
       <div style="padding:0 16px 8px">
         <button class="bar-btn" style="width:100%;color:#E07070;border-color:#E07070" onclick="deleteCustomStitch('${sid}')">${t('delete_custom_stitch')}</button>
       </div>` : ''}
@@ -1163,14 +1164,18 @@ export function saveStitchCustomize(sid) {
   const colorInput = document.getElementById('custom-color');
   const defaultLabel = STITCH_LIB[sid]?.label || sid;
 
+  const g = state.data.settings.globalStitchCustomizations;
+  if (!g.names) g.names = {};
+  if (!g.colors) g.colors = {};
+
   if (nameInput && nameInput.value.trim() && nameInput.value.trim() !== defaultLabel) {
-    proj.customSettings.names[sid] = nameInput.value.trim();
+    g.names[sid] = nameInput.value.trim();
   } else {
-    delete proj.customSettings.names[sid];
+    delete g.names[sid];
   }
 
   if (colorInput) {
-    proj.customSettings.colors[sid] = colorInput.value;
+    g.colors[sid] = colorInput.value;
   }
 
   proj.lastModified = Date.now();
@@ -1179,12 +1184,9 @@ export function saveStitchCustomize(sid) {
 }
 
 export function resetStitchCustomize(sid) {
-  const proj = getProj(state.curProjId);
-  if (!proj) return;
-
-  delete proj.customSettings.names[sid];
-  delete proj.customSettings.colors[sid];
-  proj.lastModified = Date.now();
+  const g = state.data.settings.globalStitchCustomizations;
+  if (g?.names) delete g.names[sid];
+  if (g?.colors) delete g.colors[sid];
   saveData();
 
   openStitchCustomize(sid);
@@ -1228,12 +1230,6 @@ export function openNewStitchForm(prefillId) {
             <span style="font-size:12px;color:var(--muted);font-family:monospace" id="new-color-hex">#7DD3FC</span>
           </div>
         </div>
-        <div style="margin-bottom:14px">
-          <label style="font-size:13px;color:var(--text);display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 12px;border:1px solid var(--border);border-radius:10px">
-            <input type="checkbox" id="stitch-global-toggle" checked style="width:18px;height:18px;accent-color:var(--accent)">
-            ${t('add_to_global_library')}
-          </label>
-        </div>
         <div style="margin-bottom:8px">
           <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600">${t('category_field')}</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -1271,20 +1267,14 @@ export function saveNewStitch() {
   const sid = idInput?.value?.trim().toUpperCase();
   if (!sid) { alert(t('stitch_id_required')); return; }
   if (STITCH_LIB[sid]) { alert(t('stitch_id_conflict')); return; }
-  if (proj.customSettings.customStitches?.[sid] || state.data.settings.globalCustomStitches?.[sid]) { alert(t('stitch_id_exists')); return; }
+  if (state.data.settings.globalCustomStitches?.[sid]) { alert(t('stitch_id_exists')); return; }
 
   const label = labelInput?.value?.trim() || sid;
   const color = colorInput?.value || '#7DD3FC';
   const category = catRadio?.value || 'basic';
 
-  if (!proj.customSettings.customStitches) proj.customSettings.customStitches = {};
-  proj.customSettings.customStitches[sid] = { id: sid, label, color, category };
-
-  const isGlobal = document.getElementById('stitch-global-toggle')?.checked ?? true;
-  if (isGlobal) {
-    if (!state.data.settings.globalCustomStitches) state.data.settings.globalCustomStitches = {};
-    state.data.settings.globalCustomStitches[sid] = { id: sid, label, color, category };
-  }
+  if (!state.data.settings.globalCustomStitches) state.data.settings.globalCustomStitches = {};
+  state.data.settings.globalCustomStitches[sid] = { id: sid, label, color, category };
 
   proj.lastModified = Date.now();
   saveData();
@@ -1292,25 +1282,27 @@ export function saveNewStitch() {
 }
 
 export function deleteCustomStitch(sid) {
-  const proj = getProj(state.curProjId);
-  if (!proj) return;
-  showConfirmDialog(t('delete_custom_stitch_confirm').replace('{name}', resolveLabel(sid, proj)), (ok) => {
+  showConfirmDialog(t('delete_custom_stitch_confirm').replace('{name}', resolveLabel(sid)), (ok) => {
     if (!ok) return;
 
-    delete proj.customSettings.customStitches[sid];
-    delete proj.customSettings.names[sid];
-    delete proj.customSettings.colors[sid];
     if (state.data.settings.globalCustomStitches?.[sid]) {
       delete state.data.settings.globalCustomStitches[sid];
     }
+    if (state.data.settings.globalStitchCustomizations?.names?.[sid]) {
+      delete state.data.settings.globalStitchCustomizations.names[sid];
+    }
+    if (state.data.settings.globalStitchCustomizations?.colors?.[sid]) {
+      delete state.data.settings.globalStitchCustomizations.colors[sid];
+    }
 
-    proj.parts.forEach(part => {
-      if (part.customPalette) {
-        part.customPalette = part.customPalette.filter(id => id !== sid);
-      }
+    state.data.projects.forEach(p => {
+      p.parts.forEach(part => {
+        if (part.customPalette) {
+          part.customPalette = part.customPalette.filter(id => id !== sid);
+        }
+      });
     });
 
-    proj.lastModified = Date.now();
     saveData();
     backToSetupGrid();
   });
@@ -1322,7 +1314,7 @@ export function saveProjectStitches(mode) {
   const part = getActivePart(proj);
   if (!part) return;
 
-  const allIds = [...Object.keys(STITCH_LIB), ...Object.keys(getAllCustomStitches(proj))];
+  const allIds = [...Object.keys(STITCH_LIB), ...Object.keys(getCustomStitchesGlobal())];
   const manualIds = allIds.filter(sid => {
     const btn = document.getElementById(`setup-btn-${sid}`);
     return btn && btn.dataset.checked === 'true';
@@ -1358,7 +1350,7 @@ export function closeSetupSheet() {
 }
 
 export function triggerEdgeGlow(sid) {
-  const color = sid ? getProjColor(sid, getProj(state.curProjId)) : '#9E8A74';
+  const color = sid ? getProjColor(sid) : '#9E8A74';
   const el = document.getElementById('edge-glow');
   if (!el) return;
 

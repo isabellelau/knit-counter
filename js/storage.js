@@ -1,7 +1,7 @@
 /**
  * STORAGE SCHEMA VERSIONING
  * =========================
- * Current version: LATEST_SCHEMA (currently 4)
+ * Current version: LATEST_SCHEMA (currently 7)
  *
  * Version history:
  *   v1 — initial versioned schema; added schemaVersion field;
@@ -11,6 +11,10 @@
  *   v3 — 新增 state.data.settings.highlightEnabled（智能高亮常驻开关，默认 false）
  *   v4 — 新增 project.lastModified（时间戳，为 CloudKit 同步冲突解决预留）
  *   v5 — 新增 state.data.settings.globalCustomStitches（全局自定义针法库）
+ *   v6 — 新增 state.data.settings.profile（本地昵称，无后端身份卡）
+ *   v7 — 针法库全面全局化：合并项目级 customStitches/names/colors 到
+ *         全局 globalCustomStitches / globalStitchCustomizations，
+ *         废弃项目级 customSettings 的针法定义字段
  *
  * Rule: whenever you change the shape of state.data, you MUST:
  *   1. Bump LATEST_SCHEMA by 1
@@ -54,7 +58,7 @@ export async function openDB() {
   });
 }
 
-const storageAdapter = {
+export const storageAdapter = {
   async get(key) {
     const db = await openDB();
     return new Promise((resolve, reject) => {
@@ -86,7 +90,7 @@ const storageAdapter = {
 
 const STORAGE_KEY = 'crochet_v4';
 const OLD_KEYS = ['crochet_v3_fixed', 'crochet_v3'];
-const LATEST_SCHEMA = 5;
+const LATEST_SCHEMA = 7;
 
 // ═══════════════════════════════════════
 //  一次性迁移：localStorage → IndexedDB
@@ -333,6 +337,71 @@ export function migrateData(d) {
     if (!d.settings.globalCustomStitches) {
       d.settings.globalCustomStitches = {};
     }
+  }
+
+  // v5 → v6: 补全 profile 字段
+  if (d.schemaVersion < 6) {
+    if (!d.settings) d.settings = {};
+    if (!d.settings.profile) {
+      d.settings.profile = { name: '' };
+    }
+  }
+
+  // v6 → v7: 针法库全面全局化
+  if (d.schemaVersion < 7) {
+    // 确保全局字段存在
+    if (!d.settings) d.settings = {};
+    if (!d.settings.globalCustomStitches) d.settings.globalCustomStitches = {};
+    if (!d.settings.globalStitchCustomizations) d.settings.globalStitchCustomizations = { names: {}, colors: {} };
+    if (!d.settings.customColors) d.settings.customColors = {};
+
+    const globalCustom = d.settings.globalCustomStitches;
+    const globalNames = d.settings.globalStitchCustomizations.names;
+    const globalColors = d.settings.globalStitchCustomizations.colors;
+
+    // 将旧 settings.customColors 合并到 globalStitchCustomizations.colors（全局已有跳过）
+    Object.keys(d.settings.customColors).forEach(sid => {
+      if (!globalColors[sid]) {
+        globalColors[sid] = d.settings.customColors[sid];
+      }
+    });
+
+    // 遍历所有项目，将项目级针法数据合并到全局
+    d.projects.forEach(p => {
+      if (!p.customSettings) return;
+
+      // customStitches → globalCustomStitches（全局已有跳过）
+      if (p.customSettings.customStitches) {
+        Object.keys(p.customSettings.customStitches).forEach(sid => {
+          if (!globalCustom[sid]) {
+            globalCustom[sid] = { ...p.customSettings.customStitches[sid] };
+          }
+        });
+      }
+
+      // names → globalStitchCustomizations.names（全局已有跳过）
+      if (p.customSettings.names) {
+        Object.keys(p.customSettings.names).forEach(sid => {
+          if (!globalNames[sid]) {
+            globalNames[sid] = p.customSettings.names[sid];
+          }
+        });
+      }
+
+      // colors → globalStitchCustomizations.colors（全局已有跳过）
+      if (p.customSettings.colors) {
+        Object.keys(p.customSettings.colors).forEach(sid => {
+          if (!globalColors[sid]) {
+            globalColors[sid] = p.customSettings.colors[sid];
+          }
+        });
+      }
+
+      // 清空项目级针法定义字段
+      delete p.customSettings.customStitches;
+      delete p.customSettings.names;
+      delete p.customSettings.colors;
+    });
   }
 
   d.schemaVersion = LATEST_SCHEMA;

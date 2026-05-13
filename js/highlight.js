@@ -237,13 +237,11 @@ export function renderHighlightReel(proj) {
 
   const idx = state.highlightIndex;
   const settings = state.data?.settings || {};
-  const projCustom = proj?.customSettings;
 
   const items = expanded.map((sid, i) => {
     const lib = STITCH_LIB[sid];
     const label = lib ? lib.label : sid;
-    const abbr = lib ? lib.abbr : sid;
-    const color = resolveColor(sid, settings, projCustom);
+    const color = resolveColor(sid, settings);
 
     let cls = 'highlight-reel-item';
     if (i < idx) cls += ' highlight-reel-item--done';
@@ -251,7 +249,7 @@ export function renderHighlightReel(proj) {
     else cls += ' highlight-reel-item--upcoming';
 
     const style = `--reel-color:${color}`;
-    return `<div class="${cls}" style="${style}" title="${label}">${abbr}${getShowSymbol() ? ` (${sid})` : ''}</div>`;
+    return `<div class="${cls}" style="${style}" title="${label}">${label}${getShowSymbol() ? ` (${sid})` : ''}</div>`;
   }).join('');
 
   container.innerHTML = `<div class="highlight-reel"><div class="highlight-reel-track">${items}</div></div>`;

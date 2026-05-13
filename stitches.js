@@ -186,18 +186,19 @@ export function normalizeStitch(token) {
 }
 
 /**
- * 解析针法颜色（支持项目级 + 全局自定义主题覆盖）
+ * 解析针法颜色
  * @param {string} id - 针法缩写 id
- * @param {object} settings - 全局设置，包含 theme 和 customColors
- * @param {object} [projCustom] - 项目级自定义 { colors: {} }
+ * @param {object} settings - 全局设置
  * @returns {string} CSS 颜色值
  */
-export function resolveColor(id, settings, projCustom) {
+export function resolveColor(id, settings) {
   if (!id) return "#ccc";
-  // 项目级自定义颜色（最高优先级）
-  if (projCustom?.colors?.[id]) return projCustom.colors[id];
-  // 全局自定义颜色
+  // 全局针法自定义颜色（最高优先级）
+  if (settings?.globalStitchCustomizations?.colors?.[id]) return settings.globalStitchCustomizations.colors[id];
+  // 旧全局自定义颜色（向后兼容）
   if (settings?.customColors?.[id]) return settings.customColors[id];
+  // 全局自定义针法的默认颜色
+  if (settings?.globalCustomStitches?.[id]?.color) return settings.globalCustomStitches[id].color;
   // 主题默认色
   const themeKey = settings?.theme || "morandi";
   const theme = COLOR_THEMES[themeKey] || COLOR_THEMES.morandi;

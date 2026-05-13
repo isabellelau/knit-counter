@@ -3,7 +3,7 @@ import { state, NUMBER_MAP, uid, getProj, getActivePart, isPartEmpty, getEditing
 import { saveData, loadData, migrateData, exportPDF, exportData, exportSingleProject, checkStorageQuota } from './storage.js';
 import { esc, showToast, showSheet, closeSheet, showEntryChoiceSheet, showConfirmDialog, confirmDialog, closeDialog } from './ui.js';
 import { playSound, initRecognition, toggleVoiceMode, setVoicePulse, updateVoiceButton, openVoiceTutorial } from './voice.js';
-import { openSettings, renderSettings, changeTheme, changeStitchTheme, toggleVoiceDefault, toggleVoiceSound, toggleHighlightEnabled, clearAllData, navigateToSubPage, goBackFromSubPage } from './settings.js';
+import { openSettings, renderSettings, changeTheme, changeStitchTheme, toggleVoiceDefault, toggleVoiceSound, toggleHighlightEnabled, clearAllData, navigateToSubPage, goBackFromSubPage, editProfileName, pickProfileAvatar, showAvatarSheet, openGlobalStitchLibrary, openGlobalStitchCustomize, saveGlobalStitchCustomize, resetGlobalStitchCustomize, deleteGlobalCustomStitch, openGlobalNewStitchForm, saveGlobalNewStitch } from './settings.js';
 import {
   startImportFlow, startManualFlow, dismissEntryChoice,
   toggleSelectAllInSetup, startImportFromSetup,
@@ -191,12 +191,15 @@ const _globals = {
   openSettings, changeTheme, changeStitchTheme, toggleVoiceDefault, toggleVoiceSound, toggleHighlightEnabled, clearAllData,
   switchTab, renderSettings, updateTabNav,
   navigateToSubPage, goBackFromSubPage,
+  editProfileName, pickProfileAvatar, showAvatarSheet,
+  openGlobalStitchLibrary, openGlobalStitchCustomize, saveGlobalStitchCustomize, resetGlobalStitchCustomize, deleteGlobalCustomStitch, openGlobalNewStitchForm, saveGlobalNewStitch,
   editExpectedCount,
   pickCover, setProjectCover, removeProjectCover,
   expandInstruction, getNextStitchSid, renderHighlightReel,
   setPageView,
   t, term, setLang, getLang, setNotation, getNotationKey, getShowSymbol, setShowSymbol,
-  onboardNext
+  onboardNext,
+  initStaticText
 };
 Object.entries(_globals).forEach(([k, v]) => { window[k] = v; });
 

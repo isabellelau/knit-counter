@@ -26,6 +26,16 @@ export default {
   unnamed: '未命名',
 
   // ═════════════════════════════════════
+  //  本地身份卡
+  // ═════════════════════════════════════
+  profile_default_name: '钩织人',
+  profile_change_avatar: '更换头像',
+  profile_remove_avatar: '移除头像',
+  profile_edit_title: '修改昵称',
+  profile_edit_placeholder: '输入你的昵称',
+  profile_edit_save: '保存',
+
+  // ═════════════════════════════════════
   //  导航
   // ═════════════════════════════════════
   tab_projects: '项目',
@@ -40,7 +50,7 @@ export default {
   home_today_label: '今日已钩',
   home_total_stitches: '{count} 针',
   home_total_projects: '{count} 项',
-  home_streak_days: '{count} 天',
+  home_total_days: '累计 {count} 天',
   home_empty: '还没有项目，点击下方创建第一个 🌸',
   home_archived_section: '📦 已归档',
   home_new_project_btn: '＋ 新建项目',
@@ -263,6 +273,7 @@ export default {
   stitch_theme_float: '浮光',
   stitch_theme_float_sub: '清透淡彩',
   settings_stitch_assist: '针法辅助',
+  settings_stitch_library: '全局针法库',
   settings_pro_badge: 'PRO',
   settings_permissions_placeholder: '麦克风权限管理、通知设置等将在此处配置',
   settings_stats: '统计',

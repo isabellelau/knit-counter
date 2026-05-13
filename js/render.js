@@ -1,4 +1,4 @@
-import { state, getProj, getActivePart, getEditingPartId, getTodayKey, getDailyLog, calcStreak } from './state.js';
+import { state, getProj, getActivePart, getEditingPartId, getTodayKey, getDailyLog, calcTotalDays } from './state.js';
 import { esc } from './ui.js';
 import { saveData } from './storage.js';
 import { renderTaskSlide, refreshBottomBar,
@@ -30,7 +30,7 @@ export async function renderHome() {
     const navSmall     = document.getElementById('nav-small-title');
     const navActions   = document.getElementById('nav-actions');
 
-    if (navBack)    navBack.classList.remove('visible');
+    if (navBack)    { navBack.classList.remove('visible'); navBack.onclick = () => window.goHome(); }
     if (navBar)     navBar.classList.remove('hidden');
     if (navSmall)   { navSmall.textContent = t('app_name'); navSmall.classList.remove('visible'); navSmall.onclick = null; }
     if (navActions) navActions.innerHTML = '';
@@ -43,7 +43,7 @@ export async function renderHome() {
         s + (pt.rounds || []).reduce((ss, r) => ss + (r.seq?.length || 0), 0), 0), 0);
 
     const todayCount = getDailyLog()[getTodayKey()] || 0;
-    const streak = calcStreak();
+    const totalDays = calcTotalDays();
 
     const largeTitleWrap = document.getElementById('large-title-wrap');
     if (largeTitleWrap) {
@@ -63,7 +63,7 @@ export async function renderHome() {
             <span class="stats-card-sep"></span>
             <span class="stats-card-stat">${t('home_total_projects').replace('{count}', `<strong>${totalProjs}</strong>`)}</span>
             <span class="stats-card-sep"></span>
-            <span class="stats-card-stat">${t('home_streak_days').replace('{count}', `<strong>${streak}</strong>`)}</span>
+            <span class="stats-card-stat">${t('home_total_days').replace('{count}', `<strong>${totalDays}</strong>`)}</span>
           </div>
         </div>
       `;
@@ -180,7 +180,7 @@ export function renderProject() {
   const largeSubEl   = document.getElementById('large-title-sub');
   const proj         = getProj(state.curProjId);
 
-  if (navBack)  navBack.classList.add('visible');
+  if (navBack)  { navBack.classList.add('visible'); navBack.onclick = () => window.goHome(); }
   if (navBar)   navBar.classList.remove('hidden');
   if (navSmall) {
     navSmall.textContent = proj ? proj.name : '';
@@ -267,7 +267,7 @@ export function renderProject() {
     const isActive = r.id === activeRid;
     const exp = state.expandedRounds.has(r.id) || isActive;
     const total = r.seq.length;
-    const dots = r.seq.slice(-8).map(sid => `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${getProjColor(sid, proj)};margin-right:2px"></span>`).join("");
+    const dots = r.seq.slice(-8).map(sid => `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${getProjColor(sid)};margin-right:2px"></span>`).join("");
 
     html += `<div class="round-card" id="round-${r.id}">
     <div class="round-hdr" onclick="toggleRound('${r.id}')">
