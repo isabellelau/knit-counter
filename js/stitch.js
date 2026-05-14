@@ -1,11 +1,33 @@
 import { state, uid, getProj, getActivePart, addDailyCount } from './state.js';
 import { showSheet, closeSheet, showToast, esc, showConfirmDialog } from './ui.js';
 import { saveData } from './storage.js';
-import { STITCH_LIB, STITCHES, SM, extractStitches, resolveColor } from '../stitches.js';
+import { STITCH_LIB, STITCHES, SM, extractStitches, resolveColor, ALIAS_TO_ID, STITCH_IDS, getTokenRE, setTokenRE, setOnBeforeExtract } from '../stitches.js';
 import { updateVoiceButton } from './voice.js';
 import { getNextStitchSid, renderHighlightReel, expandInstructionFull } from './highlight.js';
+import { getRefImage, addRefImage } from './image.js';
 import { setActiveRound } from './round.js';
+import { normalizeRoundNums } from './pattern.js';
 import { t, term, getShowSymbol } from './i18n.js';
+
+// ── 动态 token 正则：合并内置针法 + 自定义针法 ──
+
+export function rebuildDynamicTokenRE() {
+  const customStitches = state.data?.settings?.globalCustomStitches ?? {};
+  const customIds = Object.keys(customStitches);
+
+  // 注册自定义针法 id 到别名表（自引用）
+  for (const id of customIds) {
+    ALIAS_TO_ID[id.toUpperCase()] = id;
+  }
+
+  const allIds = [...new Set([...customIds, ...STITCH_IDS])]
+    .sort((a, b) => b.length - a.length);
+
+  setTokenRE(new RegExp(`\\b(\\d*)\\s*(${allIds.join('|')})(?![a-zA-Z])`, 'gi'));
+}
+
+// 每次 extractStitches 调用前自动刷新正则（幂等，开销极低）
+setOnBeforeExtract(rebuildDynamicTokenRE);
 
 export function getUnitLabel(proj) {
   const p = proj || getProj(state.curProjId);
@@ -69,6 +91,25 @@ export function getProjColor(sid) {
 }
 
 export function getStitchInfo(sid) {
+  // 复合针法：(5F), (3X) 等
+  const compoundMatch = sid.match(/^\((\d+)([A-Z]+)\)$/i);
+  if (compoundMatch) {
+    const count = parseInt(compoundMatch[1], 10);
+    const innerSid = compoundMatch[2].toUpperCase();
+    const innerLib = STITCH_LIB[innerSid] || getCustomStitchesGlobal()[innerSid];
+    const label = innerLib ? resolveLabel(innerSid) : innerSid;
+    return {
+      id: sid,
+      label: count + label,
+      abbr: innerLib?.abbr || innerSid,
+      color: getProjColor(innerSid),
+      category: innerLib?.category || 'basic',
+      isCompound: true,
+      innerCount: count,
+      innerSid
+    };
+  }
+
   const cs = getCustomStitchesGlobal()[sid];
   const lib = STITCH_LIB[sid];
   if (!cs && !lib) return null;
@@ -323,6 +364,183 @@ function _refreshMultiRoundNav() {
     .replace('{total}', rounds.length);
 }
 
+// ── Multi-editor ref area helpers ──
+
+let _meRefIndex = 0;
+let _meRefKeys = [];
+let _meRefSwipeInited = false;
+
+async function _loadRefImagesInEditor() {
+  const track = document.getElementById('multi-editor-ref-track');
+  const pagination = document.getElementById('multi-editor-ref-pagination');
+  if (!track || !_meRefKeys.length) return;
+
+  const imgs = track.querySelectorAll('.multi-editor-ref-img');
+  for (let i = 0; i < Math.min(imgs.length, _meRefKeys.length); i++) {
+    const src = await getRefImage(_meRefKeys[i]);
+    if (src) imgs[i].src = src;
+  }
+
+  _updateRefPagination();
+  _updateRefTrackPos();
+}
+
+function _updateRefPagination() {
+  const pagination = document.getElementById('multi-editor-ref-pagination');
+  if (pagination && _meRefKeys.length > 1) {
+    pagination.textContent = `${_meRefIndex + 1}/${_meRefKeys.length}`;
+    pagination.style.display = '';
+  } else if (pagination) {
+    pagination.style.display = 'none';
+  }
+}
+
+function _updateRefTrackPos() {
+  const track = document.getElementById('multi-editor-ref-track');
+  if (track) {
+    track.style.transform = `translateX(-${_meRefIndex * 100}%)`;
+  }
+  const fullscreenBtn = document.querySelector('.multi-editor-ref-fullscreen');
+  if (fullscreenBtn && _meRefKeys[_meRefIndex]) {
+    fullscreenBtn.onclick = () => {
+      if (window.openRefImageViewer) openRefImageViewer(state.curProjId, _meRefKeys[_meRefIndex]);
+    };
+  }
+}
+
+function _initEditorRefSwipe() {
+  if (_meRefSwipeInited) return;
+  const refArea = document.getElementById('multi-editor-ref');
+  if (!refArea) return;
+  _meRefSwipeInited = true;
+
+  let startX = 0, startY = 0, started = false;
+  refArea.addEventListener('touchstart', e => {
+    if (e.touches.length === 1) {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      started = true;
+    }
+  }, { passive: true });
+
+  refArea.addEventListener('touchend', e => {
+    if (!started) return;
+    started = false;
+    const dx = (e.changedTouches[0]?.clientX || startX) - startX;
+    const dy = Math.abs((e.changedTouches[0]?.clientY || startY) - startY);
+    // Only swipe if horizontal movement dominates
+    if (Math.abs(dx) > 40 && Math.abs(dx) > dy) {
+      if (dx < 0 && _meRefIndex < _meRefKeys.length - 1) {
+        _meRefIndex++;
+        _updateRefPagination();
+        _updateRefTrackPos();
+      } else if (dx > 0 && _meRefIndex > 0) {
+        _meRefIndex--;
+        _updateRefPagination();
+        _updateRefTrackPos();
+      }
+    }
+  });
+}
+
+function _initEditorDividerDrag() {
+  const divider = document.getElementById('multi-editor-divider');
+  const refArea = document.getElementById('multi-editor-ref');
+  if (!divider || !refArea) return;
+
+  let dragStartY = 0;
+  let dragStartH = 0;
+  let maxAvail = 340;
+  let snapPoints = [80, 200, 340];
+
+  divider.addEventListener('touchstart', e => {
+    if (e.touches.length === 1) {
+      // Measure available flex space for this session
+      const savedH = refArea.style.height;
+      refArea.style.height = '';
+      maxAvail = refArea.offsetHeight;
+      refArea.style.height = savedH || '';
+      snapPoints = [80, Math.round(maxAvail * 0.5), Math.round(maxAvail * 0.85)];
+
+      dragStartY = e.touches[0].clientY;
+      dragStartH = refArea.offsetHeight;
+      refArea.style.transition = 'none';
+    }
+  }, { passive: true });
+
+  divider.addEventListener('touchmove', e => {
+    if (dragStartY === 0) return;
+    const dy = e.touches[0].clientY - dragStartY;
+    const newH = Math.max(80, Math.min(maxAvail, dragStartH + dy));
+    refArea.style.height = newH + 'px';
+  }, { passive: true });
+
+  divider.addEventListener('touchend', () => {
+    if (dragStartY === 0) return;
+    const currentH = refArea.offsetHeight;
+    let closest = snapPoints[0];
+    let minDiff = Math.abs(currentH - snapPoints[0]);
+    for (let i = 1; i < snapPoints.length; i++) {
+      const diff = Math.abs(currentH - snapPoints[i]);
+      if (diff < minDiff) { minDiff = diff; closest = snapPoints[i]; }
+    }
+    refArea.style.transition = 'height 0.2s ease';
+    refArea.style.height = closest + 'px';
+    dragStartY = 0;
+  });
+}
+
+function _pickRefForMultiEditor(projId) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.multiple = true;
+  input.onchange = async () => {
+    const files = Array.from(input.files || []);
+    for (const file of files) {
+      await addRefImage(projId, file);
+    }
+    if (files.length > 0) {
+      _refreshMultiEditorRefArea(projId);
+    }
+  };
+  input.click();
+}
+
+function _refreshMultiEditorRefArea(projId) {
+  const proj = getProj(projId);
+  if (!proj) return;
+  const refKeys = [...(proj.refImages || [])];
+  _meRefKeys = refKeys;
+  _meRefIndex = Math.min(_meRefIndex, Math.max(0, refKeys.length - 1));
+
+  const refArea = document.getElementById('multi-editor-ref');
+  if (!refArea) return;
+
+  if (refKeys.length === 0) {
+    refArea.style.height = '';
+    refArea.innerHTML = `<div class="multi-editor-ref-empty" onclick="_pickRefForMultiEditor('${projId}')">＋ ${t('add_ref_image')}</div>`;
+    return;
+  }
+
+  refArea.style.height = refArea.style.height || '';
+  refArea.innerHTML = `
+    <div class="multi-editor-ref-track" id="multi-editor-ref-track">
+      ${refKeys.map((key, i) => `
+        <div class="multi-editor-ref-slide">
+          <img class="multi-editor-ref-img" data-key="${key}" src="" alt="">
+        </div>
+      `).join('')}
+    </div>
+    <div class="multi-editor-ref-pagination" id="multi-editor-ref-pagination" style="${refKeys.length > 1 ? '' : 'display:none'}">1/${refKeys.length}</div>
+    <button class="multi-editor-ref-fullscreen" onclick="window.openRefImageViewer && openRefImageViewer('${projId}','${refKeys[_meRefIndex]}')">⤢</button>
+  `;
+  _loadRefImagesInEditor();
+  _initEditorRefSwipe();
+}
+
+window._pickRefForMultiEditor = _pickRefForMultiEditor;
+
 export function openMultiRoundEditor(projId) {
   const proj = getProj(projId);
   if (!proj) return;
@@ -380,40 +598,75 @@ export function openMultiRoundEditor(projId) {
     `<button class="instr-editor-num-btn" onclick="instrEditorInsertNum('${n}')">${n}</button>`
   ).join('');
 
-  const html = `<div class="sheet-handle"></div>
-<div class="sheet-title">${t('multi_round_editor_title')}</div>
+  // ── Ref images ──
+  const refKeys = [...(proj.refImages || [])];
+  _meRefKeys = refKeys;
+  _meRefIndex = 0;
+  _meRefSwipeInited = false;
 
-<div class="multi-round-editor-nav">
-  <div class="mr-nav-prev" id="mr-nav-prev"></div>
-  <div class="mr-nav-current" id="mr-nav-current"></div>
-  <div class="mr-nav-indicator" id="mr-nav-indicator"></div>
+  let refAreaHTML;
+  if (refKeys.length > 0) {
+    refAreaHTML = `
+    <div class="multi-editor-ref-track" id="multi-editor-ref-track">
+      ${refKeys.map((key) => `
+        <div class="multi-editor-ref-slide">
+          <img class="multi-editor-ref-img" data-key="${key}" src="" alt="">
+        </div>
+      `).join('')}
+    </div>
+    <div class="multi-editor-ref-pagination" id="multi-editor-ref-pagination" style="${refKeys.length > 1 ? '' : 'display:none'}">1/${refKeys.length}</div>
+    <button class="multi-editor-ref-fullscreen" onclick="window.openRefImageViewer && openRefImageViewer('${projId}','${refKeys[_meRefIndex]}')">⤢</button>`;
+  } else {
+    refAreaHTML = `<div class="multi-editor-ref-empty" onclick="_pickRefForMultiEditor('${projId}')">＋ ${t('add_ref_image')}</div>`;
+  }
+
+  const html = `<div class="sheet-title">${t('multi_round_editor_title')}</div>
+
+<div class="multi-editor-ref" id="multi-editor-ref">
+  ${refAreaHTML}
 </div>
 
-<div class="instr-editor-preview-wrap">
-  <div class="instr-editor-preview-bar">
-    <div class="instr-editor-preview" id="instr-editor-preview">${buf ? esc(buf) : `<span class="instr-editor-placeholder">${placeholder}</span>`}</div>
-    <textarea id="instruction-edit-area" class="instr-editor-textarea" style="display:none" placeholder="${placeholder}">${esc(buf)}</textarea>
-    <button class="instr-editor-kb-toggle" id="instr-editor-kb-toggle" onclick="instrEditorToggleKB()">${t('instr_editor_kb_toggle')}</button>
+<div class="multi-editor-divider" id="multi-editor-divider">
+  <span class="multi-editor-divider-grip">━━</span>
+</div>
+
+<div class="multi-editor-preview" id="multi-editor-preview">
+  <div class="multi-editor-preview-text">
+    <div class="mr-nav-prev" id="mr-nav-prev"></div>
+    <div class="mr-nav-current" id="mr-nav-current"></div>
+    <div class="mr-nav-indicator" id="mr-nav-indicator"></div>
   </div>
+  <div class="multi-editor-nav">
+    <button class="multi-editor-nav-btn" onclick="instrEditorPrevRound()" title="${t('multi_round_prev_round')}">↑</button>
+    <button class="multi-editor-nav-btn" onclick="instrEditorNextRound()" title="${t('multi_round_next_round')}">↓</button>
+  </div>
+  <button class="instr-editor-kb-toggle" id="instr-editor-kb-toggle" onclick="instrEditorToggleKB()">${t('instr_editor_kb_toggle')}</button>
 </div>
 
-<div class="instr-editor-tap-area" id="instr-editor-tap-area">
-  <div class="instr-editor-section-label">${t('instr_editor_stitches_label')}</div>
-  <div class="instr-editor-stitch-grid">${stitchBtns}</div>
+<div class="multi-editor-keyboard" id="multi-editor-keyboard">
+  <div class="instr-editor-preview-wrap">
+    <div class="instr-editor-preview-bar">
+      <div class="instr-editor-preview" id="instr-editor-preview">${buf ? esc(buf) : `<span class="instr-editor-placeholder">${placeholder}</span>`}</div>
+      <textarea id="instruction-edit-area" class="instr-editor-textarea" style="display:none" placeholder="${placeholder}">${esc(buf)}</textarea>
+    </div>
+  </div>
 
-  <div class="instr-editor-numpad">${numBtns}</div>
+  <div class="instr-editor-tap-area" id="instr-editor-tap-area">
+    <div class="instr-editor-section-label">${t('instr_editor_stitches_label')}</div>
+    <div class="multi-editor-stitch-row">${stitchBtns}</div>
 
-  <div class="instr-editor-symbols">
-    <button class="instr-editor-sym-btn" onclick="instrEditorInsertSymbol('(')">(</button>
-    <button class="instr-editor-sym-btn" onclick="instrEditorInsertSymbol(')')">)</button>
-    <button class="instr-editor-sym-btn" onclick="instrEditorInsertSymbol(',')">,</button>
-    <button class="instr-editor-sym-btn" onclick="instrEditorInsertSymbol('×')">×</button>
-    <button class="instr-editor-sym-btn" onclick="instrEditorInsertSymbol(' ')">${t('instr_editor_space')}</button>
-    <button class="instr-editor-sym-btn instr-editor-sym-btn--action" onclick="instrEditorBackspace()">←</button>
-    <button class="instr-editor-sym-btn instr-editor-sym-btn--danger" onclick="instrEditorClear()">${t('instr_editor_clear_btn')}</button>
-    <button class="instr-editor-sym-btn instr-editor-sym-btn--nav" onclick="instrEditorPrevRound()">${t('multi_round_prev_round')}</button>
-    <button class="instr-editor-sym-btn instr-editor-sym-btn--nav" onclick="instrEditorNextRound()">${t('multi_round_next_round')}</button>
-    <button class="instr-editor-sym-btn instr-editor-sym-btn--confirm" onclick="instrEditorConfirmMulti()">${t('confirm')}</button>
+    <div class="instr-editor-numpad">${numBtns}</div>
+
+    <div class="instr-editor-symbols">
+      <button class="instr-editor-sym-btn" onclick="instrEditorInsertSymbol('(')">(</button>
+      <button class="instr-editor-sym-btn" onclick="instrEditorInsertSymbol(')')">)</button>
+      <button class="instr-editor-sym-btn" onclick="instrEditorInsertSymbol(',')">,</button>
+      <button class="instr-editor-sym-btn" onclick="instrEditorInsertSymbol('×')">×</button>
+      <button class="instr-editor-sym-btn" onclick="instrEditorInsertSymbol(' ')">${t('instr_editor_space')}</button>
+      <button class="instr-editor-sym-btn instr-editor-sym-btn--action" onclick="instrEditorBackspace()">←</button>
+      <button class="instr-editor-sym-btn instr-editor-sym-btn--danger" onclick="instrEditorClear()">${t('instr_editor_clear_btn')}</button>
+      <button class="instr-editor-sym-btn instr-editor-sym-btn--confirm" onclick="instrEditorConfirmMulti()">${t('confirm')}</button>
+    </div>
   </div>
 </div>
 
@@ -422,7 +675,15 @@ export function openMultiRoundEditor(projId) {
 </div>`;
 
   showSheet(html);
+  const sheet = document.getElementById('sheet');
+  if (sheet) sheet.classList.add('multi-editor-sheet');
   _refreshMultiRoundNav();
+
+  if (refKeys.length > 0) {
+    _loadRefImagesInEditor();
+    setTimeout(() => _initEditorRefSwipe(), 100);
+  }
+  setTimeout(() => _initEditorDividerDrag(), 100);
 }
 
 export function instrEditorPrevRound() {
@@ -541,11 +802,15 @@ export function renderSpillHTML(sid, idx, r, proj) {
   if (!info) return '';
   const sel = state.selectedStitch && state.selectedStitch.roundId === r.id && state.selectedStitch.idx === idx;
   const bg = info.color + "28";
-  return `<span class="spill${sel ? " selected" : ""}"
-    style="background:${bg};border-color:${info.color};color:${info.color}"
+  const compoundClass = info.isCompound ? ' spill--compound' : '';
+  const marker = proj.markers && proj.markers.find(m => m.roundId === r.id && m.index === idx);
+  const markerDot = marker ? `<span class="spill-marker-dot" style="background:${marker.color}"></span>` : '';
+  return `<span class="spill${sel ? " selected" : ""}${compoundClass}"
+    style="position:relative;background:${bg};border-color:${info.color};color:${info.color}"
     onclick="stitchTap('${r.id}',${idx})">
     <span class="spill-idx">${idx + 1}</span>
     <span class="spill-abbr">${esc(info.label)}${getShowSymbol() ? ` (${sid})` : ''}</span>
+    ${markerDot}
   </span>`;
 }
 
@@ -592,6 +857,76 @@ export function reindexSpills(seqWrap, roundId) {
   });
 }
 
+// ═════════════════════════════════════
+//  钩织进度记忆
+// ═════════════════════════════════════
+
+export function saveLastPosition(proj, part) {
+  if (!proj || !part) return;
+  const r = part.rounds.find(x => x.id === part.activeRoundId);
+  if (!r) return;
+  const stitchIndex = r.seq.length - 1;
+  // 验证：stitchIndex 必须在有效范围（-1 表示空圈，不作为恢复目标时不写入）
+  if (stitchIndex < -1) return;
+  part.lastPosition = {
+    roundId: r.id,
+    roundNum: r.roundNum != null ? r.roundNum : (part.rounds.indexOf(r) + 1),
+    stitchIndex,
+    savedAt: Date.now()
+  };
+  saveData();
+}
+
+export function checkResumePosition(proj, part) {
+  if (!proj || !part) return;
+  const lp = part.lastPosition;
+  if (!lp || lp.stitchIndex < 0) return;
+  const round = part.rounds.find(r => r.id === lp.roundId);
+  if (!round || lp.stitchIndex >= round.seq.length) {
+    part.lastPosition = null;
+    saveData();
+    return;
+  }
+
+  const rn = lp.roundNum || (part.rounds.indexOf(round) + 1);
+  const d = new Date(lp.savedAt);
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mi = String(d.getMinutes()).padStart(2, '0');
+  const timeStr = `${mm}/${dd} ${hh}:${mi}`;
+
+  const msg = t('resume_progress_msg')
+    .replace('{roundNum}', rn)
+    .replace('{stitchIndex}', lp.stitchIndex + 1)
+    .replace('{time}', timeStr);
+
+  showConfirmDialog(msg, (ok) => {
+    if (ok) {
+      part.activeRoundId = lp.roundId;
+      state.expandedRounds.add(lp.roundId);
+      proj.lastModified = Date.now();
+      saveData();
+      window.renderProject();
+      setTimeout(() => {
+        const roundEl = document.getElementById('round-' + lp.roundId);
+        if (roundEl) {
+          roundEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          const spill = roundEl.querySelectorAll('.spill')[lp.stitchIndex];
+          if (spill) {
+            spill.classList.add('spill--resume');
+            setTimeout(() => spill.classList.remove('spill--resume'), 1500);
+          }
+        }
+      }, 150);
+    }
+  }, {
+    title: t('resume_progress_title'),
+    confirmLabel: t('resume_continue'),
+    cancelLabel: t('resume_skip')
+  });
+}
+
 export function pushStitch(sid) {
   const proj = getProj(state.curProjId);
   const part = getActivePart(proj);
@@ -603,7 +938,10 @@ export function pushStitch(sid) {
 
   proj.lastModified = Date.now();
   saveData();
+  saveLastPosition(proj, part);
   addDailyCount(1);
+  window.bumpDailyCount(proj, 1);
+  window.tickFocusSession();
   state.highlightIndex++;
 
   if (state.immersiveMode) {
@@ -642,7 +980,10 @@ export function undoStitch() {
   r.seq.pop();
   proj.lastModified = Date.now();
   saveData();
+  saveLastPosition(proj, part);
   addDailyCount(-1);
+  window.bumpDailyCount(proj, -1);
+  window.tickFocusSession();
   state.highlightIndex = Math.max(0, state.highlightIndex - 1);
 
   if (state.immersiveMode) {
@@ -683,8 +1024,14 @@ function openStitchSheet(roundId, idx) {
   const projColor = getProjColor(sid);
   const projLabel = resolveLabel(sid);
 
+  const isCompound = /^\(\d+[A-Z]+\)$/i.test(sid);
+
   let html = `<div class="sheet-handle"></div>
   <div class="sheet-title">${t('stitch_detail_title').replace('{idx}', idx + 1)} · <span style="color:${projColor};font-weight:700">${esc(projLabel)}</span></div>`;
+
+  if (isCompound) {
+    html += `<div style="padding:8px 14px;margin:0 14px;font-size:12px;color:var(--accent);background:var(--accent-bg);border-radius:10px;text-align:center">${t('compound_stitch_warning')}</div>`;
+  }
 
   html += `<div class="sheet-section">${t('change_to')}</div>`;
   html += `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:8px 14px">`;
@@ -709,8 +1056,161 @@ function openStitchSheet(roundId, idx) {
     <div><div class="sheet-item-label" style="color:#EF4444">${t('delete_stitch')}</div></div>
   </div>`;
 
+  // Marker section
+  const marker = proj.markers && proj.markers.find(m => m.roundId === roundId && m.index === idx);
+  html += `<div class="sheet-divider"></div>`;
+  if (marker) {
+    html += `<div class="sheet-item" onclick="openMarkerSheet('${roundId}',${idx})">
+      <div class="sheet-item-icon" style="background:${marker.color};color:#fff">🔖</div>
+      <div><div class="sheet-item-label">${t('marker_edit')}</div></div>
+    </div>`;
+    html += `<div class="sheet-item sheet-item--danger" onclick="removeMarker('${roundId}',${idx});closeSheet();renderProject()">
+      <div class="sheet-item-icon" style="background:#FEF2F2;color:#EF4444">🗑</div>
+      <div><div class="sheet-item-label">${t('marker_remove')}</div></div>
+    </div>`;
+  } else {
+    html += `<div class="sheet-item" onclick="openMarkerSheet('${roundId}',${idx})">
+      <div class="sheet-item-icon" style="background:var(--accent-bg);color:var(--accent)">🔖</div>
+      <div><div class="sheet-item-label">${t('marker_add')}</div></div>
+    </div>`;
+  }
+
   html += `<button class="sheet-cancel" onclick="closeSheet()">${t('cancel')}</button>`;
   showSheet(html);
+}
+
+// ═════════════════════════════════════
+//  Stitch Markers (记号扣)
+// ═════════════════════════════════════
+
+const MARKER_PRESETS = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899'];
+
+export function openMarkerSheet(roundId, idx) {
+  const proj = getProj(state.curProjId);
+  const r = findRound(proj, roundId);
+  if (!r) return;
+  const existing = proj.markers && proj.markers.find(m => m.roundId === roundId && m.index === idx);
+  const selColor = existing ? existing.color : MARKER_PRESETS[0];
+  const selNote = existing ? existing.note : '';
+
+  const presetBtns = MARKER_PRESETS.map(c =>
+    `<button class="marker-color-btn" data-color="${c}" style="background:${c};width:28px;height:28px;border-radius:50%;border:${c === selColor ? '2px solid var(--text)' : '2px solid transparent'};cursor:pointer;flex-shrink:0" onclick="markerSelectColor('${c}')"></button>`
+  ).join('');
+
+  const html = `<div class="sheet-handle"></div>
+  <div class="sheet-title">${t('marker_title')}</div>
+
+  <div style="padding:12px 16px 6px">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600">${t('marker_color')}</div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap" id="marker-color-row">
+      ${presetBtns}
+      <input type="color" id="marker-custom-color" value="${selColor}"
+        style="width:28px;height:28px;border:none;border-radius:50%;cursor:pointer;background:none;padding:0;flex-shrink:0"
+        onchange="markerSelectColor(this.value)">
+    </div>
+  </div>
+
+  <div style="padding:6px 16px 12px">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600">${t('marker_note')}</div>
+    <input id="marker-note-input" type="text" placeholder="${t('marker_note_placeholder')}" maxlength="30" value="${esc(selNote)}"
+      style="width:100%;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:14px;background:var(--bg);color:var(--text);outline:none;font-family:inherit">
+  </div>
+
+  <div style="padding:6px 16px 10px;display:flex;gap:8px">
+    <button class="bar-btn" style="flex:1" onclick="closeSheet()">${t('cancel')}</button>
+    <button class="bar-btn primary" style="flex:2" onclick="saveMarker('${roundId}',${idx})">${t('confirm')}</button>
+  </div>`;
+
+  state.flowState._markerColor = selColor;
+  showSheet(html);
+}
+
+export function markerSelectColor(c) {
+  state.flowState._markerColor = c;
+  const btns = document.querySelectorAll('.marker-color-btn');
+  btns.forEach(b => {
+    b.style.border = b.dataset.color === c ? '2px solid var(--text)' : '2px solid transparent';
+  });
+  const customInput = document.getElementById('marker-custom-color');
+  if (customInput) customInput.value = c;
+}
+
+export function saveMarker(roundId, idx) {
+  const proj = getProj(state.curProjId);
+  if (!proj) return;
+  if (!proj.markers) proj.markers = [];
+
+  const color = state.flowState._markerColor || MARKER_PRESETS[0];
+  const noteInput = document.getElementById('marker-note-input');
+  const note = noteInput ? noteInput.value.trim() : '';
+
+  const existingIdx = proj.markers.findIndex(m => m.roundId === roundId && m.index === idx);
+  if (existingIdx >= 0) {
+    proj.markers[existingIdx].color = color;
+    proj.markers[existingIdx].note = note;
+  } else {
+    proj.markers.push({ id: uid(), roundId, index: idx, color, note });
+  }
+
+  proj.lastModified = Date.now();
+  state.flowState._markerColor = null;
+  saveData();
+  closeSheet();
+  window.renderProject();
+}
+
+export function removeMarker(roundId, idx) {
+  const proj = getProj(state.curProjId);
+  if (!proj || !proj.markers) return;
+  proj.markers = proj.markers.filter(m => !(m.roundId === roundId && m.index === idx));
+  proj.lastModified = Date.now();
+  saveData();
+}
+
+export function openMarkersReviewSheet(roundId) {
+  const proj = getProj(state.curProjId);
+  if (!proj) return;
+  const r = findRound(proj, roundId);
+  if (!r) return;
+  const markers = (proj.markers || []).filter(m => m.roundId === roundId);
+  if (markers.length === 0) {
+    closeSheet();
+    return;
+  }
+
+  let itemsHtml = markers.map(m => {
+    const pos = m.index + 1;
+    return `<div class="sheet-item" style="display:flex;align-items:center;gap:10px">
+      <span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${m.color};border:1.5px solid #fff;flex-shrink:0;box-shadow:0 0 0 1px var(--border)"></span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:600;color:var(--text)">${t('marker_pos').replace('{n}', pos)}</div>
+        ${m.note ? `<div style="font-size:11px;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(m.note)}</div>` : ''}
+      </div>
+      <button class="bar-btn" style="flex:0;padding:4px 10px;font-size:11px;color:var(--danger);border-color:var(--danger-bg);background:var(--danger-bg)" onclick="event.stopPropagation();removeMarker('${roundId}',${m.index});openMarkersReviewSheet('${roundId}')">${t('marker_remove')}</button>
+    </div>`;
+  }).join('');
+
+  const html = `<div class="sheet-handle"></div>
+  <div class="sheet-title">${t('marker_review_title').replace('{count}', markers.length)}</div>
+  <div style="padding:4px 0">${itemsHtml}</div>
+  <div style="padding:10px 14px">
+    <button class="sheet-cancel" style="width:100%;margin:0" onclick="closeSheet()">${t('done')}</button>
+  </div>`;
+
+  showSheet(html);
+}
+
+function _checkMarkerDrift(roundId) {
+  const proj = getProj(state.curProjId);
+  if (!proj || !proj.markers) return;
+  const count = proj.markers.filter(m => m.roundId === roundId).length;
+  if (count > 0) {
+    showToast(
+      t('marker_drift_warning').replace('{n}', count),
+      { label: t('marker_drift_check'), onClick: () => openMarkersReviewSheet(roundId) },
+      6000
+    );
+  }
 }
 
 export function changeStitch(roundId, idx, sid) {
@@ -751,6 +1251,7 @@ export function deleteStitch(roundId, idx) {
   r.seq.splice(idx, 1);
   proj.lastModified = Date.now();
   saveData(); closeSheet();
+  _checkMarkerDrift(roundId);
 
   const roundEl = document.getElementById("round-" + r.id);
   if (roundEl) {
@@ -802,6 +1303,7 @@ export function doInsert(sid) {
   state.pendingInsert = null;
   proj.lastModified = Date.now();
   saveData(); closeSheet();
+  _checkMarkerDrift(roundId);
 
   const roundEl = document.getElementById("round-" + r.id);
   if (roundEl) {
@@ -1186,16 +1688,26 @@ export function renderImmersive(proj) {
   /* ③ 当前活跃圈卡片 */
   html += `<div class="rounds-wrap">`;
   const total = r.seq.length;
-  const dots = r.seq.slice(-8).map(sid => `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${getProjColor(sid)};margin-right:2px"></span>`).join("");
 
   html += `<div class="round-card" id="round-${r.id}">
-    <div class="round-hdr">
+    <div class="round-hdr" onclick="toggleRound('${r.id}')">
       <div class="round-badge active">${r.isTextCard ? t('note').charAt(0) : (r.roundNum === 0 ? term('cast_on').charAt(0) : r.roundNum)}</div>
       <div class="round-info">
         <div class="round-label">${r.isTextCard ? (r.instruction || t('note')) : (r.roundNum === 0 ? term('cast_on') : t('round_label').replace('{n}', r.roundNum).replace('{unit}', unit))} <span style='font-size:11px;font-weight:var(--weight-semibold);background:var(--accent);color:#fff;border-radius:6px;padding:2px 7px;margin-left:6px'>${term('active')}</span></div>
-        <div class="round-count">${total} ${term('stitches')} ${dots}</div>
+        <div class="round-count">${t('round_count_label').replace('{total}', total)}</div>
       </div>
       <button class="round-edit-btn" onclick="showToast(t('immersive_edit_blocked'))" title="${t('edit_instruction')}" style="font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer;padding:2px 6px;white-space:nowrap"><span style="font-size:13px;color:var(--muted);letter-spacing:1px;">🪡</span></button>
+      <span class="round-chev open">›</span>
+    </div>
+    <div class="round-body open">
+      <div class="seq-wrap">`;
+  r.seq.forEach((sid, idx) => {
+    html += renderSpillHTML(sid, idx, r, proj);
+  });
+  if (r.seq.length === 0) {
+    html += `<span class="seq-empty">${t('empty_round_hint')}</span>`;
+  }
+  html += `</div>
     </div>
   </div>`;
   html += `</div>`;
@@ -1225,6 +1737,36 @@ export function goNextRound() {
   } else {
     showToast(t('last_round_immersive_hint'));
   }
+}
+
+// ═════════════════════════════════════
+//  Copy round structure
+// ═════════════════════════════════════
+
+export function copyRoundStructure(sourceRoundId) {
+  const proj = getProj(state.curProjId);
+  const part = getActivePart(proj);
+  if (!part) return;
+
+  const sourceRound = findRound(proj, sourceRoundId);
+  if (!sourceRound || sourceRound.seq.length === 0) {
+    showToast(t('copy_structure_empty'));
+    return;
+  }
+
+  const r = { id: uid(), seq: [...sourceRound.seq], instruction: '', isTextCard: false };
+  part.rounds.push(r);
+  normalizeRoundNums(part.rounds);
+  state.expandedRounds.add(r.id);
+  proj.lastModified = Date.now();
+  saveData();
+  setActiveRound(proj, r.id);
+  closeSheet();
+  window.renderProject();
+  setTimeout(() => {
+    const el = document.getElementById('round-' + r.id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 60);
 }
 
 export function toggleImmersiveMode() {
@@ -1271,6 +1813,9 @@ export function toggleHighlightMode() {
   if (proj) {
     refreshBottomBar(proj);
     renderHighlightReel(proj);
+    if (window.matchMedia('(min-width: 768px) and (orientation: landscape)').matches) {
+      window._renderSplitLeft(proj);
+    }
   }
 }
 
@@ -1643,6 +2188,7 @@ export function saveNewStitch() {
 
   proj.lastModified = Date.now();
   saveData();
+  rebuildDynamicTokenRE();
   backToSetupGrid();
 }
 
@@ -1669,6 +2215,7 @@ export function deleteCustomStitch(sid) {
     });
 
     saveData();
+    rebuildDynamicTokenRE();
     backToSetupGrid();
   });
 }

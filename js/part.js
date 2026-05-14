@@ -1,6 +1,7 @@
 import { state, uid, getProj, getActivePart } from './state.js';
 import { showConfirmDialog } from './ui.js';
 import { saveData } from './storage.js';
+import { saveLastPosition, checkResumePosition } from './stitch.js';
 import { t } from './i18n.js';
 
 export function addPart() {
@@ -14,7 +15,8 @@ export function addPart() {
     rawPattern: '',
     rounds: [r],
     activeRoundId: r.id,
-    customPalette: prevPart?.customPalette ? [...prevPart.customPalette] : null
+    customPalette: prevPart?.customPalette ? [...prevPart.customPalette] : null,
+    lastPosition: null
   };
   proj.parts = proj.parts || [];
   proj.parts.push(part);
@@ -30,10 +32,20 @@ export function switchPart(partId) {
   if (window.editingPartId !== null && window.editingPartId !== partId) {
     window.editingPartId = null;
   }
+  // 切换前保存当前部件位置
+  const prevPart = getActivePart(proj);
+  if (prevPart && prevPart.id !== partId) {
+    saveLastPosition(proj, prevPart);
+  }
   proj.activePartId = partId;
   state.highlightIndex = 0;
   saveData();
   window.renderProject();
+  // 渲染完成后检查新部件是否有可恢复位置
+  const newPart = proj.parts.find(p => p.id === partId);
+  if (newPart && newPart.lastPosition) {
+    setTimeout(() => checkResumePosition(proj, newPart), 100);
+  }
 }
 
 export function handleEditBtnClick(event, partId, el) {

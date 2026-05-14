@@ -2,7 +2,7 @@ import { state, uid, getProj, getActivePart } from './state.js';
 import { showSheet, esc, showConfirmDialog, showEntryChoiceSheet } from './ui.js';
 import { pickCover, setProjectCover, removeProjectCover, getProjImage } from './image.js';
 import { saveData, migrateData, exportSingleProject } from './storage.js';
-import { getUnitLabel } from './stitch.js';
+import { getUnitLabel, checkResumePosition } from './stitch.js';
 import { setPageView } from './main.js';
 import { t, term } from './i18n.js';
 
@@ -23,6 +23,8 @@ export function openProject(id) {
   }
   document.getElementById("tab-nav")?.style.setProperty("display", "none");
   document.getElementById("bottom-bar")?.style.setProperty("display", "block");
+  flushFocusSession();   // 结束上一个项目的会话（如果有）
+  startFocusSession();
   const navBar = document.getElementById("nav-bar");
   if (navBar) navBar.classList.remove("hidden");
   const screen = document.getElementById("screen");
@@ -30,6 +32,13 @@ export function openProject(id) {
   screen.classList.add("enter-forward");
   screen.addEventListener("animationend", () => screen.classList.remove("enter-forward"), { once: true });
   window.renderProject();
+  // 检查是否有可恢复的钩织进度
+  if (proj) {
+    const activePart = getActivePart(proj);
+    if (activePart && activePart.lastPosition) {
+      setTimeout(() => checkResumePosition(proj, activePart), 150);
+    }
+  }
 }
 
 export function importData(input) {
@@ -79,7 +88,10 @@ export function showNewProjectDialog() {
       activePartId: partId,
       useRowTerms: false,
       lastModified: Date.now(),
-      refImages: []
+      refImages: [],
+      focusSessions: [],
+      dailyCount: {},
+      markers: []
     };
     state.data.projects.push(proj);
     saveData();
@@ -126,6 +138,12 @@ export async function toggleProjMenu(id, e) {
     </button>` : ''}
   `;
 
+  const shareAction = `
+    <button class="sheet-item" onclick="handleGenerateShare('${id}');closeSheet()">
+      <span class="sheet-item-icon">✨</span> ${t('share_generate')}
+    </button>
+  `;
+
   const archiveAction = isArchived
     ? `<button class="sheet-item" onclick="unarchiveProject('${id}');closeSheet()">
          <span class="sheet-item-icon">📤</span> ${t('unarchive')}
@@ -144,6 +162,7 @@ export async function toggleProjMenu(id, e) {
   showSheet(`
     <div class="sheet-title">${proj.name}</div>
     ${coverActions}
+    ${shareAction}
     ${archiveAction}
     <div class="sheet-divider"></div>
     ${deleteAction}
@@ -281,4 +300,99 @@ export function renameProject(name) {
   if (!name || !state.curProjId) return;
   const proj = getProj(state.curProjId);
   if (proj) { proj.name = name; proj.lastModified = Date.now(); saveData(); }
+}
+
+// ── 专注时长 ──
+
+const FOCUS_MIN_DURATION = 60 * 1000;       // 1 分钟
+const FOCUS_IDLE_GAP = 10 * 60 * 1000;       // 10 分钟无操作断开
+const DAILY_COUNT_MAX_DAYS = 90;
+
+export function startFocusSession() {
+  state._sessionStart = Date.now();
+  state._sessionLastActive = Date.now();
+}
+
+export function tickFocusSession() {
+  const now = Date.now();
+  if (state._sessionLastActive && now - state._sessionLastActive > FOCUS_IDLE_GAP) {
+    flushFocusSession();
+    startFocusSession();
+  } else {
+    state._sessionLastActive = now;
+  }
+}
+
+export function flushFocusSession() {
+  if (!state._sessionStart || !state._sessionLastActive) return;
+  const start = state._sessionStart;
+  const end = state._sessionLastActive;
+  const duration = end - start;
+  state._sessionStart = null;
+  state._sessionLastActive = null;
+
+  if (duration < FOCUS_MIN_DURATION) return;
+
+  const proj = getProj(state.curProjId);
+  if (!proj) return;
+  if (!Array.isArray(proj.focusSessions)) proj.focusSessions = [];
+  proj.focusSessions.push({ start, end });
+  proj.lastModified = Date.now();
+  saveData();
+}
+
+export function getTotalFocusTime(proj) {
+  if (!proj || !Array.isArray(proj.focusSessions)) return 0;
+  return proj.focusSessions.reduce((sum, s) => sum + (s.end - s.start), 0);
+}
+
+export function formatFocusTime(ms) {
+  if (!ms || ms < 60 * 1000) return '—';
+  const mins = Math.floor(ms / 60000);
+  if (mins < 60) return mins + ' min';
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return h + 'h ' + m + 'm';
+}
+
+export function getTodayFocusTime(proj) {
+  if (!proj || !Array.isArray(proj.focusSessions)) return 0;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStart = today.getTime();
+  const tomorrowStart = todayStart + 24 * 3600000;
+  return proj.focusSessions
+    .filter(s => s.end >= todayStart && s.start < tomorrowStart)
+    .reduce((sum, s) => {
+      const start = Math.max(s.start, todayStart);
+      const end = Math.min(s.end, tomorrowStart);
+      return sum + Math.max(0, end - start);
+    }, 0);
+}
+
+export function getTodayStitchCount(proj) {
+  if (!proj || !proj.dailyCount) return 0;
+  const key = getTodayKey();
+  return proj.dailyCount[key] || 0;
+}
+
+function getTodayKey() {
+  const d = new Date();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
+export function bumpDailyCount(proj, n) {
+  if (!proj) return;
+  if (!proj.dailyCount || typeof proj.dailyCount !== 'object') proj.dailyCount = {};
+  const key = getTodayKey();
+  proj.dailyCount[key] = Math.max(0, (proj.dailyCount[key] || 0) + n);
+  // 清理超过 90 天的 key
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - DAILY_COUNT_MAX_DAYS);
+  const cutoffKey = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart(2,'0')}-${String(cutoff.getDate()).padStart(2,'0')}`;
+  Object.keys(proj.dailyCount).forEach(k => {
+    if (k < cutoffKey && proj.dailyCount[k] === 0) delete proj.dailyCount[k];
+  });
 }

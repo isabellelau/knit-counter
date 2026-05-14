@@ -1,7 +1,7 @@
 /**
  * STORAGE SCHEMA VERSIONING
  * =========================
- * Current version: LATEST_SCHEMA (currently 8)
+ * Current version: LATEST_SCHEMA (currently 10)
  *
  * Version history:
  *   v1 — initial versioned schema; added schemaVersion field;
@@ -16,6 +16,9 @@
  *         全局 globalCustomStitches / globalStitchCustomizations，
  *         废弃项目级 customSettings 的针法定义字段
  *   v8 — 新增 project.refImages（参考图，数组存储 IndexedDB covers key）
+ *   v9 — 新增 project.focusSessions（专注时长记录）+ project.dailyCount（每日针数）
+ *   v10 — 新增 project.markers（记号扣，针目级彩色标记+备注）
+ *   v11 — 新增 part.lastPosition（钩织进度记忆，记录最后钩织位置）
  *
  * Rule: whenever you change the shape of state.data, you MUST:
  *   1. Bump LATEST_SCHEMA by 1
@@ -91,7 +94,7 @@ export const storageAdapter = {
 
 const STORAGE_KEY = 'crochet_v4';
 const OLD_KEYS = ['crochet_v3_fixed', 'crochet_v3'];
-const LATEST_SCHEMA = 8;
+const LATEST_SCHEMA = 11;
 
 // ═══════════════════════════════════════
 //  一次性迁移：localStorage → IndexedDB
@@ -409,6 +412,30 @@ export function migrateData(d) {
   if (d.schemaVersion < 8) {
     d.projects.forEach(p => {
       if (!Array.isArray(p.refImages)) p.refImages = [];
+    });
+  }
+
+  // v8 → v9: 补全 focusSessions + dailyCount
+  if (d.schemaVersion < 9) {
+    d.projects.forEach(p => {
+      if (!Array.isArray(p.focusSessions)) p.focusSessions = [];
+      if (!p.dailyCount || typeof p.dailyCount !== 'object') p.dailyCount = {};
+    });
+  }
+
+  // v9 → v10: 补全 markers
+  if (d.schemaVersion < 10) {
+    d.projects.forEach(p => {
+      if (!Array.isArray(p.markers)) p.markers = [];
+    });
+  }
+
+  // v10 → v11: 补全 lastPosition
+  if (d.schemaVersion < 11) {
+    d.projects.forEach(p => {
+      (p.parts || []).forEach(part => {
+        if (!part.lastPosition) part.lastPosition = null;
+      });
     });
   }
 

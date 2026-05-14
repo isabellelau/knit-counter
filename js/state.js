@@ -46,6 +46,8 @@ export const state = {
     glowTimer: null,
   },
   _lastDeletedRound: null,
+  _sessionStart: null,
+  _sessionLastActive: null,
 };
 
 // Sync editingPartId with window for inline HTML handlers

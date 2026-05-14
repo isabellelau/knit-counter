@@ -200,6 +200,17 @@ async function _removeRefBlob(key) {
   });
 }
 
+export async function setRefImage(projId, key, base64) {
+  try {
+    const res = await fetch(base64);
+    const blob = await res.blob();
+    await _setRefBlob(key, blob);
+  } catch (e) {
+    console.warn('setRefImage failed:', e);
+    throw e;
+  }
+}
+
 export async function getRefImage(key) {
   try {
     const blob = await _getRefBlob(key);
@@ -309,6 +320,15 @@ export function openRefImageViewer(projId, currentKey) {
   closeBtn.textContent = '×';
   closeBtn.onclick = _closeRefViewer;
 
+  const annotateBtn = document.createElement('button');
+  annotateBtn.className = 'ref-viewer-annotate';
+  annotateBtn.textContent = '✏️';
+  annotateBtn.onclick = (e) => {
+    e.stopPropagation();
+    _closeRefViewer();
+    setTimeout(() => window.openAnnotator(projId, keys[index]), 250);
+  };
+
   const dots = document.createElement('div');
   dots.className = 'ref-viewer-dots';
 
@@ -343,6 +363,7 @@ export function openRefImageViewer(projId, currentKey) {
 
   overlay.appendChild(img);
   overlay.appendChild(closeBtn);
+  overlay.appendChild(annotateBtn);
   overlay.appendChild(dots);
   document.body.appendChild(overlay);
 
@@ -370,6 +391,8 @@ function _closeRefViewer() {
     _refViewerState = null;
   }, 200);
 }
+
+window._closeRefViewer = _closeRefViewer;
 
 // ── 从项目菜单/管理 Sheet 触发文件选择 ──
 

@@ -48,6 +48,9 @@ export default {
   // ═════════════════════════════════════
   home_empty_moti: 'Every stitch matters. Start when you\'re ready.',
   home_today_label: 'Today',
+  home_stats_projects: 'Projects',
+  home_stats_stitches: 'Total stitches',
+  home_stats_focus: 'Focus time',
   home_total_stitches: '{count} sts',
   home_total_projects: '{count} projects',
   home_total_days: '{count} days total',
@@ -158,7 +161,7 @@ export default {
   // ═════════════════════════════════════
   //  Pattern import
   // ═════════════════════════════════════
-  import_pattern: '📥 Import pattern',
+  import_pattern: 'Import pattern',
   pattern_placeholder: 'Paste your pattern here, or upload an image to scan…\ne.g.\nR1: 6X\nR2: 6V\nR3: [1X, 1V]*6',
   ocr_button: '📷 Scan image',
   parse_preview: '🔍 Preview',
@@ -232,6 +235,11 @@ export default {
   immersive_exit_short: '⊡ Exit',
   immersive_undo: '↩ Undo',
   immersive_next_round: 'Next round ›',
+  annotator_save_confirm: 'Save annotated image?',
+  annotator_saved: 'Annotation saved',
+  annotator_exit_confirm: 'You have unsaved annotations. Save before leaving?',
+  annotator_exit_title: 'Unsaved changes',
+  annotator_discard: 'Discard',
   immersive_edit_blocked: 'Exit focus mode to edit the pattern',
 
   // ═════════════════════════════════════
@@ -395,8 +403,50 @@ export default {
   //  Multi-round instruction editor
   // ═════════════════════════════════════
   multi_round_editor_title: 'Multi-Round Editor',
-  multi_round_prev_round: '↑Prev',
-  multi_round_next_round: '↓Next',
+  multi_round_prev_round: 'Prev',
+  multi_round_next_round: 'Next',
   multi_round_nav_indicator: 'Round {n} / {total}',
   multi_round_nav_prev_empty: '—',
+
+  // ═════════════════════════════════════
+  //  Share image
+  // ═════════════════════════════════════
+  share_generate: 'Share card',
+  share_preview_title: 'Share preview',
+  share_save: 'Save image',
+  share_share: 'Share',
+  share_saved_hint: 'Image saved — share manually',
+  share_total_stitches: 'Stitches',
+  share_total_rounds: 'Rounds',
+
+  // ═════════════════════════════════════
+  //  Stitch markers
+  // ═════════════════════════════════════
+  marker_title: 'Stitch marker',
+  marker_color: 'Color',
+  marker_note: 'Note',
+  marker_note_placeholder: 'Note, e.g. left shoulder seam',
+  marker_add: '🔖 Add marker',
+  marker_edit: '🔖 Edit marker',
+  marker_remove: '🗑 Remove marker',
+  marker_pos: 'Stitch {n}',
+  marker_none: 'No markers in this round',
+  marker_review_title: 'Review markers ({count})',
+  marker_drift_warning: '⚠️ {n} marker(s) in this round may have shifted',
+  marker_drift_check: 'Review',
+
+  // ═════════════════════════════════════
+  //  Compound stitches & loop markers
+  // ═════════════════════════════════════
+  compound_stitch_warning: 'This is a parsed compound stitch (e.g. 5 double crochets) and cannot be individually modified. Edit the pattern text and re-import.',
+  loop_marker_label: 'Loop R{from}-R{to}',
+  copy_structure_btn: 'Copy this round\'s structure',
+  copy_structure_from: '↻ Copy structure from existing round',
+  copy_structure_empty: 'This round has no stitch data',
+  add_round_sheet_title: 'New {unit}',
+  add_round_blank: '+ Blank {unit}',
+  resume_progress_title: 'Continue last session?',
+  resume_progress_msg: 'Last worked on\nRound {roundNum} · Stitch {stitchIndex}\n{time}',
+  resume_continue: 'Continue',
+  resume_skip: 'Browse from start',
 };

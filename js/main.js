@@ -26,10 +26,12 @@ import {
   goNextRound, refreshBottomBar,
   instrEditorInsert, instrEditorInsertNum, instrEditorInsertSymbol,
   instrEditorBackspace, instrEditorClear, instrEditorConfirm, instrEditorToggleKB,
-  openMultiRoundEditor, instrEditorPrevRound, instrEditorNextRound, instrEditorConfirmMulti
+  openMultiRoundEditor, instrEditorPrevRound, instrEditorNextRound, instrEditorConfirmMulti,
+  openMarkerSheet, openMarkersReviewSheet, saveMarker, removeMarker, markerSelectColor,
+  copyRoundStructure
 } from './stitch.js';
 import {
-  addRound, toggleRound, deleteRound, undoDeleteRound, setActiveRound
+  addRound, addRoundBlank, toggleRound, deleteRound, undoDeleteRound, setActiveRound
 } from './round.js';
 import {
   addPart, switchPart, renamePart, deletePart, startEditPartName,
@@ -38,9 +40,14 @@ import {
 import {
   showNewProjectDialog, openProject, renameProject, deleteProject, toggleProjMenu,
   archiveProject, showArchiveSuccessSheet, unarchiveProject, importData,
-  handlePwaHintOptOut, showPwaTutorial
+  handlePwaHintOptOut, showPwaTutorial,
+  startFocusSession, tickFocusSession, flushFocusSession,
+  getTotalFocusTime, formatFocusTime, getTodayFocusTime, getTodayStitchCount,
+  bumpDailyCount
 } from './project.js';
 import { pickCover, setProjectCover, removeProjectCover, addRefImage, removeRefImage, getRefImage, showRefImagesSheet, openRefImageViewer, pickRefImages } from './image.js';
+import { handleGenerateShare, showShareSheet, downloadShareImage, shareImageNative } from './share.js';
+import { openAnnotator, saveAnnotation } from './annotator.js';
 import { expandInstruction, getNextStitchSid, renderHighlightReel } from './highlight.js';
 import { renderHome, renderProject } from './render.js';
 import { t, term, setLang, getLang, setNotation, getNotationKey, SUPPORTED_LANGS, getShowSymbol, setShowSymbol } from './i18n.js';
@@ -57,6 +64,18 @@ export function setPageView(view) {
 
 // ── navigation ──
 function goHome() {
+  if (window._isAnnotatorOpen && window._isAnnotatorOpen()) {
+    window._exitAnnotator(() => _doGoHome());
+    return;
+  }
+  _doGoHome();
+}
+
+function _doGoHome() {
+  document.documentElement.classList.remove('ipad-split');
+  const splitLeft = document.getElementById('ipad-split-left');
+  if (splitLeft) splitLeft.remove();
+
   if (state.voiceMode) {
     state.flowState.voiceState = 'off';
     if (state.recognition) {
@@ -73,6 +92,7 @@ function goHome() {
   const navBar = document.getElementById('nav-bar');
   if (navBar) navBar.style.display = '';
   document.documentElement.classList.remove('immersive-mode');
+  flushFocusSession();
   setPageView('home-view');
   state.curProjId = null; state.expandedRounds.clear(); state.selectedStitch = null;
   state.highlightMode = false;
@@ -90,6 +110,7 @@ function goHome() {
 
 function switchTab(tab) {
   if (state.currentTab === tab) return;
+  if (tab === 'settings') flushFocusSession();
   state.currentTab = tab;
   updateTabNav();
 
@@ -185,7 +206,7 @@ const _globals = {
   goHome, openProject, exportPDF, exportData, exportSingleProject, importData, checkStorageQuota,
   showNewProjectDialog, showConfirmDialog, confirmDialog, closeDialog, deleteProject,
   renderProject, renderHome,
-  addRound, toggleRound, deleteRound, undoDeleteRound, setActiveRound,
+  addRound, addRoundBlank, toggleRound, deleteRound, undoDeleteRound, setActiveRound,
   pushStitch, undoStitch, stitchTap,
   changeStitch, deleteStitch, startInsert, doInsert,
   showSheet, closeSheet, openPatternPasteSheet,
@@ -216,11 +237,16 @@ const _globals = {
   openGlobalStitchLibrary, openGlobalStitchCustomize, saveGlobalStitchCustomize, resetGlobalStitchCustomize, deleteGlobalCustomStitch, openGlobalNewStitchForm, saveGlobalNewStitch,
   editExpectedCount,
   pickCover, setProjectCover, removeProjectCover, addRefImage, removeRefImage, getRefImage, showRefImagesSheet, openRefImageViewer, pickRefImages,
+  handleGenerateShare, showShareSheet, downloadShareImage, shareImageNative,
+  startFocusSession, tickFocusSession, flushFocusSession, getTotalFocusTime, formatFocusTime, getTodayFocusTime, getTodayStitchCount, bumpDailyCount,
   expandInstruction, getNextStitchSid, renderHighlightReel,
   setPageView,
   t, term, setLang, getLang, setNotation, getNotationKey, getShowSymbol, setShowSymbol,
   onboardNext,
-  initStaticText
+  initStaticText,
+  openMarkerSheet, openMarkersReviewSheet, saveMarker, removeMarker, markerSelectColor,
+  copyRoundStructure,
+  openAnnotator, saveAnnotation
 };
 Object.entries(_globals).forEach(([k, v]) => { window[k] = v; });
 
@@ -282,6 +308,12 @@ initOnboarding();
 await loadData();
 initScrollBehavior();
 renderHome();
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && state.curProjId) {
+    flushFocusSession();
+  }
+});
 
 // ===== Onboarding =====
 

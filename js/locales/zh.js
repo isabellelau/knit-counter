@@ -48,6 +48,9 @@ export default {
   // ═════════════════════════════════════
   home_empty_moti: '每一点积累都会被看见',
   home_today_label: '今日已钩',
+  home_stats_projects: '项目',
+  home_stats_stitches: '累计针数',
+  home_stats_focus: '专注时长',
   home_total_stitches: '{count} 针',
   home_total_projects: '{count} 项',
   home_total_days: '累计 {count} 天',
@@ -158,7 +161,7 @@ export default {
   // ═════════════════════════════════════
   //  图解导入
   // ═════════════════════════════════════
-  import_pattern: '📥 导入图解',
+  import_pattern: '导入图解',
   pattern_placeholder: '在此粘贴图解文字，或上传图片自动识别...\n例如：\nR1: 6X\nR2: 6V\nR3: [1X, 1V]*6',
   ocr_button: '📷 识别图片',
   parse_preview: '🔍 解析预览',
@@ -232,6 +235,11 @@ export default {
   immersive_exit_short: '⊡ 退出',
   immersive_undo: '↩ 撤销',
   immersive_next_round: '下一圈 ›',
+  annotator_save_confirm: '保存标注图片？',
+  annotator_saved: '标注已保存',
+  annotator_exit_confirm: '有未保存的标注，是否保存后离开？',
+  annotator_exit_title: '未保存的修改',
+  annotator_discard: '放弃',
   immersive_edit_blocked: '请退出沉浸模式后编辑图解',
 
   // ═════════════════════════════════════
@@ -395,8 +403,50 @@ export default {
   //  多圈图解编辑器
   // ═════════════════════════════════════
   multi_round_editor_title: '多圈图解编辑器',
-  multi_round_prev_round: '↑上一圈',
-  multi_round_next_round: '↓下一圈',
+  multi_round_prev_round: '上一圈',
+  multi_round_next_round: '下一圈',
   multi_round_nav_indicator: '第 {n} 圈 / 共 {total} 圈',
   multi_round_nav_prev_empty: '—',
+
+  // ═════════════════════════════════════
+  //  分享图
+  // ═════════════════════════════════════
+  share_generate: '生成分享图',
+  share_preview_title: '分享图预览',
+  share_save: '保存图片',
+  share_share: '分享',
+  share_saved_hint: '已保存，请手动分享',
+  share_total_stitches: '总针数',
+  share_total_rounds: '总圈数',
+
+  // ═════════════════════════════════════
+  //  记号扣
+  // ═════════════════════════════════════
+  marker_title: '记号扣',
+  marker_color: '颜色',
+  marker_note: '备注',
+  marker_note_placeholder: '备注，如：左肩缝合点',
+  marker_add: '🔖 打记号扣',
+  marker_edit: '🔖 编辑记号扣',
+  marker_remove: '🗑 移除记号扣',
+  marker_pos: '第 {n} 针',
+  marker_none: '这一圈还没有记号扣',
+  marker_review_title: '记号扣检查（{count} 个）',
+  marker_drift_warning: '⚠️ 本圈有 {n} 个记号扣，位置可能已变化',
+  marker_drift_check: '检查',
+
+  // ═════════════════════════════════════
+  //  复合针法 & 循环标记
+  // ═════════════════════════════════════
+  compound_stitch_warning: '这是解析出的复合针法（如 5长针），无法单独修改。请编辑图解文本后重新导入。',
+  loop_marker_label: '循环 R{from}-R{to}',
+  copy_structure_btn: '复制此圈结构',
+  copy_structure_from: '↻ 从已有圈复制结构',
+  copy_structure_empty: '该圈没有针法数据',
+  add_round_sheet_title: '新增{unit}',
+  add_round_blank: '＋ 空白{unit}',
+  resume_progress_title: '继续上次进度？',
+  resume_progress_msg: '上次钩到\n第 {roundNum} 圈 · 第 {stitchIndex} 针\n{time}',
+  resume_continue: '继续',
+  resume_skip: '从头浏览',
 };

@@ -73,7 +73,7 @@ export function showSheet(html) {
 }
 
 export function closeSheet() {
-  document.getElementById("sheet").classList.remove("show");
+  document.getElementById("sheet").classList.remove("show", "multi-editor-sheet");
   document.getElementById("overlay").classList.remove("show");
   state.pendingInsert = null; state.selectedStitch = null;
 
@@ -121,16 +121,20 @@ export function showEntryChoiceSheet() {
   showSheet(html);
 }
 
-export function showConfirmDialog(message, onConfirm) {
-  document.getElementById("dlg-title").textContent = t('dialog_confirm_title');
+export function showConfirmDialog(message, onConfirm, opts) {
+  document.getElementById("dlg-title").textContent = (opts && opts.title) ? opts.title : t('dialog_confirm_title');
   document.getElementById("dlg-msg").textContent = message;
   document.getElementById("dlg-msg").style.display = "";
   document.getElementById("dlg-input").style.display = "none";
   state.dlgCallback = null;
   state.confirmCallback = onConfirm;
+  state._dlgOpts = opts || null;
   document.getElementById("dialog").classList.add("show");
-  // 聚焦确定按钮避免键盘陷阱
-  setTimeout(() => document.querySelector("#dialog .dialog-btn.ok").focus(), 100);
+  const okBtn = document.querySelector("#dialog .dialog-btn.ok");
+  if (okBtn && opts && opts.confirmLabel) okBtn.textContent = opts.confirmLabel;
+  const cancelBtn = document.querySelector("#dialog .dialog-btn:not(.ok)");
+  if (cancelBtn && opts && opts.cancelLabel) cancelBtn.textContent = opts.cancelLabel;
+  setTimeout(() => okBtn && okBtn.focus(), 100);
 }
 
 export function confirmDialog() {
@@ -146,5 +150,8 @@ export function closeDialog() {
   document.getElementById("dialog").classList.remove("show");
   const okBtn = document.querySelector("#dialog .dialog-btn.ok");
   if (okBtn) okBtn.textContent = t('confirm');
+  const cancelBtn = document.querySelector("#dialog .dialog-btn:not(.ok)");
+  if (cancelBtn) cancelBtn.textContent = t('cancel');
   if (state.confirmCallback) { state.confirmCallback(false); state.confirmCallback = null; }
+  state._dlgOpts = null;
 }

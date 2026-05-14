@@ -749,6 +749,30 @@ html.theme-dark .stats-card-row {
       background: var(--bg)
     }
 
+    .round-hdr-markers {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      margin-left: 6px;
+      flex-shrink: 0;
+    }
+    .round-hdr-marker-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      border: 1px solid #fff;
+      flex-shrink: 0;
+    }
+    .round-hdr-marker-more {
+      font-size: 9px;
+      color: var(--muted);
+      font-weight: 600;
+      margin-left: 1px;
+    }
+    .round-card:has(.round-body.open) .round-hdr-markers {
+      display: none;
+    }
+
     .round-badge {
       width: 28px;
       height: 28px;
@@ -768,6 +792,37 @@ html.theme-dark .stats-card-row {
       background: var(--accent);
       border-color: var(--accent);
       color: #fff
+    }
+
+    .round-badge--auto {
+      background: var(--accent-bg);
+      border-color: var(--accent-bg);
+      color: var(--accent);
+      opacity: 0.85
+    }
+
+    .round-badge--auto.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      opacity: 1
+    }
+
+    .round-badge--loop {
+      background: var(--accent-bg);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .round-badge--loop.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .round-card--loop {
+      border-style: dashed;
+      border-color: var(--accent);
+      background: var(--accent-bg);
     }
 
     .round-info {
@@ -851,6 +906,36 @@ html.theme-dark .stats-card-row {
 
     .spill.selected {
       box-shadow: 0 0 0 2.5px var(--text)
+    }
+
+    .spill-marker-dot {
+      position: absolute;
+      top: -2px;
+      right: -2px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      border: 1.5px solid #fff;
+      pointer-events: none;
+    }
+
+    .spill--compound {
+      background-image: repeating-linear-gradient(
+        -45deg,
+        transparent,
+        transparent 3px,
+        rgba(255,255,255,0.35) 3px,
+        rgba(255,255,255,0.35) 6px
+      );
+    }
+
+    .spill--resume {
+      animation: resume-pulse 1.5s ease forwards;
+    }
+
+    @keyframes resume-pulse {
+      0%   { box-shadow: 0 0 0 3px var(--accent); }
+      100% { box-shadow: 0 0 0 0px transparent; }
     }
 
     /* ── bottom palette ── */
@@ -1065,6 +1150,164 @@ html.theme-dark .stats-card-row {
       background: var(--bg);
     }
 
+    /* ── ref image annotator ── */
+    .annotator-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.95);
+      z-index: 210;
+      display: flex;
+      flex-direction: column;
+      opacity: 1;
+      transition: opacity 0.2s;
+    }
+    .annotator-toolbar-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: calc(env(safe-area-inset-top) + 8px) 12px 8px;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .annotator-back-btn,
+    .annotator-save-btn {
+      border: none;
+      background: rgba(255,255,255,0.15);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .annotator-back-btn:active,
+    .annotator-save-btn:active {
+      background: rgba(255,255,255,0.3);
+    }
+    .annotator-page-info {
+      color: rgba(255,255,255,0.6);
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .annotator-viewport {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      touch-action: none;
+    }
+    .annotator-canvas {
+      display: block;
+      touch-action: none;
+      border-radius: 4px;
+    }
+    .annotator-toolbar-bottom {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+      background: rgba(255,255,255,0.06);
+      flex-shrink: 0;
+    }
+    .annotator-color-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: center;
+    }
+    .annotator-color-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      padding: 0;
+      transition: transform 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .annotator-color-btn:active {
+      transform: scale(0.9);
+    }
+    .annotator-color-btn.active {
+      border-color: #fff;
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.4);
+    }
+    .annotator-custom-color {
+      width: 28px;
+      height: 28px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      cursor: pointer;
+      padding: 0;
+      background: none;
+    }
+    .annotator-width-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: center;
+    }
+    .annotator-width-slider {
+      width: 140px;
+      accent-color: #fff;
+    }
+    .annotator-width-label {
+      color: rgba(255,255,255,0.7);
+      font-size: 12px;
+      font-weight: 600;
+      min-width: 28px;
+      text-align: left;
+    }
+    .annotator-tool-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: center;
+    }
+    .annotator-tool-btn {
+      width: 40px;
+      height: 36px;
+      border-radius: 8px;
+      border: 1.5px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.6);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      transition: all 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .annotator-tool-btn:active {
+      transform: scale(0.93);
+    }
+    .annotator-tool-btn.active {
+      border-color: #fff;
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+    }
+    .annotator-undo-btn {
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.7);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+      text-align: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .annotator-undo-btn:active {
+      background: rgba(255,255,255,0.2);
+    }
+
     /* ── ref image viewer ── */
     .ref-viewer-overlay {
       position: fixed;
@@ -1107,6 +1350,27 @@ html.theme-dark .stats-card-row {
     .ref-viewer-close:active {
       background: rgba(255,255,255,0.3);
     }
+    .ref-viewer-annotate {
+      position: fixed;
+      top: calc(env(safe-area-inset-top) + 8px);
+      right: 60px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255,255,255,0.15);
+      color: #fff;
+      font-size: 18px;
+      line-height: 36px;
+      text-align: center;
+      cursor: pointer;
+      z-index: 201;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .ref-viewer-annotate:active {
+      background: rgba(255,255,255,0.3);
+    }
     .ref-viewer-dots {
       position: fixed;
       bottom: calc(env(safe-area-inset-bottom) + 24px);
@@ -1125,6 +1389,246 @@ html.theme-dark .stats-card-row {
     }
     .ref-viewer-dot.active {
       background: #fff;
+    }
+
+    /* ── iPad / tablet responsive ── */
+    @media (min-width: 768px) {
+      body {
+        max-width: 720px;
+      }
+      .sheet {
+        max-width: 720px;
+      }
+      .multi-editor-sheet {
+        max-width: 100vw !important;
+      }
+      /* 项目卡片两列布局 */
+      .rounds-wrap {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      .round-card {
+        margin-bottom: 0 !important;
+      }
+      /* 部件标签放大 */
+      .part-tabs-scroll {
+        gap: 10px;
+      }
+      /* 调色板按钮适当放大 */
+      .palette {
+        gap: 12px;
+        padding: 16px 24px 0;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      body {
+        max-width: 960px;
+      }
+      .sheet {
+        max-width: 720px;
+      }
+    }
+
+    /* ── iPad landscape split pane ── */
+    @media (min-width: 768px) and (orientation: landscape) {
+      html.ipad-split body {
+        display: grid;
+        grid-template-columns: 40% 60%;
+        grid-template-rows: auto 1fr auto;
+        max-width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      /* Left pane — reference images */
+      html.ipad-split #ipad-split-left {
+        display: flex;
+        flex-direction: column;
+        grid-column: 1;
+        grid-row: 1 / -1;
+        background: var(--bg-secondary);
+        border-right: 1px solid var(--border);
+        overflow: hidden;
+        position: relative;
+      }
+
+      /* Right pane elements */
+      html.ipad-split #nav-bar {
+        grid-column: 2;
+        grid-row: 1;
+        max-width: none;
+      }
+      html.ipad-split #screen {
+        grid-column: 2;
+        grid-row: 2;
+        max-width: none;
+        margin: 0;
+        width: 100%;
+        overflow-y: auto;
+      }
+      html.ipad-split #bottom-bar {
+        grid-column: 2;
+        grid-row: 3;
+        max-width: none;
+      }
+
+      /* Hide elements inappropriate for split layout */
+      html.ipad-split #tab-nav,
+      html.ipad-split #home-fab {
+        display: none !important;
+      }
+
+      /* Ref image viewport */
+      .ipad-split-ref-viewport {
+        flex: 1;
+        position: relative;
+        overflow: hidden;
+        touch-action: pan-y;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+
+      .ipad-split-ref-track {
+        display: flex;
+        height: 100%;
+        transition: transform 0.25s ease;
+      }
+
+      .ipad-split-ref-slide {
+        flex: 0 0 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12px;
+      }
+
+      .ipad-split-ref-slide img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        border-radius: 8px;
+      }
+
+      /* Pagination badge */
+      .ipad-split-ref-pagination {
+        position: absolute;
+        top: 10px;
+        right: 12px;
+        background: rgba(0,0,0,0.5);
+        color: #fff;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 9px;
+        border-radius: 10px;
+        pointer-events: none;
+      }
+
+      /* Annotate button */
+      .ipad-split-annotate-btn {
+        position: absolute;
+        bottom: 12px;
+        right: 12px;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(0,0,0,0.5);
+        color: #fff;
+        font-size: 18px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        -webkit-tap-highlight-color: transparent;
+        z-index: 5;
+      }
+      .ipad-split-annotate-btn:active {
+        background: rgba(0,0,0,0.75);
+      }
+
+      /* Empty state */
+      .ipad-split-ref-empty {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin: 20px;
+        border: 2px dashed var(--border);
+        border-radius: var(--radius-md);
+        color: var(--muted);
+        font-size: 14px;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .ipad-split-ref-empty:active {
+        background: var(--bg);
+      }
+      .ipad-split-ref-empty-icon {
+        font-size: 28px;
+        opacity: 0.5;
+      }
+
+      /* Adjust sheets in split mode */
+      html.ipad-split .sheet {
+        max-width: 60vw;
+        right: 0;
+        left: auto;
+      }
+      html.ipad-split .multi-editor-sheet {
+        max-width: 60vw !important;
+        right: 0;
+        left: auto;
+      }
+
+      /* ── 首页横屏：项目卡片两列 + 内容居中 ── */
+      .proj-list {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      #screen {
+        max-width: 960px;
+        margin: 0 auto;
+      }
+
+      /* ── 项目详情页横屏适配 ── */
+
+      /* 参考图入口：左栏已常驻，隐藏 Nav Bar 中的参考图按钮 */
+      html.ipad-split .nav-btn[onclick*="showRefImagesSheet"] {
+        display: none;
+      }
+
+      /* 针法配置 Sheet 放大 */
+      html.ipad-split .sheet {
+        max-width: 480px;
+        margin: 0 auto;
+      }
+      html.ipad-split .picker-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+
+      /* ── 设置页横屏适配 ── */
+      .settings-list {
+        max-width: 720px;
+        margin: 0 auto;
+      }
+      html.settings-view .profile-header {
+        flex-direction: row;
+        text-align: left;
+        gap: 16px;
+        align-items: center;
+      }
+      html.settings-view .profile-header-avatar-wrap {
+        margin-bottom: 0;
+      }
+      #tab-nav {
+        padding: 0 20%;
+      }
     }
 
     /* ── print styles ── */
@@ -1363,6 +1867,27 @@ html.theme-dark .stats-card-row {
       font-weight: 700;
       color: var(--muted);
       cursor: pointer
+    }
+
+    /* ── Share Preview ── */
+    .share-preview-wrap {
+      padding: 12px 16px;
+      text-align: center;
+    }
+    .share-preview-img {
+      max-width: 100%;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.08);
+    }
+    .share-preview-actions {
+      display: flex;
+      gap: 10px;
+      padding: 8px 14px;
+    }
+    .share-preview-btn {
+      flex: 1;
+      justify-content: center;
+      text-align: center;
     }
 
     /* ── Instruction Editor ── */
@@ -1611,7 +2136,252 @@ html.theme-dark .stats-card-row {
       padding: 4px 0 2px;
     }
 
-    /* ── iOS Settings List ── */
+    /* ── Multi-Editor fullscreen Sheet ── */
+    .multi-editor-sheet {
+      height: 100vh !important;
+      max-height: 100vh !important;
+      display: flex !important;
+      flex-direction: column !important;
+      overflow: hidden !important;
+      padding-bottom: 10px !important;
+    }
+    .multi-editor-sheet .sheet-handle {
+      display: none;
+    }
+
+    /* Area 1 — Reference images */
+    .multi-editor-ref {
+      flex: 1 1 0;
+      min-height: 80px;
+      position: relative;
+      margin: 0 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      background: var(--bg);
+      transition: height 0.2s ease;
+      user-select: none;
+    }
+
+    .multi-editor-ref-track {
+      display: flex;
+      height: 100%;
+      transition: transform 0.25s ease;
+    }
+
+    .multi-editor-ref-slide {
+      flex: 0 0 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+    }
+
+    .multi-editor-ref-img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .multi-editor-ref-pagination {
+      position: absolute;
+      top: 6px;
+      right: 10px;
+      background: rgba(0,0,0,0.45);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 10px;
+      pointer-events: none;
+    }
+
+    .multi-editor-ref-fullscreen {
+      position: absolute;
+      bottom: 6px;
+      right: 10px;
+      background: rgba(0,0,0,0.45);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      width: 30px;
+      height: 30px;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .multi-editor-ref-fullscreen:active {
+      opacity: 0.8;
+    }
+
+    .multi-editor-ref-empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-md);
+      color: var(--muted);
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .multi-editor-ref-empty:active {
+      background: var(--bg-secondary);
+    }
+
+    /* Divider — draggable */
+    .multi-editor-divider {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 20px;
+      margin: 0 14px;
+      cursor: row-resize;
+      touch-action: none;
+    }
+
+    .multi-editor-divider-grip {
+      display: block;
+      width: 32px;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--border);
+      letter-spacing: 2px;
+      text-align: center;
+      color: transparent;
+      user-select: none;
+    }
+
+    /* Area 2 — Preview */
+    .multi-editor-preview {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 14px;
+      padding: 10px 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      position: relative;
+      min-height: 60px;
+    }
+
+    .multi-editor-preview-text {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .multi-editor-preview .mr-nav-prev {
+      font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.4;
+      min-height: 16px;
+    }
+
+    .multi-editor-preview .mr-nav-current {
+      font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.5;
+    }
+
+    .multi-editor-preview .mr-nav-indicator {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 1px;
+      text-align: left;
+      padding: 0;
+    }
+
+    .multi-editor-preview .instr-editor-kb-toggle {
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg);
+      padding: 4px 7px;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      white-space: nowrap;
+      font-family: inherit;
+      line-height: 1.3;
+    }
+
+    /* Vertical nav buttons (area 2 right side) */
+    .multi-editor-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex-shrink: 0;
+      margin-right: 50px; /* space for kb-toggle */
+    }
+
+    .multi-editor-nav-btn {
+      width: 36px;
+      height: 28px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-secondary);
+      color: var(--text);
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: inherit;
+    }
+
+    .multi-editor-nav-btn:active {
+      background: var(--border);
+    }
+
+    /* Area 3 — Keyboard */
+    .multi-editor-keyboard {
+      flex: 0 0 auto;
+      display: flex;
+      flex-direction: column;
+      padding-top: 4px;
+    }
+
+    .multi-editor-keyboard .instr-editor-preview-wrap {
+      padding: 0 14px 4px;
+    }
+
+    /* Single-row scrollable stitch buttons */
+    .multi-editor-stitch-row {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 4px 0;
+      height: 44px;
+      align-items: center;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .multi-editor-stitch-row::-webkit-scrollbar {
+      display: none;
+    }
+
+    .multi-editor-stitch-row .instr-editor-stitch-btn {
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
     .settings-list {
       padding: 8px 0 24px;
     }

@@ -1,12 +1,69 @@
 import { state, uid, getProj, getActivePart } from './state.js';
-import { showConfirmDialog, showToast } from './ui.js';
+import { showConfirmDialog, showToast, showSheet, closeSheet, esc } from './ui.js';
 import { saveData } from './storage.js';
 import { t, term } from './i18n.js';
 import { normalizeRoundNums } from './pattern.js';
-import { getUnitLabel, refreshBottomBar, renderFilterToggle, renderTaskSlide, updateHighlightButton, renderImmersive } from './stitch.js';
+import { getUnitLabel, refreshBottomBar, renderFilterToggle, renderTaskSlide, updateHighlightButton, renderImmersive, getProjColor } from './stitch.js';
 import { getNextStitchSid, renderHighlightReel } from './highlight.js';
 
 export function addRound() {
+  const proj = getProj(state.curProjId);
+  const part = getActivePart(proj);
+  if (!part) return;
+
+  // 收集当前部件中有 seq 数据的圈（用于复制结构）
+  const roundsWithSeq = [];
+  part.rounds.forEach(r => {
+    if (r.seq && r.seq.length > 0) {
+      roundsWithSeq.push({ round: r, part });
+    }
+  });
+
+  if (roundsWithSeq.length > 0) {
+    // 显示 Sheet 提供空白 / 复制选项
+    const unit = getUnitLabel(proj);
+    let itemsHtml = '';
+    roundsWithSeq.forEach(({ round, part: pt }, i) => {
+      const total = round.seq.length;
+      const dots = round.seq.slice(-6).map(sid => {
+        const c = getProjColor(sid);
+        return `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${c};margin-right:1px;flex-shrink:0"></span>`;
+      }).join('');
+      const rn = round.roundNum != null ? round.roundNum : (pt.rounds.indexOf(round) + 1);
+      const label = round.isTextCard
+        ? (round.instruction || t('note'))
+        : (round.roundNum === 0 ? term('cast_on') : t('round_label').replace('{n}', rn).replace('{unit}', unit));
+      itemsHtml += `<div class="sheet-item" onclick="copyRoundStructure('${round.id}')">
+        <div class="sheet-item-icon" style="background:var(--accent-bg);color:var(--accent);font-size:13px">↻</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:600;color:var(--text)">${esc(label)}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:1px;display:flex;align-items:center;gap:3px">${total} ${term('stitches')} ${dots}</div>
+        </div>
+      </div>`;
+    });
+
+    const html = `<div class="sheet-handle"></div>
+    <div class="sheet-title">${t('add_round_sheet_title').replace('{unit}', unit)}</div>
+    <div class="sheet-item" onclick="addRoundBlank()">
+      <div class="sheet-item-icon" style="background:var(--accent-bg);color:var(--accent);font-size:16px">＋</div>
+      <div><div class="sheet-item-label">${t('add_round_blank').replace('{unit}', unit)}</div></div>
+    </div>
+    <div class="sheet-divider"></div>
+    <div class="sheet-section">${t('copy_structure_from')}</div>
+    ${itemsHtml}
+    <div style="padding:10px 14px">
+      <button class="sheet-cancel" style="width:100%;margin:0" onclick="closeSheet()">${t('cancel')}</button>
+    </div>`;
+
+    showSheet(html);
+    return;
+  }
+
+  // No rounds with seq — create empty round directly
+  addRoundBlank();
+}
+
+export function addRoundBlank() {
   const proj = getProj(state.curProjId);
   const part = getActivePart(proj);
   if (!part) return;
@@ -17,6 +74,7 @@ export function addRound() {
   proj.lastModified = Date.now();
   saveData();
   setActiveRound(proj, r.id);
+  closeSheet();
   window.renderProject();
   setTimeout(() => {
     const el = document.getElementById("round-" + r.id);

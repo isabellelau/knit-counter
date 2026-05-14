@@ -1,4 +1,4 @@
-import { state, getProj, getActivePart, getEditingPartId, getTodayKey, getDailyLog, calcTotalDays } from './state.js';
+import { state, getProj, getActivePart, getEditingPartId } from './state.js';
 import { esc } from './ui.js';
 import { saveData } from './storage.js';
 import { renderTaskSlide, refreshBottomBar,
@@ -6,8 +6,9 @@ import { renderTaskSlide, refreshBottomBar,
          renderSpillHTML, getProjColor, getUnitLabel } from './stitch.js';
 import { setPageView } from './main.js';
 import { renderHighlightReel } from './highlight.js';
-import { getProjImage } from './image.js';
+import { getProjImage, getRefImage } from './image.js';
 import { t, term } from './i18n.js';
+import { getTotalFocusTime, formatFocusTime, getTodayStitchCount } from './project.js';
 
 const COVER_COLORS = [
   '#EAD8DA', '#E6D7CF', '#D8CFC7', '#D8D0DA', '#D3D9D1'
@@ -37,33 +38,40 @@ export async function renderHome() {
 
     document.getElementById("tab-nav")?.style.setProperty("display", "");
 
-    const totalProjs = state.data.projects.length;
-    const totalNeedles = state.data.projects.reduce((sum, p) =>
-      sum + (p.parts || []).reduce((s, pt) =>
-        s + (pt.rounds || []).reduce((ss, r) => ss + (r.seq?.length || 0), 0), 0), 0);
-
-    const todayCount = getDailyLog()[getTodayKey()] || 0;
-    const totalDays = calcTotalDays();
+    const activeProjs = state.data.projects.filter(p => !p.archived);
 
     const largeTitleWrap = document.getElementById('large-title-wrap');
     if (largeTitleWrap) {
       largeTitleWrap.style.display = '';
-      const moti = todayCount === 0
+
+      const totalProjsCount = activeProjs.length;
+      const totalNeedlesAll = state.data.projects.reduce((sum, p) =>
+        sum + (p.parts || []).reduce((s, pt) =>
+          s + (pt.rounds || []).reduce((ss, r) => ss + (r.seq?.length || 0), 0), 0), 0);
+
+      let todayStitchesAll = 0;
+      let totalFocusAll = 0;
+      state.data.projects.forEach(p => {
+        todayStitchesAll += getTodayStitchCount(p);
+        totalFocusAll += getTotalFocusTime(p);
+      });
+
+      const moti = todayStitchesAll === 0
         ? `<div class="stats-card-moti">${t('home_empty_moti')}</div>`
         : '';
       largeTitleWrap.innerHTML = `
         <div class="stats-card">
           <div class="stats-card-appname">${t('app_name')}</div>
           <div class="stats-card-label">${t('home_today_label')}</div>
-          <div class="stats-today-number">${todayCount.toLocaleString()}</div>
+          <div class="stats-today-number">${todayStitchesAll.toLocaleString()}</div>
           <div class="stats-unit">${term('stitches')}</div>
           ${moti}
           <div class="stats-card-row">
-            <span class="stats-card-stat">${t('home_total_stitches').replace('{count}', `<strong>${totalNeedles.toLocaleString()}</strong>`)}</span>
+            <span class="stats-card-stat">${t('home_total_stitches').replace('{count}', `<strong>${totalNeedlesAll.toLocaleString()}</strong>`)}</span>
             <span class="stats-card-sep"></span>
-            <span class="stats-card-stat">${t('home_total_projects').replace('{count}', `<strong>${totalProjs}</strong>`)}</span>
+            <span class="stats-card-stat">${t('home_total_projects').replace('{count}', `<strong>${totalProjsCount}</strong>`)}</span>
             <span class="stats-card-sep"></span>
-            <span class="stats-card-stat">${t('home_total_days').replace('{count}', `<strong>${totalDays}</strong>`)}</span>
+            <span class="stats-card-stat">${t('home_stats_focus')} <strong>${formatFocusTime(totalFocusAll)}</strong></span>
           </div>
         </div>
       `;
@@ -71,7 +79,6 @@ export async function renderHome() {
 
     let html = '';
 
-    const activeProjs = state.data.projects.filter(p => !p.archived);
     const archivedProjs = state.data.projects.filter(p => p.archived);
 
     const coverMap = new Map();
@@ -213,6 +220,18 @@ export function renderProject() {
   if (largeTitleWrap) largeTitleWrap.style.display = 'none';
 
   if (!proj) return window.goHome();
+
+  // ── iPad 横屏分栏布局 ──
+  const isSplit = window.matchMedia('(min-width: 768px) and (orientation: landscape)').matches;
+  if (isSplit) {
+    document.documentElement.classList.add('ipad-split');
+    _renderSplitLeft(proj);
+  } else {
+    document.documentElement.classList.remove('ipad-split');
+    const left = document.getElementById('ipad-split-left');
+    if (left) left.remove();
+  }
+
   const part = getActivePart(proj);
   const unit = getUnitLabel(proj);
 
@@ -221,7 +240,7 @@ export function renderProject() {
       <button class="nav-btn nav-toggle-mode" onclick="toggleRowTerms()" aria-label="${t('toggle_row_terms')}">
         <span class="toggle-mode-dot">◉</span> <span class="toggle-mode-label">${unit}</span>
       </button>
-      <button class="nav-btn" onclick="openSettings()" aria-label="${t('settings')}">⚙️</button>
+      <button class="nav-btn" onclick="openSettings()" aria-label="${t('settings')}">⚙︎</button>
       <button class="nav-btn" onclick="showRefImagesSheet('${proj.id}')" aria-label="${t('ref_images_title')}">🖼</button>
     `;
   }
@@ -269,13 +288,59 @@ export function renderProject() {
   html += `<div class="rounds-wrap">`;
   if (part) part.rounds.forEach((r, i) => {
     const isActive = r.id === activeRid;
+    const isLoop = r.isLoopMarker;
     const exp = state.expandedRounds.has(r.id) || isActive;
     const total = r.seq.length;
     const dots = r.seq.slice(-8).map(sid => `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${getProjColor(sid)};margin-right:2px"></span>`).join("");
 
-    html += `<div class="round-card" id="round-${r.id}">
+    const roundMarkers = (proj.markers || []).filter(m => m.roundId === r.id);
+    let markerDotsHtml = '';
+    if (roundMarkers.length > 0) {
+      markerDotsHtml = '<span class="round-hdr-markers">';
+      roundMarkers.slice(0, 3).forEach(m => {
+        markerDotsHtml += `<span class="round-hdr-marker-dot" style="background:${m.color}"></span>`;
+      });
+      const overflow = roundMarkers.length - 3;
+      if (overflow > 0) markerDotsHtml += `<span class="round-hdr-marker-more">+${overflow}</span>`;
+      markerDotsHtml += '</span>';
+    }
+
+    if (isLoop) {
+      // ── 循环标记卡片 ──
+      const loopFrom = r.loopFrom || '?';
+      const loopTo = r.loopTo || '?';
+      html += `<div class="round-card round-card--loop" id="round-${r.id}">
     <div class="round-hdr" onclick="toggleRound('${r.id}')">
-      <div class="round-badge${isActive ? " active" : ""}" onclick="event.stopPropagation();setActiveRound(null,'${r.id}')" style="cursor:pointer" title="${t('set_as_current').replace('{unit}', unit)}">${r.isTextCard ? "文" : (r.roundNum === 0 ? "起" : (r.roundNum != null ? r.roundNum : i + 1))}</div>
+      <div class="round-badge round-badge--loop${isActive ? " active" : ""}" onclick="event.stopPropagation();setActiveRound(null,'${r.id}')" style="cursor:pointer" title="${t('set_as_current').replace('{unit}', unit)}">↻</div>
+      ${markerDotsHtml}
+      <div class="round-info">
+        <div class="round-label">${esc(r.instruction || t('loop_marker_label').replace('{from}', loopFrom).replace('{to}', loopTo))}${isActive ? ` <span style='font-size:11px;font-weight:var(--weight-semibold);background:var(--accent);color:#fff;border-radius:6px;padding:2px 7px;margin-left:6px'>${term('active')}</span>` : ""}</div>
+        <div class="round-count">${t('round_count_label').replace('{total}', total)} ${dots}</div>
+      </div>
+      <button class="round-edit-btn" onclick="event.stopPropagation();openInstructionEdit('${r.id}')" title="${t('edit_instruction')}" style="font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer;padding:2px 6px;white-space:nowrap"><span style="font-size:13px;color:var(--muted);letter-spacing:1px;">🪡</span></button>
+      <button class="round-del" onclick="event.stopPropagation();deleteRound('${r.id}')" title="${t('delete_round').replace('{unit}', unit)}">×</button>
+      <span class="round-chev${exp ? " open" : ""}">›</span>
+    </div>
+    <div class="round-body${exp ? " open" : ""}">
+      <div style="padding:8px 12px;text-align:center">
+        <button class="bar-btn" style="border-style:dashed;border-color:var(--accent);color:var(--accent);width:100%;padding:10px"
+          onclick="copyRoundStructure('${r.id}')">↻ ${t('copy_structure_btn')}</button>
+      </div>
+      <div class="seq-wrap">`;
+      if (r.seq.length === 0) {
+        html += `<span class="seq-empty">${t('empty_round_hint')}</span>`;
+      } else {
+        r.seq.forEach((sid, idx) => {
+          html += renderSpillHTML(sid, idx, r, proj);
+        });
+      }
+      html += `</div>
+    </div></div>`;
+    } else {
+      html += `<div class="round-card" id="round-${r.id}">
+    <div class="round-hdr" onclick="toggleRound('${r.id}')">
+      <div class="round-badge${isActive ? " active" : ""}${r.source === 'auto' ? " round-badge--auto" : ""}" onclick="event.stopPropagation();setActiveRound(null,'${r.id}')" style="cursor:pointer" title="${t('set_as_current').replace('{unit}', unit)}">${r.source === 'auto' ? '注' : (r.isTextCard ? "文" : (r.roundNum === 0 ? "起" : (r.roundNum != null ? r.roundNum : i + 1)))}</div>
+      ${markerDotsHtml}
       <div class="round-info">
         <div class="round-label">${r.isTextCard ? (r.instruction || t('note')) : (r.roundNum === 0 ? term('cast_on') : t('round_label').replace('{n}', r.roundNum != null ? r.roundNum : i + 1).replace('{unit}', unit))}${isActive ? ` <span style='font-size:11px;font-weight:var(--weight-semibold);background:var(--accent);color:#fff;border-radius:6px;padding:2px 7px;margin-left:6px'>${term('active')}</span>` : ""}</div>
         <div class="round-count">${t('round_count_label').replace('{total}', total)} ${dots}</div>
@@ -296,6 +361,7 @@ export function renderProject() {
     }
     html += `</div>`;
     html += `</div></div>`;
+    }
   });
 
   html += `</div>`;
@@ -308,3 +374,91 @@ export function renderProject() {
   if (barH) document.documentElement.style.setProperty('--bottom-bar-h', barH + 'px');
   renderHighlightReel(proj);
 }
+
+// ── iPad 横屏左栏参考图 ──
+
+function _renderSplitLeft(proj) {
+  const refKeys = Array.isArray(proj.refImages) ? [...proj.refImages] : [];
+
+  let left = document.getElementById('ipad-split-left');
+  if (!left) {
+    left = document.createElement('div');
+    left.id = 'ipad-split-left';
+    document.body.prepend(left);
+  }
+
+  // 保留滑动索引
+  const prevIndex = left._splitIndex || 0;
+  const index = refKeys.length > 0 ? Math.min(prevIndex, refKeys.length - 1) : 0;
+  left._splitIndex = index;
+  left._splitKeys = refKeys;
+  left._splitProjId = proj.id;
+
+  // 空状态
+  if (refKeys.length === 0) {
+    left.innerHTML = `
+      <div class="ipad-split-ref-empty" onclick="pickRefImages('${proj.id}')">
+        <div class="ipad-split-ref-empty-icon">＋</div>
+        <div>添加参考图</div>
+      </div>`;
+    return;
+  }
+
+  function _updateAnnotate() {
+    const btn = left.querySelector('.ipad-split-annotate-btn');
+    if (btn && left._splitKeys && left._splitKeys.length > 0) {
+      btn.onclick = () => window.openAnnotator(left._splitProjId, left._splitKeys[left._splitIndex]);
+    }
+  }
+
+  // 图片轨道
+  let html = '<div class="ipad-split-ref-viewport">';
+  html += `<div class="ipad-split-ref-track" style="transform:translateX(-${index * 100}%)">`;
+  refKeys.forEach(key => {
+    html += `<div class="ipad-split-ref-slide"><img src="" data-refkey="${key}" alt=""></div>`;
+  });
+  html += '</div>';
+  if (refKeys.length > 1) {
+    html += `<div class="ipad-split-ref-pagination">${index + 1}/${refKeys.length}</div>`;
+  }
+  html += '<button class="ipad-split-annotate-btn">✏️</button>';
+  html += '</div>';
+
+  left.innerHTML = html;
+  _updateAnnotate();
+
+  // 滑动切换
+  const viewport = left.querySelector('.ipad-split-ref-viewport');
+  let startX = 0;
+
+  viewport.addEventListener('touchstart', e => {
+    if (e.touches.length === 1) startX = e.touches[0].clientX;
+  }, { passive: true });
+
+  viewport.addEventListener('touchend', e => {
+    const dx = (e.changedTouches[0]?.clientX || startX) - startX;
+    if (Math.abs(dx) > 50 && left._splitKeys && left._splitKeys.length > 1) {
+      if (dx < 0 && left._splitIndex < left._splitKeys.length - 1) {
+        left._splitIndex++;
+      } else if (dx > 0 && left._splitIndex > 0) {
+        left._splitIndex--;
+      }
+      const track = left.querySelector('.ipad-split-ref-track');
+      if (track) track.style.transform = `translateX(-${left._splitIndex * 100}%)`;
+      const pag = left.querySelector('.ipad-split-ref-pagination');
+      if (pag) pag.textContent = `${left._splitIndex + 1}/${left._splitKeys.length}`;
+      _updateAnnotate();
+    }
+  });
+
+  // 异步加载图片
+  refKeys.forEach(key => {
+    getRefImage(key).then(src => {
+      if (!src) return;
+      const img = left.querySelector(`img[data-refkey="${key}"]`);
+      if (img) img.src = src;
+    });
+  });
+}
+
+window._renderSplitLeft = _renderSplitLeft;
