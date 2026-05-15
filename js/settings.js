@@ -474,6 +474,7 @@ function _buildAdvancedSubPageHTML() {
 }
 
 export function toggleHighlightEnabled() {
+  if (!state.data.settings.isPro) { showToast(t('share_pro_required')); return; }
   const enabled = !state.data.settings.highlightEnabled;
   state.data.settings.highlightEnabled = enabled;
   state.highlightMode = enabled;

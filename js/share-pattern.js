@@ -5,6 +5,14 @@ import { t } from './i18n.js';
 
 const APP_URL = 'https://isabellelau.github.io/knit-counter/';
 
+// ── Pro gate ──
+function isPro() { return state.data.settings.isPro === true; }
+
+function requirePro() {
+  if (!isPro()) { showToast(t('share_pro_required')); return false; }
+  return true;
+}
+
 // ── Clipboard helpers ──
 function copyToClipboard(text) {
   if (navigator.clipboard?.writeText) {
@@ -221,6 +229,7 @@ window._copyTextPattern = function(projId) {
 };
 
 window._copyFullProject = async function(projId) {
+  if (!requirePro()) return;
   const proj = getProj(projId);
   if (!proj) return;
   const stripped = stripProjectForExport(proj);
