@@ -1,7 +1,26 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "WebFetch(domain:isabellelau.github.io)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://isabellelau.github.io/knit-counter/\")",
+      "Bash(git log *)",
+      "Bash(git fetch *)",
+      "Bash(curl -s -L \"https://isabellelau.github.io/knit-counter/\")",
+      "Bash(wget -q -O- \"https://isabellelau.github.io/knit-counter/\")",
+      "Bash(curl -s -L \"https://isabellelau.github.io/knit-counter/styles.css\")",
+      "Bash(curl -s -L -D - \"https://isabellelau.github.io/knit-counter/styles.css\")",
+      "Bash(gh api *)",
+      "Bash(curl *)",
+      "Bash(git show *)",
+      "Bash(ls -la stitches.js)",
+      "Bash(ls -la js/stitch.js)",
+      "Bash(node *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git checkout *)",
+      "Bash(sed -i \"1619d\" js/stitch.js)",
+      "Bash(sed -i \"s/<div class=\\\\\"round-hdr\\\\\">/<div class=\\\\\"round-hdr\\\\\" onclick=\\\\\"toggleRound\\('\\\\${r.id}'\\)\\\\\">/\" js/stitch.js)"
     ]
   }
 }

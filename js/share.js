@@ -2,11 +2,12 @@ import { state, getProj } from './state.js';
 import { getProjImage } from './image.js';
 import { getTotalFocusTime, formatFocusTime } from './project.js';
 import { resolveColor } from '../stitches.js';
-import { showSheet, showToast } from './ui.js';
+import { showSheet, showToast, closeSheet } from './ui.js';
 import { showLoading, hideLoading } from './pattern.js';
 import { t } from './i18n.js';
 
 let _html2canvasReady = false;
+let _shareCtx = null;  // { projId, includeName, imageDataUrl, filename, projName }
 
 function loadHtml2canvas() {
   return new Promise((resolve, reject) => {
@@ -34,7 +35,7 @@ function cssVar(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
-export async function generateShareImage(projId) {
+export async function generateShareImage(projId, includeName = true) {
   const proj = getProj(projId);
   if (!proj) throw new Error('Project not found');
 
@@ -64,6 +65,7 @@ export async function generateShareImage(projId) {
 
   const bgColor = cssVar('--bg') || '#FAF5F5';
   const accentColor = cssVar('--accent') || '#C9969F';
+  const profileName = includeName ? (state.data.settings.profile?.name || '').trim() : '';
 
   let coverHTML;
   if (coverSrc) {
@@ -106,7 +108,7 @@ export async function generateShareImage(projId) {
   <div style="height:74px;background:${accentColor};display:flex;align-items:center;justify-content:space-between;padding:0 20px;box-sizing:border-box;">
     <div>
       <div style="font-size:18px;font-weight:700;color:#fff;line-height:1.3;">${t('app_name')}</div>
-      <div style="font-size:10px;color:rgba(255,255,255,0.75);line-height:1.3;">${t('home_empty_moti')}</div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.75);line-height:1.3;">${profileName ? profileName : t('home_empty_moti')}</div>
     </div>
     <div style="width:28px;height:28px;background:rgba(255,255,255,0.25);border-radius:7px;flex-shrink:0;"></div>
   </div>
@@ -144,7 +146,7 @@ export async function generateShareImage(projId) {
 export async function handleGenerateShare(projId) {
   showLoading(t('loading'));
   try {
-    const dataUrl = await generateShareImage(projId);
+    const dataUrl = await generateShareImage(projId, true);
     hideLoading();
     showShareSheet(projId, dataUrl);
   } catch (e) {
@@ -160,21 +162,56 @@ export function showShareSheet(projId, imageDataUrl) {
   const safeName = proj.name.replace(/[\/\\:*?"<>|]/g, '_');
   const filename = `织影_${safeName}.png`;
 
+  _shareCtx = { projId, includeName: true, imageDataUrl, filename, projName: proj.name };
+
   const html = `
     <div class="sheet-handle"></div>
     <div class="sheet-title">${t('share_preview_title')}</div>
     <div class="share-preview-wrap">
-      <img class="share-preview-img" src="${imageDataUrl}" alt="">
+      <img class="share-preview-img" id="sharePreviewImg" src="${imageDataUrl}" alt="">
+    </div>
+    <div class="share-preview-toggle-row">
+      <span class="share-preview-toggle-label">${t('share_include_name')}</span>
+      <span class="settings-toggle on" id="shareIncludeNameToggle" onclick="window._toggleShareIncludeName()">
+        <span class="settings-toggle-knob"></span>
+      </span>
     </div>
     <div class="share-preview-actions">
-      <button class="sheet-item share-preview-btn" onclick="downloadShareImage('${imageDataUrl}','${filename.replace(/'/g, "\\'")}');closeSheet()">${t('share_save')}</button>
-      <button class="sheet-item share-preview-btn" onclick="shareImageNative('${imageDataUrl}','${filename.replace(/'/g, "\\'")}','${proj.name.replace(/'/g, "\\'")}')">${t('share_share')}</button>
+      <button class="sheet-item share-preview-btn" onclick="window._shareDownloadCurrent()">${t('share_save')}</button>
+      <button class="sheet-item share-preview-btn" onclick="window._shareNativeCurrent()">${t('share_share')}</button>
     </div>
     <button class="sheet-cancel" onclick="closeSheet()">${t('cancel')}</button>
   `;
 
   showSheet(html);
 }
+
+window._toggleShareIncludeName = async function() {
+  if (!_shareCtx) return;
+  _shareCtx.includeName = !_shareCtx.includeName;
+  const toggle = document.getElementById('shareIncludeNameToggle');
+  if (toggle) toggle.classList.toggle('on', _shareCtx.includeName);
+  const img = document.getElementById('sharePreviewImg');
+  if (img) img.style.opacity = '0.5';
+  try {
+    _shareCtx.imageDataUrl = await generateShareImage(_shareCtx.projId, _shareCtx.includeName);
+    if (img) { img.src = _shareCtx.imageDataUrl; img.style.opacity = '1'; }
+  } catch (e) {
+    if (img) img.style.opacity = '1';
+    showToast('更新分享图失败');
+  }
+};
+
+window._shareDownloadCurrent = function() {
+  if (!_shareCtx) return;
+  downloadShareImage(_shareCtx.imageDataUrl, _shareCtx.filename);
+  closeSheet();
+};
+
+window._shareNativeCurrent = function() {
+  if (!_shareCtx) return;
+  shareImageNative(_shareCtx.imageDataUrl, _shareCtx.filename, _shareCtx.projName);
+};
 
 export function downloadShareImage(dataUrl, filename) {
   const a = document.createElement('a');

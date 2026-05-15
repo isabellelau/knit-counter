@@ -9,25 +9,27 @@
   /* 背景层次 */
   --bg:            #FAF5F5;   /* 页面底色 */
   --bg-secondary:  #F5EEEF;   /* 轻微区分的次级背景 */
-  --card:          #FFFDFD;   /* 卡片、弹窗 */
+  --card:          #FFFCFC;   /* 卡片、弹窗 */
 
   /* 边框 */
   --border:        #EAD8DA;   /* 默认边框 */
-  --border-strong: #D4B0B5;   /* 强调边框 */
+  --border-strong: #E6D8DD;   /* 强调边框 */
 
   /* 文字 */
-  --text:          #2D1E20;   /* 主文字 */
-  --text-secondary:#7A6065;   /* 次级文字 */
-  --muted:         #B09A9E;   /* 辅助/占位文字 */
+  --text:          #4E3E44;   /* 主文字 */
+  --text-secondary:#8E7A82;   /* 次级文字 */
+  --muted:         #A08A90;   /* 辅助/占位文字 */
 
   /* 强调色（按钮、选中态、高亮） */
-  --accent:        #C9969F;   /* 主强调色 */
+  --accent:        #C48F99;   /* 主强调色 */
   --accent-dark:   #A07078;   /* 按压/深色变体 */
-  --accent-bg:     #F5E6E8;   /* 强调色的浅背景（选中态底色） */
+  --accent-bg:     #F0D8DC;   /* 强调色的浅背景（选中态底色） */
 
   /* 功能色 */
   --danger:        #D4756B;   /* 删除、错误 */
   --danger-bg:     #FAECE9;
+  --success:       #8BA89A;   /* 完成、成功状态 */
+  --success-bg:    #EDF3F0;
 
   /* 布局 */
   --hdr-h:         57px;
@@ -37,7 +39,7 @@
   --radius-xs:     10px;
 
   /* 毛玻璃 */
-  --glass-bg:      rgba(250, 245, 245, 0.80);
+  --glass-bg:      rgba(255,250,251,.72);
 
   /* 字体 & 字阶 */
   --font-stack:
@@ -78,21 +80,23 @@
   :root {
     --bg:            #2A2123;
     --bg-secondary:  #332528;
-    --card:          #3D2D30;
+    --card:          #423235;
 
     --border:        #4A3538;
     --border-strong: #6A4A4F;
 
     --text:          #F2E8E9;
     --text-secondary:#C4A8AC;
-    --muted:         #8A6A6E;
+    --muted:         #7A5C60;
 
     --accent:        #C4909A;
     --accent-dark:   #D4A8B0;
-    --accent-bg:     #4A2D32;
+    --accent-bg:     #543438;
 
     --danger:        #D4756B;
     --danger-bg:     #3D2420;
+    --success:       #8BA89A;
+    --success-bg:    #2D3531;
 
     --glass-bg:      rgba(42, 33, 35, 0.85);
   }
@@ -105,29 +109,33 @@ html.theme-light {
   --border-strong: #D4B0B5;
   --text:          #2D1E20;
   --text-secondary:#7A6065;
-  --muted:         #B09A9E;
+  --muted:         #A08A90;
   --accent:        #C9969F;
   --accent-dark:   #A07078;
-  --accent-bg:     #F5E6E8;
+  --accent-bg:     #F0D8DC;
   --danger:        #D4756B;
   --danger-bg:     #FAECE9;
+  --success:       #8BA89A;
+  --success-bg:    #EDF3F0;
   --glass-bg:      rgba(250, 245, 245, 0.80);
 }
 
 html.theme-dark {
   --bg:            #2A2123;
   --bg-secondary:  #332528;
-  --card:          #3D2D30;
+  --card:          #423235;
   --border:        #4A3538;
   --border-strong: #6A4A4F;
   --text:          #F2E8E9;
   --text-secondary:#C4A8AC;
-  --muted:         #8A6A6E;
+  --muted:         #7A5C60;
   --accent:        #C4909A;
   --accent-dark:   #D4A8B0;
-  --accent-bg:     #4A2D32;
+  --accent-bg:     #543438;
   --danger:        #D4756B;
   --danger-bg:     #3D2420;
+  --success:       #8BA89A;
+  --success-bg:    #2D3531;
   --glass-bg:      rgba(42, 33, 35, 0.85);
 }
 
@@ -1622,12 +1630,26 @@ html.theme-dark .stats-card-row {
         text-align: left;
         gap: 16px;
         align-items: center;
+        padding: 16px 24px;
+        max-width: 720px;
+        margin: 0 auto;
+        width: 100%;
+        box-sizing: border-box;
       }
       html.settings-view .profile-header-avatar-wrap {
         margin-bottom: 0;
       }
       #tab-nav {
         padding: 0 20%;
+      }
+      html.settings-view #screen {
+        max-width: 100vw !important;
+        margin: 0 !important;
+        width: 100% !important;
+      }
+      html.settings-view body {
+        max-width: 100vw !important;
+        margin: 0 !important;
       }
     }
 
@@ -1888,6 +1910,17 @@ html.theme-dark .stats-card-row {
       flex: 1;
       justify-content: center;
       text-align: center;
+    }
+    .share-preview-toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0 14px 8px;
+    }
+    .share-preview-toggle-label {
+      font-size: 13px;
+      color: var(--muted);
     }
 
     /* ── Instruction Editor ── */

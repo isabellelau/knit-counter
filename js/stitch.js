@@ -1024,13 +1024,15 @@ function openStitchSheet(roundId, idx) {
   const projColor = getProjColor(sid);
   const projLabel = resolveLabel(sid);
 
-  const isCompound = /^\(\d+[A-Z]+\)$/i.test(sid);
+  const info = getStitchInfo(sid);
+  const isCompound = info && info.isCompound;
 
   let html = `<div class="sheet-handle"></div>
   <div class="sheet-title">${t('stitch_detail_title').replace('{idx}', idx + 1)} · <span style="color:${projColor};font-weight:700">${esc(projLabel)}</span></div>`;
 
   if (isCompound) {
-    html += `<div style="padding:8px 14px;margin:0 14px;font-size:12px;color:var(--accent);background:var(--accent-bg);border-radius:10px;text-align:center">${t('compound_stitch_warning')}</div>`;
+    const innerLabel = resolveLabel(info.innerSid);
+    html += `<div style="padding:8px 14px;margin:0 14px;font-size:12px;color:var(--accent);background:var(--accent-bg);border-radius:10px;text-align:center">${t('compound_stitch_warning').replace('{count}', info.innerCount).replace('{stitch}', innerLabel)}</div>`;
   }
 
   html += `<div class="sheet-section">${t('change_to')}</div>`;
@@ -1749,7 +1751,40 @@ export function copyRoundStructure(sourceRoundId) {
   if (!part) return;
 
   const sourceRound = findRound(proj, sourceRoundId);
-  if (!sourceRound || sourceRound.seq.length === 0) {
+  if (!sourceRound) return;
+
+  // ── 循环标记：批量复制 loopFrom→loopTo 的所有圈 ──
+  if (sourceRound.isLoopMarker && sourceRound.loopFrom && sourceRound.loopTo) {
+    const from = sourceRound.loopFrom;
+    const to = sourceRound.loopTo;
+    const sourceRounds = part.rounds.filter(r =>
+      !r.isLoopMarker && !r.isTextCard && r.roundNum != null && r.roundNum >= from && r.roundNum <= to
+    );
+    if (sourceRounds.length === 0) {
+      showToast(t('copy_structure_empty'));
+      return;
+    }
+    const markerIdx = part.rounds.findIndex(r => r.id === sourceRoundId);
+    const insertIdx = markerIdx >= 0 ? markerIdx + 1 : part.rounds.length;
+    const newIds = [];
+    sourceRounds.forEach(sr => {
+      const r = { id: uid(), seq: [...sr.seq], instruction: sr.instruction || '', isTextCard: false };
+      part.rounds.splice(insertIdx + newIds.length, 0, r);
+      newIds.push(r.id);
+      state.expandedRounds.add(r.id);
+    });
+    normalizeRoundNums(part.rounds);
+    proj.lastModified = Date.now();
+    saveData();
+    closeSheet();
+    window.renderProject();
+    const unit = getUnitLabel(proj);
+    showToast(t('copy_loop_structure_done').replace('{from}', from).replace('{to}', to).replace('{count}', sourceRounds.length).replace('{unit}', unit));
+    return;
+  }
+
+  // ── 普通圈：复制单个 seq ──
+  if (sourceRound.seq.length === 0) {
     showToast(t('copy_structure_empty'));
     return;
   }

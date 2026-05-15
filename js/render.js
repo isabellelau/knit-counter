@@ -195,6 +195,7 @@ export function renderProject() {
       if (!proj) return;
       document.getElementById('dlg-title').textContent = t('rename_project');
       document.getElementById('dlg-input').value = proj.name;
+      document.getElementById('dlg-input').placeholder = t('project_name_placeholder');
       document.getElementById('dlg-input').style.display = '';
       document.getElementById('dlg-msg').style.display = 'none';
       state.dlgCallback = (newName) => {

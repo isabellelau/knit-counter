@@ -106,6 +106,7 @@ export function showNewProjectDialog() {
   document.getElementById("dlg-msg").style.display = "none";
   document.getElementById("dlg-input").style.display = "";
   document.getElementById("dlg-input").value = "";
+  document.getElementById("dlg-input").placeholder = t('project_name_placeholder');
   state.confirmCallback = null;
   document.getElementById("dialog").classList.add("show");
   setTimeout(() => document.getElementById("dlg-input").focus(), 100);

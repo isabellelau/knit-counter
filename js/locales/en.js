@@ -416,6 +416,7 @@ export default {
   share_save: 'Save image',
   share_share: 'Share',
   share_saved_hint: 'Image saved — share manually',
+  share_include_name: 'Include signature',
   share_total_stitches: 'Stitches',
   share_total_rounds: 'Rounds',
 
@@ -438,11 +439,12 @@ export default {
   // ═════════════════════════════════════
   //  Compound stitches & loop markers
   // ═════════════════════════════════════
-  compound_stitch_warning: 'This is a parsed compound stitch (e.g. 5 double crochets) and cannot be individually modified. Edit the pattern text and re-import.',
+  compound_stitch_warning: '⚠️ This stitch contains {count} actions ({stitch}). Please confirm completion before continuing',
   loop_marker_label: 'Loop R{from}-R{to}',
   copy_structure_btn: 'Copy this round\'s structure',
   copy_structure_from: '↻ Copy structure from existing round',
   copy_structure_empty: 'This round has no stitch data',
+  copy_loop_structure_done: 'Copied R{from}–R{to} structure, {count} {unit}',
   add_round_sheet_title: 'New {unit}',
   add_round_blank: '+ Blank {unit}',
   resume_progress_title: 'Continue last session?',

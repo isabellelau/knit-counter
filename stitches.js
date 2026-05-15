@@ -56,7 +56,7 @@ Object.entries(STITCH_LIB).forEach(([id, s]) => {
 // 主题色彩 — morandi 按动作功能配色
 export const COLOR_THEMES = {
   morandi: {
-    X: "#C4A882", T: "#B8956A", F: "#A6845C", E: "#8E6E4A",
+    X: "#C4A882", T: "#C49A6C", F: "#B07050", E: "#8C5C3E",
     V: "#F4A460", W: "#E07B3E", TV: "#FFB88C", TW: "#D9703A",
     FV: "#FFCC99", FW: "#CC7740", EV: "#FF9F5C",
     A: "#9B8EC4", M: "#7B6DA8", TA: "#B5ABD8", TM: "#66578D",
@@ -101,25 +101,73 @@ const ROUND_PREFIX_RE = /^(?:R|Round|第)?\s*(\d+)\s*[:：.]\s*(.*)/i;
 
 /**
  * 展开行内括号重复：将 (X,2K)×3 展开为 X, 2K, X, 2K, X, 2K
- * 仅处理最外层、内容无嵌套括号的组；内部 (NF) 保留
+ * 使用深度追踪匹配最外层括号组；内部 (NF) / [NF] 视为复合针法 token 保留不展开
  * @param {string} line
  * @returns {string}
  */
 export function expandRepeatGroups(line) {
-  const re = /([\(\[])([^\(\)\[\]]+)([\)\]])\s*[×*x]\s*(\d+)/gi;
-  return line.replace(re, (fullMatch, openBracket, inner, closeBracket, timesStr) => {
-    if ((openBracket === '(' && closeBracket !== ')') || (openBracket === '[' && closeBracket !== ']')) return fullMatch;
+  let result = '';
+  let i = 0;
 
-    const trimmed = inner.trim();
-    // 仅含一个复合针法 token（如 5F），不展开 — 它是 (5F) 复合针法，非重复组
-    if (/^\d+[A-Z]+$/i.test(trimmed)) return fullMatch;
+  while (i < line.length) {
+    const ch = line[i];
 
-    const times = parseInt(timesStr, 10);
-    if (times <= 0 || times > 200) return fullMatch;
-    const tokens = trimmed.split(/[,，]/).map(t => t.trim()).filter(Boolean);
-    if (tokens.length === 0) return fullMatch;
-    return Array(times).fill(tokens.join(', ')).join(', ');
-  });
+    if (ch === '(' || ch === '[') {
+      const openBracket = ch;
+      const closeBracket = ch === '(' ? ')' : ']';
+      let depth = 1;
+      let j = i + 1;
+
+      while (j < line.length && depth > 0) {
+        if (line[j] === openBracket) depth++;
+        else if (line[j] === closeBracket) depth--;
+        j++;
+      }
+
+      if (depth !== 0) {
+        // 括号不闭合 — 原样输出当前字符并继续
+        result += ch;
+        i++;
+        continue;
+      }
+
+      const inner = line.substring(i + 1, j - 1);
+      const after = line.substring(j);
+
+      // 检查是否后跟重复运算符 × / x / * / 乘
+      const repeatMatch = after.match(/^\s*[×*x乘]\s*(\d+)/);
+      if (repeatMatch) {
+        const times = parseInt(repeatMatch[1], 10);
+        const trimmed = inner.trim();
+
+        // 单 token 复合针法 (如 5F) — 不展开
+        if (/^\d+[A-Z]+$/i.test(trimmed) && !/[,，]/.test(trimmed)) {
+          // 这是 (5F) 复合针法，整体保留
+          result += line.substring(i, j + repeatMatch[0].length);
+          i = j + repeatMatch[0].length;
+          continue;
+        }
+
+        if (times > 0 && times <= 200) {
+          const tokens = trimmed.split(/[,，]/).map(t => t.trim()).filter(Boolean);
+          if (tokens.length > 0) {
+            result += Array(times).fill(tokens.join(', ')).join(', ');
+            i = j + repeatMatch[0].length;
+            continue;
+          }
+        }
+      }
+
+      // 不是重复组 — 原样输出
+      result += line.substring(i, j);
+      i = j;
+    } else {
+      result += ch;
+      i++;
+    }
+  }
+
+  return result;
 }
 
 /**
@@ -156,6 +204,9 @@ export function parsePattern(text) {
   const results = [];
 
   lines.forEach((raw, lineIdx) => {
+    // 0) 预处理：展开行内括号重复
+    raw = expandRepeatGroups(raw);
+
     // 1) 标准单圈前缀：R1: / Round 1: / 1.
     const match = raw.match(ROUND_PREFIX_RE);
     if (match) {
@@ -241,7 +292,24 @@ export function parsePattern(text) {
       }
     }
 
-    // 4) 无明显前缀 → 文本卡片保留
+    // 4) 循环标记：循环R2-R3 / repeat R2-R3 / 重复第2-3圈
+    const loopRe = /(?:一直\s*)?(循环|重复|loop|repeat)\s*(?:第\s*)?R?(\d+)\s*(?:圈)?\s*[-~—至到]\s*(?:第\s*)?R?(\d+)\s*(?:圈)?/i;
+    const loopMatch = raw.match(loopRe);
+    if (loopMatch) {
+      results.push({
+        type: "round",
+        roundNum: null,
+        isLoopMarker: true,
+        loopFrom: parseInt(loopMatch[2], 10),
+        loopTo: parseInt(loopMatch[3], 10),
+        instruction: raw,
+        seq: [],
+        raw
+      });
+      return;
+    }
+
+    // 5) 无明显前缀 → 文本卡片保留
     results.push({
       type: "text",
       roundNum: null,
@@ -249,19 +317,6 @@ export function parsePattern(text) {
       seq: [],
       raw
     });
-  });
-
-  // 扫描循环标记：循环R2-R3 / repeat R2-R3
-  const loopRe = /(循环|重复|loop|repeat)\s*R?(\d+)\s*[-~—]\s*R?(\d+)/i;
-  results.forEach(r => {
-    if (r.type === 'round' && r.instruction) {
-      const lm = r.instruction.match(loopRe);
-      if (lm) {
-        r.isLoopMarker = true;
-        r.loopFrom = parseInt(lm[2], 10);
-        r.loopTo = parseInt(lm[3], 10);
-      }
-    }
   });
 
   return results;
@@ -392,7 +447,8 @@ export function normalizeStitch(token) {
   if (compoundPlaceholder) {
     const count = compoundPlaceholder[1];
     const innerSid = compoundPlaceholder[2].toUpperCase();
-    const resolved = ALIAS_TO_ID[innerSid] || innerSid;
+    const resolved = ALIAS_TO_ID[innerSid];
+    if (!resolved) return null;
     return `(${count}${resolved})`;
   }
 
@@ -401,7 +457,8 @@ export function normalizeStitch(token) {
   if (compoundMatch) {
     const count = compoundMatch[1];
     const innerSid = compoundMatch[2].toUpperCase();
-    const resolved = ALIAS_TO_ID[innerSid] || innerSid;
+    const resolved = ALIAS_TO_ID[innerSid];
+    if (!resolved) return null;
     return `(${count}${resolved})`;
   }
 

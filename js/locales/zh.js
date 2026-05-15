@@ -416,6 +416,7 @@ export default {
   share_save: '保存图片',
   share_share: '分享',
   share_saved_hint: '已保存，请手动分享',
+  share_include_name: '包含身份签名',
   share_total_stitches: '总针数',
   share_total_rounds: '总圈数',
 
@@ -438,11 +439,12 @@ export default {
   // ═════════════════════════════════════
   //  复合针法 & 循环标记
   // ═════════════════════════════════════
-  compound_stitch_warning: '这是解析出的复合针法（如 5长针），无法单独修改。请编辑图解文本后重新导入。',
+  compound_stitch_warning: '⚠️ 此针目包含 {count} 个动作（{stitch}），请确认完成后再继续',
   loop_marker_label: '循环 R{from}-R{to}',
   copy_structure_btn: '复制此圈结构',
   copy_structure_from: '↻ 从已有圈复制结构',
   copy_structure_empty: '该圈没有针法数据',
+  copy_loop_structure_done: '已复制 R{from}–R{to} 结构，共 {count} {unit}',
   add_round_sheet_title: '新增{unit}',
   add_round_blank: '＋ 空白{unit}',
   resume_progress_title: '继续上次进度？',
