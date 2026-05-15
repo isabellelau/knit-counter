@@ -114,8 +114,9 @@ async function compressAndEncode(data) {
     const bytes = new TextEncoder().encode(json);
     const cs = new CompressionStream('gzip');
     const writer = cs.writable.getWriter();
-    writer.write(bytes);
-    writer.close();
+    await writer.write(bytes);
+    await writer.close();
+
     const reader = cs.readable.getReader();
     const chunks = [];
     while (true) {
@@ -146,14 +147,17 @@ function generateFullProjectText(proj, encoded) {
 async function decodeAndDecompress(b64) {
   try {
     const bytes = base64ToUint8Array(b64);
+
     if (typeof DecompressionStream === 'undefined') {
       return JSON.parse(new TextDecoder().decode(bytes));
     }
+
     try {
       const ds = new DecompressionStream('gzip');
       const writer = ds.writable.getWriter();
-      writer.write(bytes);
-      writer.close();
+      await writer.write(bytes);
+      await writer.close();
+
       const reader = ds.readable.getReader();
       const chunks = [];
       while (true) {
