@@ -1,9 +1,9 @@
-import { state, getProj } from './state.js';
+import { state, uid, getProj } from './state.js';
 import { showSheet, showToast, closeSheet, esc } from './ui.js';
+import { saveData } from './storage.js';
 import { t } from './i18n.js';
 
 const APP_URL = 'https://isabellelau.github.io/knit-counter/';
-const QR_MAX_BYTES = 2000;
 
 // ── Pro gate ──
 function isPro() { return state.data.settings.isPro === true; }
@@ -35,6 +35,25 @@ function copyToClipboard(text) {
   });
 }
 
+// ── Binary helpers ──
+function uint8ArrayToBase64(bytes) {
+  let binary = '';
+  const chunk = 8192;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+function base64ToUint8Array(base64) {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
 // ── Text pattern generation ──
 function generateTextPattern(proj) {
   const lines = [];
@@ -63,64 +82,109 @@ function generateTextPattern(proj) {
   return lines.join('\n');
 }
 
-// ── Sequence payload (Pro: stripped-down export) ──
-function getSequencePayload(proj) {
+// ── Full project export (Pro) ──
+function stripProjectForExport(proj) {
   return {
-    version: 1,
-    type: 'sequence',
-    exportedAt: new Date().toISOString(),
-    project: {
-      name: proj.name,
-      useRowTerms: proj.useRowTerms,
-      parts: (proj.parts || []).map(part => ({
-        title: part.title,
-        rounds: (part.rounds || [])
-          .filter(r => !r.isTextCard && !r.isLoopMarker)
-          .map(r => ({
-            instruction: r.instruction || '',
-            seq: r.seq || [],
-            ...(r.expectedCount != null ? { expectedCount: r.expectedCount } : {})
-          }))
+    name: proj.name,
+    useRowTerms: proj.useRowTerms,
+    parts: (proj.parts || []).map(part => ({
+      title: part.title,
+      activeRoundId: part.activeRoundId,
+      customPalette: part.customPalette,
+      markers: part.markers,
+      rounds: (part.rounds || []).map(r => ({
+        instruction: r.instruction || '',
+        seq: r.seq || [],
+        ...(r.expectedCount != null ? { expectedCount: r.expectedCount } : {}),
+        ...(r.isTextCard ? { isTextCard: true } : {}),
+        ...(r.isLoopMarker ? { isLoopMarker: true } : {}),
+        ...(r.roundNum != null ? { roundNum: r.roundNum } : {})
       }))
-    }
+    }))
   };
 }
 
-function triggerDownload(payload, filename) {
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+async function compressAndEncode(data) {
+  const json = JSON.stringify(data);
+  if (typeof CompressionStream === 'undefined') {
+    const bytes = new TextEncoder().encode(json);
+    return { compressed: false, data: uint8ArrayToBase64(bytes) };
+  }
+  try {
+    const bytes = new TextEncoder().encode(json);
+    const cs = new CompressionStream('gzip');
+    const writer = cs.writable.getWriter();
+    writer.write(bytes);
+    writer.close();
+    const reader = cs.readable.getReader();
+    const chunks = [];
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+    }
+    const totalLength = chunks.reduce((acc, c) => acc + c.length, 0);
+    const combined = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const c of chunks) {
+      combined.set(c, offset);
+      offset += c.length;
+    }
+    return { compressed: true, data: uint8ArrayToBase64(combined) };
+  } catch (e) {
+    console.warn('Compression failed, falling back to uncompressed:', e);
+    const bytes = new TextEncoder().encode(json);
+    return { compressed: false, data: uint8ArrayToBase64(bytes) };
+  }
 }
 
-// ── QR code ──
-let _qrLoaded = false;
-let _qrLoading = null;
-
-function loadQRCode() {
-  if (_qrLoaded) return Promise.resolve();
-  if (_qrLoading) return _qrLoading;
-  _qrLoading = new Promise((resolve, reject) => {
-    if (window.QRCode) { _qrLoaded = true; resolve(); return; }
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
-    script.onload = () => { _qrLoaded = true; resolve(); };
-    script.onerror = () => { _qrLoading = null; reject(new Error('QR code library load failed')); };
-    document.head.appendChild(script);
-  });
-  return _qrLoading;
+function generateFullProjectText(proj, encoded) {
+  return `【织影项目】${proj.name}\nKNIT1:${encoded}\n用织影App导入可直接使用 #织影`;
 }
 
-function toBase64(str) {
-  const bytes = new TextEncoder().encode(str);
-  let binary = '';
-  bytes.forEach(b => binary += String.fromCharCode(b));
-  return btoa(binary);
+// ── Import: decode / decompress ──
+async function decodeAndDecompress(b64) {
+  try {
+    const bytes = base64ToUint8Array(b64);
+    if (typeof DecompressionStream === 'undefined') {
+      return JSON.parse(new TextDecoder().decode(bytes));
+    }
+    try {
+      const ds = new DecompressionStream('gzip');
+      const writer = ds.writable.getWriter();
+      writer.write(bytes);
+      writer.close();
+      const reader = ds.readable.getReader();
+      const chunks = [];
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+      }
+      const totalLength = chunks.reduce((acc, c) => acc + c.length, 0);
+      const combined = new Uint8Array(totalLength);
+      let offset = 0;
+      for (const c of chunks) {
+        combined.set(c, offset);
+        offset += c.length;
+      }
+      return JSON.parse(new TextDecoder().decode(combined));
+    } catch {
+      return JSON.parse(new TextDecoder().decode(bytes));
+    }
+  } catch (e) {
+    console.warn('decodeAndDecompress failed:', e);
+    return null;
+  }
+}
+
+function validateProjectData(data) {
+  if (!data || typeof data !== 'object') return false;
+  if (!Array.isArray(data.parts)) return false;
+  for (const part of data.parts) {
+    if (!Array.isArray(part.rounds)) return false;
+  }
+  return true;
 }
 
 // ═══════════════════════════════════════════
@@ -139,12 +203,8 @@ export function openShareSheet(projId) {
       <span class="sheet-item-icon">📝</span> ${esc(t('share_copy_text'))}
     </button>
 
-    <button class="sheet-item" onclick="window._exportStitchSeq('${projId}')">
-      <span class="sheet-item-icon">🧵</span> ${esc(t('share_export_seq'))}<span class="pro-badge">PRO</span>
-    </button>
-
-    <button class="sheet-item" onclick="window._exportFullProj('${projId}')">
-      <span class="sheet-item-icon">📦</span> ${esc(t('share_export_full'))}<span class="pro-badge">PRO</span>
+    <button class="sheet-item" onclick="window._copyFullProject('${projId}')">
+      <span class="sheet-item-icon">📦</span> ${esc(t('share_copy_full'))}<span class="pro-badge">PRO</span>
     </button>
 
     <button class="sheet-cancel" onclick="closeSheet()">${t('cancel')}</button>
@@ -163,104 +223,81 @@ window._copyTextPattern = function(projId) {
   });
 };
 
-window._exportStitchSeq = function(projId) {
+window._copyFullProject = async function(projId) {
   if (!requirePro()) return;
   const proj = getProj(projId);
   if (!proj) return;
-  const payload = getSequencePayload(proj);
-  const date = new Date().toISOString().slice(0, 10);
-  triggerDownload(payload, `${proj.name}_seq_${date}.knt`);
-  closeSheet();
+  const stripped = stripProjectForExport(proj);
+  const { data } = await compressAndEncode(stripped);
+  const text = generateFullProjectText(proj, data);
+  copyToClipboard(text).then(() => {
+    showToast(t('share_full_copied'));
+    closeSheet();
+  }).catch(() => {
+    showToast(t('share_full_copied'));
+    closeSheet();
+  });
 };
 
-window._exportFullProj = function(projId) {
-  if (!requirePro()) return;
-  const proj = getProj(projId);
-  if (!proj) return;
+// ── Import shared project sheet ──
+export function openImportShareSheet() {
+  document.getElementById("sheet").classList.remove("show");
+  document.getElementById("overlay").classList.remove("show");
+  state.flowState.importMode = 'create';
 
-  const payload = {
-    version: 1,
-    exportedAt: new Date().toISOString(),
-    project: proj
-  };
-
-  const date = new Date().toISOString().slice(0, 10);
-  triggerDownload(payload, `${proj.name}_${date}.knt`);
-
-  // Re-render sheet with QR toggle
-  showQRSheet(projId, payload);
-};
-
-// ── QR sheet (shown after full project export) ──
-function showQRSheet(projId, payload) {
   const html = `
     <div class="sheet-handle"></div>
-    <div class="sheet-title">${t('share_pattern_title')}</div>
-    <div style="padding:8px 16px 12px;text-align:center;font-size:13px;font-weight:600;color:var(--success)">
-      ✓ ${t('share_exported')}
+    <div class="sheet-title">${t('import_share_title')}</div>
+    <div style="padding:8px 16px 12px">
+      <textarea id="import-share-textarea" placeholder="${esc(t('import_share_placeholder'))}" style="width:100%;height:140px;border:1.5px solid var(--border);border-radius:10px;padding:10px;font-size:13px;font-family:inherit;resize:vertical;background:var(--bg);color:var(--text);box-sizing:border-box"></textarea>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">${t('import_share_hint')}</div>
     </div>
-    <div class="share-preview-toggle-row">
-      <span class="share-preview-toggle-label">${t('share_qr_label')}</span>
-      <span class="settings-toggle" id="shareQRToggle" onclick="window._toggleShareQR('${projId}')">
-        <span class="settings-toggle-knob"></span>
-      </span>
+    <div style="display:flex;gap:8px;padding:0 16px 12px">
+      <button class="sheet-cancel" onclick="closeSheet()" style="flex:1;margin:0">${t('cancel')}</button>
+      <button class="sheet-item" onclick="window._doImportShared()" style="flex:1;margin:0;justify-content:center">${t('import')}</button>
     </div>
-    <div id="share-qr-container" style="display:none">
-      <div class="share-qr-wrap">
-        <div id="share-qr-code"></div>
-        <div style="font-size:11px;color:var(--muted);margin-top:8px">${t('share_qr_hint')}</div>
-      </div>
-    </div>
-    <button class="sheet-cancel" onclick="closeSheet()">${t('close')}</button>
   `;
   showSheet(html);
-  // stash payload for toggle handler
-  window._shareQRPayload = payload;
-  window._shareQRProjectId = projId;
 }
 
-window._toggleShareQR = async function(projId) {
-  const toggle = document.getElementById('shareQRToggle');
-  const container = document.getElementById('share-qr-container');
-  if (!toggle || !container) return;
+window._doImportShared = async function() {
+  const textarea = document.getElementById('import-share-textarea');
+  if (!textarea) return;
+  const raw = textarea.value.trim();
+  if (!raw) return;
 
-  const isOn = !toggle.classList.contains('on');
-  toggle.classList.toggle('on', isOn);
-
-  if (!isOn) {
-    container.style.display = 'none';
+  const match = raw.match(/KNIT1:(\S+)/);
+  if (!match || !match[1]) {
+    showToast(t('import_share_error'));
     return;
   }
 
-  const payload = window._shareQRPayload;
-  if (!payload) return;
-
-  const json = JSON.stringify(payload);
-  if (json.length > QR_MAX_BYTES) {
-    showToast(t('share_qr_too_large'));
-    toggle.classList.remove('on');
+  const b64 = match[1];
+  const data = await decodeAndDecompress(b64);
+  if (!data || !validateProjectData(data)) {
+    showToast(t('import_share_error'));
     return;
   }
 
-  container.style.display = 'block';
-  const qrDiv = document.getElementById('share-qr-code');
-  if (!qrDiv) return;
-  qrDiv.innerHTML = '';
+  const newId = uid();
+  const proj = {
+    id: newId,
+    name: data.name || t('imported_project'),
+    useRowTerms: data.useRowTerms || false,
+    parts: (data.parts || []).map(part => ({
+      ...part,
+      rounds: (part.rounds || []).map(r => ({
+        ...r,
+        seq: r.seq || [],
+        instruction: r.instruction || ''
+      }))
+    })),
+    createdAt: Date.now(),
+    lastModified: Date.now()
+  };
 
-  try {
-    await loadQRCode();
-    new window.QRCode(qrDiv, {
-      text: toBase64(json),
-      width: 200,
-      height: 200,
-      colorDark: '#2D1E20',
-      colorLight: '#ffffff',
-      correctLevel: window.QRCode.CorrectLevel.L
-    });
-  } catch (e) {
-    console.warn('QR code generation failed:', e);
-    showToast('QR code generation failed');
-    container.style.display = 'none';
-    toggle.classList.remove('on');
-  }
+  state.data.projects[newId] = proj;
+  saveData();
+  closeSheet();
+  window.openProject(newId);
 };

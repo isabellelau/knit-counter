@@ -102,21 +102,24 @@ export function showEntryChoiceSheet() {
       <div style="color:var(--accent);font-size:20px;flex-shrink:0">→</div>
     </div>
     <div onclick="startManualFlow()" style="background:var(--card);border:2px solid var(--border);border-radius:14px;padding:18px 16px;cursor:pointer;display:flex;align-items:center;gap:14px">
-      <div style="width:48px;height:48px;border-radius:12px;background:#EDE9FE;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">✋</div>
+      <div style="width:48px;height:48px;border-radius:12px;background:#EDE9FE;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">✏️</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:3px">${t('entry_manual')}</div>
         <div style="font-size:12px;color:var(--muted)">${t('entry_manual_sub')}</div>
       </div>
       <div style="color:var(--muted);font-size:20px;flex-shrink:0">→</div>
     </div>
-    <div onclick="startStitchOnlyFlow()" style="background:var(--card);border:2px solid var(--border);border-radius:14px;padding:18px 16px;cursor:pointer;display:flex;align-items:center;gap:14px">
-      <div style="width:48px;height:48px;border-radius:12px;background:#FCE7F3;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">🧶</div>
+    <div onclick="openImportShareSheet()" style="background:var(--card);border:2px solid var(--border);border-radius:14px;padding:18px 16px;cursor:pointer;display:flex;align-items:center;gap:14px">
+      <div style="width:48px;height:48px;border-radius:12px;background:#DBEAFE;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">📥</div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:3px">${t('entry_stitch_only')}</div>
-        <div style="font-size:12px;color:var(--muted)">${t('entry_stitch_only_sub')}</div>
+        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:3px">${t('entry_import_share')}</div>
+        <div style="font-size:12px;color:var(--muted)">${t('entry_import_share_sub')}</div>
       </div>
       <div style="color:var(--muted);font-size:20px;flex-shrink:0">→</div>
     </div>
+  </div>
+  <div style="text-align:right;padding:6px 16px 8px;font-size:11px;color:var(--muted);cursor:pointer" onclick="startStitchOnlyFlow()">
+    ${t('entry_free_mode_link')}
   </div>`;
   showSheet(html);
 }

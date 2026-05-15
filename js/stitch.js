@@ -1631,42 +1631,33 @@ export function toggleFilterByRound() {
 export function renderFilterToggle() {
   const dotBg = state.filterByRound ? 'var(--accent)' : 'var(--border)';
   const dotPos = state.filterByRound ? '18px' : '2px';
-  const unit = getUnitLabel();
-  return `<div style="display:flex;align-items:center;justify-content:flex-end;padding:2px 4px 6px;gap:6px;cursor:pointer" onclick="toggleFilterByRound()">
-    <span style="font-size:10px;color:var(--muted);user-select:none">${t('filter_by_round').replace('{unit}', unit)}</span>
-    <span style="display:inline-block;width:34px;height:20px;border-radius:10px;background:${dotBg};position:relative;transition:background .2s;flex-shrink:0">
-      <span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;left:${dotPos};transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></span>
+  return `<div class="filter-toggle-row" onclick="toggleFilterByRound()">
+    <span class="filter-toggle-switch" style="background:${dotBg}">
+      <span class="filter-toggle-dot" style="left:${dotPos}"></span>
     </span>
   </div>`;
 }
 
 export function renderImmersiveToggle() {
   const active = state.immersiveMode;
-  return `<button class="bar-btn" id="immersive-mode-btn" onclick="toggleImmersiveMode()" style="font-size:11px;padding:4px 8px;${active ? 'background:var(--accent);color:#fff;border-color:var(--accent)' : ''}">
-    ${active ? t('immersive_exit') : t('immersive_enter')}
-  </button>`;
+  return `<button class="bar-btn" id="immersive-mode-btn" onclick="toggleImmersiveMode()" title="${active ? t('immersive_exit') : t('immersive_enter')}" style="${active ? 'background:var(--accent);color:#fff;border-color:var(--accent)' : ''}">⊡</button>`;
 }
 
 export function renderToggleRow() {
-  return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-    ${renderImmersiveToggle()}
-    ${renderFilterToggle()}
-  </div>`;
+  return renderFilterToggle();
 }
 
 export function renderBarRow() {
-  const unit = getUnitLabel();
   const hint = state.voiceMode
     ? `<div style="text-align:center;font-size:11px;color:#EF4444;padding:2px 0 4px;opacity:.8">${t('voice_hint_bar')}</div>`
     : '';
-  return `${hint}<div class="bar-row">
-    <button class="bar-btn" onclick="undoStitch()">${t("immersive_undo")}</button>
-    <button class="bar-btn" onclick="openPatternPasteSheet()">${t("import_pattern")}</button>
-    <button class="bar-btn" id="voice-mode-btn" onclick="toggleVoiceMode()">${t("voice_btn")}</button>
-    <button class="bar-btn" id="highlight-mode-btn" onclick="toggleHighlightMode()" style="position:relative">
-      ${t('flow_mode_btn')}
-    </button>
-    <button class="bar-btn primary" onclick="addRound()">${t('add_round_btn').replace('{unit}', unit)}</button>
+  return `${hint}<div class="bar-row bar-row--icons">
+    ${renderImmersiveToggle()}
+    <button class="bar-btn" onclick="undoStitch()" title="${t('immersive_undo')}">↩</button>
+    <button class="bar-btn" onclick="openPatternPasteSheet()" title="${t('import_pattern')}">📥</button>
+    <button class="bar-btn" id="voice-mode-btn" onclick="toggleVoiceMode()" title="${t('voice_btn')}">🎙</button>
+    <button class="bar-btn" id="highlight-mode-btn" onclick="toggleHighlightMode()" title="${t('flow_mode_btn')}">✦</button>
+    <button class="bar-btn primary" onclick="addRound()">+R</button>
   </div>`;
 }
 
@@ -1874,12 +1865,12 @@ export function updateImmersiveButton() {
     btn.style.background = 'var(--accent)';
     btn.style.color = '#fff';
     btn.style.borderColor = 'var(--accent)';
-    btn.textContent = t('immersive_exit');
+    btn.title = t('immersive_exit');
   } else {
     btn.style.background = '';
     btn.style.color = '';
     btn.style.borderColor = '';
-    btn.textContent = t('immersive_enter');
+    btn.title = t('immersive_enter');
   }
 }
 

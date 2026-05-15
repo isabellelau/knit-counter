@@ -47,7 +47,7 @@ import {
 } from './project.js';
 import { pickCover, setProjectCover, removeProjectCover, addRefImage, removeRefImage, getRefImage, showRefImagesSheet, openRefImageViewer, pickRefImages } from './image.js';
 import { handleGenerateShare, showShareSheet, downloadShareImage, shareImageNative } from './share.js';
-import { openShareSheet } from './share-pattern.js';
+import { openShareSheet, openImportShareSheet } from './share-pattern.js';
 import { openAnnotator, saveAnnotation } from './annotator.js';
 import { expandInstruction, getNextStitchSid, renderHighlightReel } from './highlight.js';
 import { renderHome, renderProject } from './render.js';
@@ -239,7 +239,7 @@ const _globals = {
   editExpectedCount,
   pickCover, setProjectCover, removeProjectCover, addRefImage, removeRefImage, getRefImage, showRefImagesSheet, openRefImageViewer, pickRefImages,
   handleGenerateShare, showShareSheet, downloadShareImage, shareImageNative,
-  openShareSheet,
+  openShareSheet, openImportShareSheet,
   startFocusSession, tickFocusSession, flushFocusSession, getTotalFocusTime, formatFocusTime, getTodayFocusTime, getTodayStitchCount, bumpDailyCount,
   expandInstruction, getNextStitchSid, renderHighlightReel,
   setPageView,

@@ -100,7 +100,7 @@ export default {
   delete_round: '删除这一{unit}',
   delete_round_confirm: '确定要删除这一{unit}吗？',
   deleted_round: '已删除一{unit}',
-  add_round_btn: '＋ 新一{unit}',
+  add_round_btn: '+R',
   empty_round_hint: '暂无记录，点击下方针法按钮添加',
   empty_instruction_hint: '暂无图解，点击导入或开始记录',
   round_need_calibration: '本圈图解需要校准 · 点击🪡编辑',
@@ -161,6 +161,7 @@ export default {
   // ═════════════════════════════════════
   //  图解导入
   // ═════════════════════════════════════
+  import: '导入',
   import_pattern: '导入图解',
   pattern_placeholder: '在此粘贴图解文字，或上传图片自动识别...\n例如：\nR1: 6X\nR2: 6V\nR3: [1X, 1V]*6',
   ocr_button: '📷 识别图片',
@@ -253,6 +254,9 @@ export default {
   entry_skip: '跳过（使用全部针法）',
   entry_stitch_only: '不使用文字图解，直接选择针法',
   entry_stitch_only_sub: '进入针法配置面板，手动挑选需要的针法',
+  entry_import_share: '导入他人分享',
+  entry_import_share_sub: '粘贴织影分享文本，快速导入完整项目',
+  entry_free_mode_link: '全自由模式，不使用图解 →',
 
   // ═════════════════════════════════════
   //  设置页
@@ -457,13 +461,14 @@ export default {
   // ═════════════════════════════════════
   share_pattern_title: '分享图解',
   share_copy_text: '复制文字图解',
-  share_export_seq: '导出针法序列',
-  share_export_full: '导出完整项目',
+  share_copy_full: '复制完整项目',
   share_copied: '图解已复制到剪贴板',
+  share_full_copied: '项目已复制到剪贴板',
   share_pro_required: '此功能需要 Pro，敬请期待',
-  share_qr_label: '🔲 同时生成二维码',
-  share_qr_hint: '长按保存二维码',
-  share_qr_too_large: '项目数据过大，无法生成二维码，请使用文件分享',
   share_text_footer: '用织影 App 打开可直接计数',
-  share_exported: '文件已下载',
+  import_share_title: '导入分享的项目',
+  import_share_placeholder: '粘贴从织影分享的项目内容\n格式：【织影项目】...KNIT1:...',
+  import_share_hint: '支持从织影 App 导出的项目分享文本',
+  import_share_error: '内容格式不正确，请检查后重试',
+  imported_project: '导入的项目',
 };

@@ -100,7 +100,7 @@ export default {
   delete_round: 'Delete this {unit}',
   delete_round_confirm: 'Delete this {unit}?',
   deleted_round: '{unit} deleted',
-  add_round_btn: '+ New {unit}',
+  add_round_btn: '+R',
   empty_round_hint: 'No stitches yet — tap a stitch button below to start recording',
   empty_instruction_hint: 'No pattern yet. Tap import or start recording.',
   round_need_calibration: 'Pattern needs calibration · tap 🪡 to edit',
@@ -161,6 +161,7 @@ export default {
   // ═════════════════════════════════════
   //  Pattern import
   // ═════════════════════════════════════
+  import: 'Import',
   import_pattern: 'Import pattern',
   pattern_placeholder: 'Paste your pattern here, or upload an image to scan…\ne.g.\nR1: 6X\nR2: 6V\nR3: [1X, 1V]*6',
   ocr_button: '📷 Scan image',
@@ -253,6 +254,9 @@ export default {
   entry_skip: 'Skip (use all stitches)',
   entry_stitch_only: 'Skip pattern, pick stitches',
   entry_stitch_only_sub: 'Open stitch setup to manually choose which stitches you need',
+  entry_import_share: 'Import shared project',
+  entry_import_share_sub: 'Paste shared text from StitchEcho to import a full project',
+  entry_free_mode_link: 'Free mode, no pattern →',
 
   // ═════════════════════════════════════
   //  Settings
@@ -457,13 +461,14 @@ export default {
   // ═════════════════════════════════════
   share_pattern_title: 'Share Pattern',
   share_copy_text: 'Copy text pattern',
-  share_export_seq: 'Export stitch sequence',
-  share_export_full: 'Export full project',
+  share_copy_full: 'Copy full project',
   share_copied: 'Pattern copied to clipboard',
+  share_full_copied: 'Project copied to clipboard',
   share_pro_required: 'This feature requires Pro. Stay tuned!',
-  share_qr_label: '🔲 Generate QR code',
-  share_qr_hint: 'Long press to save QR code',
-  share_qr_too_large: 'Project data too large for QR code. Please use file sharing instead.',
   share_text_footer: 'Open with StitchEcho to count directly',
-  share_exported: 'File downloaded',
+  import_share_title: 'Import shared project',
+  import_share_placeholder: 'Paste project content shared from StitchEcho\nFormat: 【织影项目】...KNIT1:...',
+  import_share_hint: 'Supports project export text from StitchEcho',
+  import_share_error: 'Format incorrect, please check and try again',
+  imported_project: 'Imported project',
 };

@@ -203,19 +203,16 @@ export function updateVoiceButton() {
   const btn = document.getElementById('voice-mode-btn');
   if (!btn) return;
   if (state.flowState.voiceState === 'starting') {
-    btn.textContent = t('voice_btn_starting');
     btn.style.background = '#F59E0B';
     btn.style.color = '#fff';
     btn.style.borderColor = '#F59E0B';
     btn.style.animation = 'btn-pulse 1s ease-in-out infinite';
   } else if (state.flowState.voiceState === 'on') {
-    btn.textContent = t('voice_btn_on');
     btn.style.background = '#EF4444';
     btn.style.color = '#fff';
     btn.style.borderColor = '#EF4444';
     btn.style.animation = 'btn-pulse 1.8s ease-in-out infinite';
   } else {
-    btn.textContent = t('voice_btn');
     btn.style.background = '';
     btn.style.color = '';
     btn.style.borderColor = '';
