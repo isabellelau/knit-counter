@@ -99,6 +99,13 @@ export { STITCH_IDS };
 
 const ROUND_PREFIX_RE = /^(?:R|Round|第)?\s*(\d+)\s*[:：.]\s*(.*)/i;
 
+// 说明性前缀词 — 这些词引导的片段是注释而非针法指令，解析时需跳过
+const SKIP_PREFIXES = [
+  '当作', '相当于', '代替', '作为', '视为', '等于', '即',
+  'work as', 'treat as', 'count as', 'same as',
+  'instead of', 'equivalent to', 'acts as'
+];
+
 /**
  * 展开行内括号重复：将 (X,2K)×3 展开为 X, 2K, X, 2K, X, 2K
  * 使用深度追踪匹配最外层括号组；内部 (NF) / [NF] 视为复合针法 token 保留不展开
@@ -333,9 +340,18 @@ export function extractStitches(text) {
   // 展开括号重复：(X,2K)×3 → X, 2K, X, 2K, X, 2K
   text = expandRepeatGroups(text);
 
+  // 移除说明性前缀片段（如"当作1个长针"），避免别名误解析为针法指令
+  let cleaned = text;
+  for (const prefix of SKIP_PREFIXES) {
+    cleaned = cleaned.replace(
+      new RegExp(prefix + '[^，,。\\.\\n]+', 'gi'),
+      ' '
+    );
+  }
+
   // 预处理：将中英文别名替换为缩写，使后续正则能识别
   // 例："引拔" → "SL", "SC" → "X", "HDCINC" → "TV"
-  let processed = text;
+  let processed = cleaned;
   const allAliases = Object.entries(ALIAS_TO_ID)
     .filter(([a, id]) => a.toUpperCase() !== id.toUpperCase())
     .sort((a, b) => b[0].length - a[0].length);
