@@ -779,12 +779,12 @@ export function saveRoundInstruction(roundId) {
 
   window.renderProject();
 
+  renderDynamicPalette(proj);
   if (state.highlightMode) {
     const result = getNextStitchSid(proj);
     if (result.status === 'ok' || result.status === 'round_complete') {
       showToast(t('instruction_calibrated'));
     }
-    renderDynamicPalette(proj);
     renderHighlightReel(proj);
   }
 
@@ -968,7 +968,7 @@ export function pushStitch(sid) {
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
   }
   renderHighlightReel(proj);
-  if (state.highlightMode) refreshBottomBar(proj);
+  refreshBottomBar(proj);
 }
 
 export function undoStitch() {
@@ -1008,7 +1008,7 @@ export function undoStitch() {
     window.renderProject();
   }
   renderHighlightReel(proj);
-  if (state.highlightMode) refreshBottomBar(proj);
+  refreshBottomBar(proj);
 }
 
 export function stitchTap(roundId, idx) {
@@ -1532,12 +1532,9 @@ export function renderDynamicPalette(proj) {
   const part = getActivePart(proj);
   if (!part) return '<div class="palette"></div>';
 
-  // ── 智能高亮 ──
-  const highlight = state.highlightMode;
-  let next = null;
-  if (highlight) {
-    next = getNextStitchSid(proj);
-  }
+  // ── 当前针高亮（始终启用）；心流模式额外锁定其余按钮 ──
+  const flowMode = state.highlightMode;
+  const next = getNextStitchSid(proj);
 
   let displayIds;
   if (part.customPalette && part.customPalette.length > 0) {
@@ -1574,19 +1571,19 @@ export function renderDynamicPalette(proj) {
 
   let html = '';
 
-  // ── 高亮状态栏 ──
-  if (highlight && next) {
+  // ── 心流状态栏（仅心流模式显示）──
+  if (flowMode && next) {
     if (next.status === 'ok') {
-      html += `<div class="palette-status-bar">${t('highlight_status_current').replace('{n}', next.index + 1).replace('{total}', next.total)}</div>`;
+      html += `<div class="palette-status-bar">${t('flow_mode_status_current').replace('{n}', next.index + 1).replace('{total}', next.total)}</div>`;
     } else if (next.status === 'round_complete') {
-      html += `<div class="palette-status-bar palette-status-bar--complete">${t('highlight_status_done')}</div>`;
+      html += `<div class="palette-status-bar palette-status-bar--complete">${t('flow_mode_status_done')}</div>`;
     } else if (next.status === 'parse_error') {
-      html += `<div class="palette-status-bar palette-status-bar--error" onclick="openInstructionEdit('${part.activeRoundId || ''}')">${t('highlight_status_calibrate')}</div>`;
+      html += `<div class="palette-status-bar palette-status-bar--error" onclick="openInstructionEdit('${part.activeRoundId || ''}')">${t('flow_mode_status_calibrate')}</div>`;
     }
   }
 
   // ── 针法按钮 ──
-  const dimBtn = highlight && next && (next.status === 'ok' || next.status === 'round_complete');
+  const dimBtn = flowMode && next && (next.status === 'ok' || next.status === 'round_complete');
   html += `<div class="palette">`;
   displayIds.forEach((sid, idx) => {
     const info = getStitchInfo(sid);
@@ -1595,16 +1592,17 @@ export function renderDynamicPalette(proj) {
     let btnClass = 'pal-btn';
     let btnExtra = '';
 
-    if (highlight && next) {
-      if (next.status === 'ok') {
-        if (sid === next.sid) {
-          btnClass += ' palette-btn--highlight';
-        } else {
-          btnExtra = 'opacity:0.3;pointer-events:none';
-        }
-      } else if (next.status === 'round_complete') {
+    // 当前针高亮：始终生效（免费 + Pro）
+    if (next && next.status === 'ok') {
+      if (sid === next.sid) {
+        btnClass += ' palette-btn--highlight';
+      } else if (flowMode) {
+        // 其余按钮变暗：仅心流模式
         btnExtra = 'opacity:0.3;pointer-events:none';
       }
+    } else if (flowMode && next && next.status === 'round_complete') {
+      // 圈已完成：仅心流模式全部变暗
+      btnExtra = 'opacity:0.3;pointer-events:none';
     }
 
     html += `<button class="${btnClass}" data-sid="${sid}" style="background:${info.color};${btnExtra}" onclick="pushStitch('${sid}')">
@@ -1612,7 +1610,7 @@ export function renderDynamicPalette(proj) {
     </button>`;
   });
 
-  // 增减按钮：高亮模式下 okl/round_complete 时禁用；沉浸模式下隐藏
+  // 增减按钮：心流模式下 ok/round_complete 时禁用；沉浸模式下隐藏
   if (!state.immersiveMode) {
     const addBtnExtra = dimBtn ? 'opacity:0.3;pointer-events:none' : '';
     html += `<button class="pal-btn" style="background:var(--bg);color:var(--accent);border:2px dashed var(--accent);font-size:18px;${addBtnExtra}" onclick="openStitchSetup('edit')" title="${t('add_remove_stitches_title')}">
@@ -1666,7 +1664,7 @@ export function renderBarRow() {
     <button class="bar-btn" onclick="openPatternPasteSheet()">${t("import_pattern")}</button>
     <button class="bar-btn" id="voice-mode-btn" onclick="toggleVoiceMode()">${t("voice_btn")}</button>
     <button class="bar-btn" id="highlight-mode-btn" onclick="toggleHighlightMode()" style="position:relative">
-      ${t('highlight_btn')}
+      ${t('flow_mode_btn')}
     </button>
     <button class="bar-btn primary" onclick="addRound()">${t('add_round_btn').replace('{unit}', unit)}</button>
   </div>`;
@@ -1822,10 +1820,11 @@ export function toggleImmersiveMode() {
 }
 
 // ═════════════════════════════════════
-//  智能高亮开关
+//  心流模式开关（Pro）
 // ═════════════════════════════════════
 
 export function toggleHighlightMode() {
+  if (!state.data.settings.isPro) { showToast(t('share_pro_required')); return; }
   state.highlightMode = !state.highlightMode;
 
   if (state.highlightMode) {
@@ -1836,7 +1835,7 @@ export function toggleHighlightMode() {
 
     const result = getNextStitchSid(proj);
     if (result.status === 'parse_error') {
-      showToast(t('highlight_need_calibration'));
+      showToast(t('flow_mode_need_calibration'));
       openInstructionEdit(part.activeRoundId);
     }
   } else {

@@ -171,7 +171,7 @@ function parseOne(tokens, i, groups) {
 }
 
 // ═══════════════════════════════════════
-//  expandInstructionFull — 独立解析器（智能高亮专用）
+//  expandInstructionFull — 独立解析器（心流模式专用）
 // ═══════════════════════════════════════
 export function expandInstructionFull(instruction) {
   if (!instruction || typeof instruction !== 'string' || !instruction.trim()) return null;
@@ -184,7 +184,7 @@ export function expandInstructionFull(instruction) {
   }
 }
 
-// ── 旧版（保留，不再被智能高亮使用）──
+// ── 旧版（保留，不再被心流模式使用）──
 export function expandInstruction(instruction) {
   if (!instruction || typeof instruction !== 'string') return null;
   try {
@@ -197,7 +197,7 @@ export function expandInstruction(instruction) {
 }
 
 // ═══════════════════════════════════════
-//  智能高亮：获取下一针的 sid
+//  心流模式：获取下一针的 sid
 // ═══════════════════════════════════════
 export function getNextStitchSid(proj) {
   const part = getActivePart(proj);
@@ -216,7 +216,7 @@ export function getNextStitchSid(proj) {
 }
 
 // ═══════════════════════════════════════
-//  renderHighlightReel — 智能高亮序列滚动条
+//  renderHighlightReel — 心流模式序列滚动条
 // ═══════════════════════════════════════
 export function renderHighlightReel(proj) {
   const container = document.getElementById('highlight-reel-container');

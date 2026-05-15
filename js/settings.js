@@ -457,10 +457,10 @@ function _buildAdvancedSubPageHTML() {
       <div class="settings-row-icon" style="background:var(--accent-bg);color:var(--accent)">✦</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:var(--text-body);color:var(--text);display:flex;align-items:center;gap:8px">
-          ${t('highlight_toggle_label')}
+          ${t('flow_mode_toggle_label')}
           <span class="highlight-pro-badge-inline">${t('settings_pro_badge')}</span>
         </div>
-        <div style="font-size:var(--text-caption1);color:var(--muted);margin-top:2px">${t('highlight_toggle_desc')}</div>
+        <div style="font-size:var(--text-caption1);color:var(--muted);margin-top:2px">${t('flow_mode_toggle_desc')}</div>
       </div>
       <span class="settings-toggle${enabled ? ' on' : ''}" id="settings-highlight-toggle">
         <i class="settings-toggle-knob"></i>
@@ -468,12 +468,13 @@ function _buildAdvancedSubPageHTML() {
     </div>
 
     <div class="settings-section-desc settings-section-desc--bottom">
-      ${t('highlight_toggle_footer')}
+      ${t('flow_mode_toggle_footer')}
     </div>
   `;
 }
 
 export function toggleHighlightEnabled() {
+  if (!state.data.settings.isPro) { showToast(t('share_pro_required')); return; }
   const enabled = !state.data.settings.highlightEnabled;
   state.data.settings.highlightEnabled = enabled;
   state.highlightMode = enabled;
@@ -488,7 +489,7 @@ export function toggleHighlightEnabled() {
     window.renderProject();
   }
 
-  showToast(enabled ? t('highlight_enabled_toast') : t('highlight_disabled_toast'));
+  showToast(enabled ? t('flow_mode_enabled_toast') : t('flow_mode_disabled_toast'));
 }
 
 // ═════════════════════════════════════

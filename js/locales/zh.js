@@ -104,12 +104,12 @@ export default {
   empty_round_hint: '暂无记录，点击下方针法按钮添加',
   empty_instruction_hint: '暂无图解，点击导入或开始记录',
   round_need_calibration: '本圈图解需要校准 · 点击🪡编辑',
-  highlight_need_calibration: '本圈图解需要校准才能启用高亮',
+  flow_mode_need_calibration: '本圈图解需要校准才能启用心流模式',
   last_round_immersive_hint: '已经是最后一圈了，请退出沉浸模式添加新圈',
   round_count_label: '{total} 针',
   instruction_placeholder: '例：R4: 10(X,V,X)',
   instruction_calibrated: '图解校准成功 ✓',
-  expected_count_hint: '图解定义 {parsed} 针，高亮序列由图解决定，如有需要请优先直接修改图解',
+  expected_count_hint: '图解定义 {parsed} 针，心流序列由图解决定，如有需要请优先直接修改图解',
 
   // ═════════════════════════════════════
   //  针法操作
@@ -215,17 +215,17 @@ export default {
   voice_hint_bar: '🎙 说数字 1-9 添加针法 · 说"撤销"删除上一针',
 
   // ═════════════════════════════════════
-  //  智能高亮
+  //  心流模式（Pro）
   // ═════════════════════════════════════
-  highlight_btn: '✦ 高亮',
-  highlight_toggle_label: '智能高亮当前针',
-  highlight_toggle_desc: '每次只高亮下一针，其他针法降低亮度',
-  highlight_toggle_footer: '开启后在底部针法面板自动聚焦当前需钩织的下一针',
-  highlight_enabled_toast: '智能高亮已开启 · 长按可关闭',
-  highlight_disabled_toast: '智能高亮已关闭',
-  highlight_status_current: '第 {n} 针 / 共 {total} 针',
-  highlight_status_done: '本圈已完成 ✓',
-  highlight_status_calibrate: '图解需要校准，点击编辑 ›',
+  flow_mode_btn: '~ 心流',
+  flow_mode_toggle_label: '心流模式',
+  flow_mode_toggle_desc: '锁定针法面板，仅高亮下一针并降低其余亮度',
+  flow_mode_toggle_footer: '开启后底部针法面板自动聚焦当前需钩织的下一针，其余按钮变暗不可点击',
+  flow_mode_enabled_toast: '心流模式已开启 · 长按可关闭',
+  flow_mode_disabled_toast: '心流模式已关闭',
+  flow_mode_status_current: '第 {n} 针 / 共 {total} 针',
+  flow_mode_status_done: '本圈已完成 ✓',
+  flow_mode_status_calibrate: '图解需要校准，点击编辑 ›',
 
   // ═════════════════════════════════════
   //  沉浸模式

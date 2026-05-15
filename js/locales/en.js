@@ -104,12 +104,12 @@ export default {
   empty_round_hint: 'No stitches yet — tap a stitch button below to start recording',
   empty_instruction_hint: 'No pattern yet. Tap import or start recording.',
   round_need_calibration: 'Pattern needs calibration · tap 🪡 to edit',
-  highlight_need_calibration: 'Calibrate the pattern first to enable highlight mode',
+  flow_mode_need_calibration: 'Calibrate the pattern first to enable Flow Mode',
   last_round_immersive_hint: 'This is the last round. Exit immersive mode to add a new one.',
   round_count_label: '{total} sts',
   instruction_placeholder: 'e.g. R4: 10(X,V,X)',
   instruction_calibrated: 'Pattern calibrated ✓',
-  expected_count_hint: 'Pattern defines {parsed} sts. Highlight sequence follows the pattern — edit the pattern text directly if needed.',
+  expected_count_hint: 'Pattern defines {parsed} sts. Flow sequence follows the pattern — edit the pattern text directly if needed.',
 
   // ═════════════════════════════════════
   //  Stitch actions
@@ -215,17 +215,17 @@ export default {
   voice_hint_bar: '🎙 Say a number (1–9) to add a stitch · say "undo" to remove the last one',
 
   // ═════════════════════════════════════
-  //  Smart highlight
+  //  Flow Mode (Pro)
   // ═════════════════════════════════════
-  highlight_btn: '✦ Highlight',
-  highlight_toggle_label: 'Smart stitch highlight',
-  highlight_toggle_desc: 'Highlight only the next stitch, dimming the rest',
-  highlight_toggle_footer: 'When on, the stitch palette automatically focuses the next stitch in the pattern.',
-  highlight_enabled_toast: 'Smart highlight on · tap and hold to turn off',
-  highlight_disabled_toast: 'Smart highlight off',
-  highlight_status_current: 'Stitch {n} of {total}',
-  highlight_status_done: 'Round complete ✓',
-  highlight_status_calibrate: 'Pattern needs calibration — tap to edit ›',
+  flow_mode_btn: '~ Flow',
+  flow_mode_toggle_label: 'Flow Mode',
+  flow_mode_toggle_desc: 'Lock the stitch palette — highlight only the next stitch, dim the rest',
+  flow_mode_toggle_footer: 'When on, the stitch palette locks onto the next stitch and dims the rest to reduce distraction.',
+  flow_mode_enabled_toast: 'Flow Mode on · tap and hold to turn off',
+  flow_mode_disabled_toast: 'Flow Mode off',
+  flow_mode_status_current: 'Stitch {n} of {total}',
+  flow_mode_status_done: 'Round complete ✓',
+  flow_mode_status_calibrate: 'Pattern needs calibration — tap to edit ›',
 
   // ═════════════════════════════════════
   //  Immersive mode
