@@ -23,7 +23,7 @@ async function getVersionFromHtml() {
   }
 }
 
-let CACHE_NAME = 'crochet-1.110';
+let CACHE_NAME = 'crochet-1.111';
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
@@ -38,9 +38,15 @@ self.addEventListener('install', (e) => {
 
 self.addEventListener('activate', event => {
   event.waitUntil(
+    // 清除所有旧缓存（无论名称），确保无残留文件
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+      Promise.all(keys.map(k => caches.delete(k)))
     ).then(() => {
+      // 重建当前版本缓存
+      return caches.open(CACHE_NAME)
+        .then(cache => cache.addAll(PRECACHE))
+        .catch(() => {});
+    }).then(() => {
       self.clients.claim();
       return self.clients.matchAll();
     }).then(clients => {
