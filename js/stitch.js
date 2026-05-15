@@ -1815,7 +1815,6 @@ export function toggleImmersiveMode() {
 // ═════════════════════════════════════
 
 export function toggleHighlightMode() {
-  if (!state.data.settings.isPro) { showToast(t('share_pro_required')); return; }
   state.highlightMode = !state.highlightMode;
 
   if (state.highlightMode) {
