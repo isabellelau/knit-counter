@@ -31,7 +31,7 @@ let sw = fs.readFileSync(swPath, 'utf8');
 
 sw = sw.replace(
   /(?:const|let)\s+CACHE_NAME\s*=\s*['"`].*?['"`]/,
-  `const CACHE_NAME = 'crochet-${version}'`
+  `let CACHE_NAME = 'crochet-${version}'`
 );
 fs.writeFileSync(swPath, sw);
 

@@ -23,7 +23,7 @@ async function getVersionFromHtml() {
   }
 }
 
-const CACHE_NAME = 'crochet-1.109';
+let CACHE_NAME = 'crochet-1.110';
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
@@ -55,6 +55,9 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', (e) => {
   const { request } = e;
   const url = new URL(request.url);
+
+  // 只处理 http/https 请求，跳过 chrome-extension:// 等不可缓存协议
+  if (!url.protocol.startsWith('http')) return;
 
   // 只缓存 GET 请求
   if (request.method !== 'GET') return;
