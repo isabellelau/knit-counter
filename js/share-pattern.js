@@ -89,7 +89,6 @@ function stripProjectForExport(proj) {
     useRowTerms: proj.useRowTerms,
     parts: (proj.parts || []).map(part => ({
       title: part.title,
-      activeRoundId: part.activeRoundId,
       customPalette: part.customPalette,
       markers: part.markers,
       rounds: (part.rounds || []).map(r => ({
@@ -98,6 +97,8 @@ function stripProjectForExport(proj) {
         ...(r.expectedCount != null ? { expectedCount: r.expectedCount } : {}),
         ...(r.isTextCard ? { isTextCard: true } : {}),
         ...(r.isLoopMarker ? { isLoopMarker: true } : {}),
+        ...(r.loopFrom != null ? { loopFrom: r.loopFrom } : {}),
+        ...(r.loopTo != null ? { loopTo: r.loopTo } : {}),
         ...(r.roundNum != null ? { roundNum: r.roundNum } : {})
       }))
     }))
@@ -173,12 +174,11 @@ async function decodeAndDecompress(b64) {
         offset += c.length;
       }
       return JSON.parse(new TextDecoder().decode(combined));
-    } catch (innerErr) {
-      console.error('[decode] DecompressionStream failed, trying raw parse:', innerErr.message);
+    } catch {
       return JSON.parse(new TextDecoder().decode(bytes));
     }
   } catch (e) {
-    console.error('[decode] all paths failed:', e.message);
+    console.warn('decodeAndDecompress failed:', e);
     return null;
   }
 }
@@ -229,20 +229,16 @@ window._copyTextPattern = function(projId) {
 };
 
 window._copyFullProject = async function(projId) {
-  if (!requirePro()) { console.error('[export] requirePro failed'); return; }
+  if (!requirePro()) return;
   const proj = getProj(projId);
-  if (!proj) { console.error('[export] getProj returned null for', projId); return; }
-  console.error('[export] compressing project:', proj.name);
+  if (!proj) return;
   const stripped = stripProjectForExport(proj);
   const { data } = await compressAndEncode(stripped);
-  console.error('[export] encoded, base64 len:', data.length);
   const text = generateFullProjectText(proj, data);
   copyToClipboard(text).then(() => {
-    console.error('[export] copied OK');
     showToast(t('share_full_copied'));
     closeSheet();
-  }).catch((err) => {
-    console.error('[export] clipboard write failed:', err);
+  }).catch(() => {
     showToast(t('share_full_copied'));
     closeSheet();
   });
@@ -271,28 +267,19 @@ export function openImportShareSheet() {
 
 window._doImportShared = async function() {
   const textarea = document.getElementById('import-share-textarea');
-  if (!textarea) { console.error('[import] textarea not found'); return; }
+  if (!textarea) return;
   const raw = textarea.value.trim();
-  if (!raw) { console.error('[import] textarea empty'); return; }
+  if (!raw) return;
 
   const match = raw.match(/KNIT1:(\S+)/);
   if (!match || !match[1]) {
-    console.error('[import] regex miss - no KNIT1: prefix found in:', raw.slice(0, 100));
     showToast(t('import_share_error'));
     return;
   }
 
   const b64 = match[1];
-  console.error('[import] b64 extracted, len:', b64.length);
-
   const data = await decodeAndDecompress(b64);
-  if (!data) {
-    console.error('[import] decodeAndDecompress returned null');
-    showToast(t('import_share_error'));
-    return;
-  }
-  if (!validateProjectData(data)) {
-    console.error('[import] validateProjectData failed. typeof:', typeof data, 'has parts:', Array.isArray(data.parts), 'keys:', Object.keys(data || {}));
+  if (!data || !validateProjectData(data)) {
     showToast(t('import_share_error'));
     return;
   }
