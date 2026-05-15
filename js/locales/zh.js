@@ -456,9 +456,9 @@ export default {
   //  分享图解
   // ═════════════════════════════════════
   share_pattern_title: '分享图解',
-  share_copy_text: '📝 复制文字图解',
-  share_export_seq: '🧵 导出针法序列',
-  share_export_full: '📦 导出完整项目',
+  share_copy_text: '复制文字图解',
+  share_export_seq: '导出针法序列',
+  share_export_full: '导出完整项目',
   share_copied: '图解已复制到剪贴板',
   share_pro_required: '此功能需要 Pro，敬请期待',
   share_qr_label: '🔲 同时生成二维码',

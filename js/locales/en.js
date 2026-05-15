@@ -456,9 +456,9 @@ export default {
   //  Share pattern
   // ═════════════════════════════════════
   share_pattern_title: 'Share Pattern',
-  share_copy_text: '📝 Copy text pattern',
-  share_export_seq: '🧵 Export stitch sequence',
-  share_export_full: '📦 Export full project',
+  share_copy_text: 'Copy text pattern',
+  share_export_seq: 'Export stitch sequence',
+  share_export_full: 'Export full project',
   share_copied: 'Pattern copied to clipboard',
   share_pro_required: 'This feature requires Pro. Stay tuned!',
   share_qr_label: '🔲 Generate QR code',
