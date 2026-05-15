@@ -464,6 +464,7 @@ export default {
   share_copy_full: '复制完整项目',
   share_copied: '图解已复制到剪贴板',
   share_full_copied: '项目已复制到剪贴板',
+  share_copy_failed: '复制失败，请重试',
   share_pro_required: '此功能需要 Pro，敬请期待',
   share_text_footer: '用织影 App 打开可直接计数',
   import_share_title: '导入分享的项目',

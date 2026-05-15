@@ -464,6 +464,7 @@ export default {
   share_copy_full: 'Copy full project',
   share_copied: 'Pattern copied to clipboard',
   share_full_copied: 'Project copied to clipboard',
+  share_copy_failed: 'Copy failed, please try again',
   share_pro_required: 'This feature requires Pro. Stay tuned!',
   share_text_footer: 'Open with StitchEcho to count directly',
   import_share_title: 'Import shared project',

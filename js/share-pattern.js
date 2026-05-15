@@ -99,37 +99,9 @@ function stripProjectForExport(proj) {
 
 async function compressAndEncode(data) {
   const json = JSON.stringify(data);
-  if (typeof CompressionStream === 'undefined') {
-    const bytes = new TextEncoder().encode(json);
-    return { compressed: false, data: uint8ArrayToBase64(bytes) };
-  }
-  try {
-    const bytes = new TextEncoder().encode(json);
-    const cs = new CompressionStream('gzip');
-    const writer = cs.writable.getWriter();
-    await writer.write(bytes);
-    await writer.close();
-
-    const reader = cs.readable.getReader();
-    const chunks = [];
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      chunks.push(value);
-    }
-    const totalLength = chunks.reduce((acc, c) => acc + c.length, 0);
-    const combined = new Uint8Array(totalLength);
-    let offset = 0;
-    for (const c of chunks) {
-      combined.set(c, offset);
-      offset += c.length;
-    }
-    return { compressed: true, data: uint8ArrayToBase64(combined) };
-  } catch (e) {
-    console.warn('Compression failed, falling back to uncompressed:', e);
-    const bytes = new TextEncoder().encode(json);
-    return { compressed: false, data: uint8ArrayToBase64(bytes) };
-  }
+  // CompressionStream 在部分浏览器中会导致流挂起，暂时走无压缩 fallback
+  const bytes = new TextEncoder().encode(json);
+  return { compressed: false, data: uint8ArrayToBase64(bytes) };
 }
 
 function generateFullProjectText(proj, encoded) {
@@ -221,18 +193,20 @@ window._copyTextPattern = function(projId) {
 };
 
 window._copyFullProject = async function(projId) {
-  const proj = getProj(projId);
-  if (!proj) return;
-  const stripped = stripProjectForExport(proj);
-  const { data } = await compressAndEncode(stripped);
-  const text = generateFullProjectText(proj, data);
-  copyToClipboard(text).then(() => {
+  try {
+    const proj = getProj(projId);
+    if (!proj) return;
+    const stripped = stripProjectForExport(proj);
+    const { data } = await compressAndEncode(stripped);
+    const text = generateFullProjectText(proj, data);
+    await copyToClipboard(text);
     showToast(t('share_full_copied'));
+  } catch (e) {
+    console.error('Full project export failed:', e);
+    showToast(t('share_copy_failed'));
+  } finally {
     closeSheet();
-  }).catch(() => {
-    showToast(t('share_full_copied'));
-    closeSheet();
-  });
+  }
 };
 
 // ── Import shared project sheet ──
