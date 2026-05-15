@@ -173,11 +173,12 @@ async function decodeAndDecompress(b64) {
         offset += c.length;
       }
       return JSON.parse(new TextDecoder().decode(combined));
-    } catch {
+    } catch (innerErr) {
+      console.error('[decode] DecompressionStream failed, trying raw parse:', innerErr.message);
       return JSON.parse(new TextDecoder().decode(bytes));
     }
   } catch (e) {
-    console.warn('decodeAndDecompress failed:', e);
+    console.error('[decode] all paths failed:', e.message);
     return null;
   }
 }
@@ -266,19 +267,28 @@ export function openImportShareSheet() {
 
 window._doImportShared = async function() {
   const textarea = document.getElementById('import-share-textarea');
-  if (!textarea) return;
+  if (!textarea) { console.error('[import] textarea not found'); return; }
   const raw = textarea.value.trim();
-  if (!raw) return;
+  if (!raw) { console.error('[import] textarea empty'); return; }
 
   const match = raw.match(/KNIT1:(\S+)/);
   if (!match || !match[1]) {
+    console.error('[import] regex miss — no KNIT1: prefix found in:', raw.slice(0, 100));
     showToast(t('import_share_error'));
     return;
   }
 
   const b64 = match[1];
+  console.error('[import] b64 extracted, len:', b64.length);
+
   const data = await decodeAndDecompress(b64);
-  if (!data || !validateProjectData(data)) {
+  if (!data) {
+    console.error('[import] decodeAndDecompress returned null');
+    showToast(t('import_share_error'));
+    return;
+  }
+  if (!validateProjectData(data)) {
+    console.error('[import] validateProjectData failed. typeof:', typeof data, 'has parts:', Array.isArray(data.parts), 'keys:', Object.keys(data || {}));
     showToast(t('import_share_error'));
     return;
   }
