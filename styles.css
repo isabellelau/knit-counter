@@ -3413,3 +3413,29 @@ html.immersive-mode .pal-btn small {
   font-size: 13px;
 }
 
+/* ── Pro badge ── */
+.pro-badge {
+  display: inline-block;
+  font-size: 10px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-left: 6px;
+  vertical-align: middle;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  line-height: 1.4;
+}
+
+/* ── QR code container ── */
+.share-qr-wrap {
+  text-align: center;
+  padding: 12px 16px;
+}
+.share-qr-wrap img,
+.share-qr-wrap canvas {
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.1);
+}
+

@@ -451,4 +451,19 @@ export default {
   resume_progress_msg: '上次钩到\n第 {roundNum} 圈 · 第 {stitchIndex} 针\n{time}',
   resume_continue: '继续',
   resume_skip: '从头浏览',
+
+  // ═════════════════════════════════════
+  //  分享图解
+  // ═════════════════════════════════════
+  share_pattern_title: '分享图解',
+  share_copy_text: '📝 复制文字图解',
+  share_export_seq: '🧵 导出针法序列',
+  share_export_full: '📦 导出完整项目',
+  share_copied: '图解已复制到剪贴板',
+  share_pro_required: '此功能需要 Pro，敬请期待',
+  share_qr_label: '🔲 同时生成二维码',
+  share_qr_hint: '长按保存二维码',
+  share_qr_too_large: '项目数据过大，无法生成二维码，请使用文件分享',
+  share_text_footer: '用织影 App 打开可直接计数',
+  share_exported: '文件已下载',
 };

@@ -5,6 +5,7 @@ import { saveData, migrateData, exportSingleProject } from './storage.js';
 import { getUnitLabel, checkResumePosition } from './stitch.js';
 import { setPageView } from './main.js';
 import { t, term } from './i18n.js';
+import { openShareSheet } from './share-pattern.js';
 
 export function openProject(id) {
   setPageView(null);
@@ -142,6 +143,9 @@ export async function toggleProjMenu(id, e) {
   const shareAction = `
     <button class="sheet-item" onclick="handleGenerateShare('${id}');closeSheet()">
       <span class="sheet-item-icon">✨</span> ${t('share_generate')}
+    </button>
+    <button class="sheet-item" onclick="openShareSheet('${id}')">
+      <span class="sheet-item-icon">📤</span> ${t('share_pattern_title')}
     </button>
   `;
 

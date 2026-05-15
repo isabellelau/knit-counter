@@ -451,4 +451,19 @@ export default {
   resume_progress_msg: 'Last worked on\nRound {roundNum} · Stitch {stitchIndex}\n{time}',
   resume_continue: 'Continue',
   resume_skip: 'Browse from start',
+
+  // ═════════════════════════════════════
+  //  Share pattern
+  // ═════════════════════════════════════
+  share_pattern_title: 'Share Pattern',
+  share_copy_text: '📝 Copy text pattern',
+  share_export_seq: '🧵 Export stitch sequence',
+  share_export_full: '📦 Export full project',
+  share_copied: 'Pattern copied to clipboard',
+  share_pro_required: 'This feature requires Pro. Stay tuned!',
+  share_qr_label: '🔲 Generate QR code',
+  share_qr_hint: 'Long press to save QR code',
+  share_qr_too_large: 'Project data too large for QR code. Please use file sharing instead.',
+  share_text_footer: 'Open with StitchEcho to count directly',
+  share_exported: 'File downloaded',
 };
