@@ -229,16 +229,20 @@ window._copyTextPattern = function(projId) {
 };
 
 window._copyFullProject = async function(projId) {
-  if (!requirePro()) return;
+  if (!requirePro()) { console.error('[export] requirePro failed'); return; }
   const proj = getProj(projId);
-  if (!proj) return;
+  if (!proj) { console.error('[export] getProj returned null for', projId); return; }
+  console.error('[export] compressing project:', proj.name);
   const stripped = stripProjectForExport(proj);
   const { data } = await compressAndEncode(stripped);
+  console.error('[export] encoded, base64 len:', data.length);
   const text = generateFullProjectText(proj, data);
   copyToClipboard(text).then(() => {
+    console.error('[export] copied OK');
     showToast(t('share_full_copied'));
     closeSheet();
-  }).catch(() => {
+  }).catch((err) => {
+    console.error('[export] clipboard write failed:', err);
     showToast(t('share_full_copied'));
     closeSheet();
   });
@@ -273,7 +277,7 @@ window._doImportShared = async function() {
 
   const match = raw.match(/KNIT1:(\S+)/);
   if (!match || !match[1]) {
-    console.error('[import] regex miss — no KNIT1: prefix found in:', raw.slice(0, 100));
+    console.error('[import] regex miss - no KNIT1: prefix found in:', raw.slice(0, 100));
     showToast(t('import_share_error'));
     return;
   }
