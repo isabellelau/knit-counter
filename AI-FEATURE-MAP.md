@@ -15,7 +15,7 @@
 
 ## 功能模块统计
 
-- **页面级视图**: 3 个（首页项目列表、项目详情页、设置页）+ Onboarding 引导页 + 设置子页面（外观/针法库/语言/数据/进阶）
+- **页面级视图**: 3 个（首页项目列表、项目详情页、设置页）+ Onboarding 引导页 + 设置子页面（外观/针法库/语言/数据/语音）
 - **可复用 UI 组件**: 4 个（Sheet 弹窗、Dialog 对话框、Toast 提示、Loading 遮罩）
 - **业务逻辑模块**: 16 个 JS 文件（按领域拆分）
 - **国际化文件**: 3 个（`locales/zh.js`、`locales/en.js`、`locales/terms.js`）
@@ -45,7 +45,8 @@ knit/
     ├── round.js            # 圈/行操作（增删切换/空白圈/循环标记）
     ├── part.js             # 部件操作（增删改切换）
     ├── pattern.js          # 图解导入（粘贴/OCR/解析确认）
-    ├── voice.js            # 语音识别（Web Speech API + 音效）
+    ├── voice.js            # 语音识别（Web Speech API + 音效 + 意图执行引擎）
+    ├── voice-intent.js     # 语音意图解析（L1 免费层 / L2 Pro 层，含 CONFIRM 心流联动）
     ├── image.js            # 图片处理（封面压缩/存取 + 参考图管理 + 参考图查看器）
     ├── annotator.js        # 图片标注工具（画笔/橡皮擦/颜色/撤销/缩放）
     ├── highlight.js        # 流式模式（指令分词器/下一针预测/高亮卷轴渲染）
@@ -887,14 +888,15 @@ knit/
 - 下一针预测: `js/highlight.js:202-220` — `getNextStitchSid(proj)` 根据当前进度确定下一步
 - 高亮卷轴: `js/highlight.js:221-260` — `renderHighlightReel(proj)` 水平滚动 stitch-by-stitch 序列
 - 按钮联动: `js/stitch.js:1531-1623` — 调色板中非下一针按钮变暗
-- 设置开关: `js/settings.js:476-579` — `toggleHighlightEnabled()`（设置 → 进阶子页面，PRO 徽标装饰）
+- 语音心流联动: `js/voice.js:211-221` — CONFIRM 意图在 `voiceFlowSync && highlightMode` 时调用 `getNextStitchSid()` 自动推进
+- 设置开关: `js/settings.js` — `toggleHighlightEnabled()`（设置 → 语音子页面，PRO 徽标装饰）
 - 退出方式: 长按任意针法按钮
 
 **视觉标识**:
 - 开启后底部调色板仅高亮"下一针"按钮，其余变暗
 - 高亮卷轴（`highlight-reel`）横向显示当前圈完整针法序列，当前针有脉冲动画
 - 每添加一针自动推进 `highlightIndex`
-- 设置中显示为"流式模式"（带 PRO 装饰徽标，功能已免费）
+- 语音模式下说"好"/"done"可声控推进流式模式（需开启心流联动开关）
 - PRO 徽标为纯视觉装饰，无功能限制
 
 **修改指引**:
@@ -903,6 +905,7 @@ knit/
 - 修改高亮卷轴样式: 编辑 `styles.css:3389-3431` — `.highlight-reel*`
 - 修改 PRO 徽标样式: 编辑 `styles.css:3433-3445` — `.highlight-pro-badge`
 - 修改开关默认值: 编辑 `js/state.js:19` — `highlightEnabled`
+- 修改心流联动触发词: 编辑 `js/voice-intent.js` — CONFIRM 正则匹配
 
 
 ### 业务功能 - 沉浸模式
@@ -1181,19 +1184,53 @@ knit/
 
 **用户描述方式**:
 - 主要: "语音输入"、"语音控制"、"声控钩织"、"说数字加针"
-- 别名: "voice mode"、"语音识别"、"语音计数"、"喊针法"
+- 别名: "voice mode"、"语音识别"、"语音计数"、"喊针法"、"心流联动"
+
+**架构概述**:
+语音模式采用两层意图解析架构：
+- **L1 免费层**（`parseIntentL1`）: 识别针法名称 + 数字、撤销、重复上一针
+- **L2 Pro 层**（`parseIntentL2`）: L1 全部能力 + 标记颜色（MARK）、跳转圈号（GOTO）、心流联动确认（CONFIRM）
+- 意图执行引擎（`executeIntent`）统一处理所有意图类型
 
 **代码位置**:
-- 语音开关: `js/voice.js:105-188` — `toggleVoiceMode()`（3 状态：off / starting / on）
-- 语音识别初始化: `js/voice.js:50-103` — `initRecognition()`
-- 识别处理: `js/voice.js:58-84` — 匹配数字 1-9 或撤销关键词
+- 语音开关/生命周期: `js/voice.js:309-391` — `toggleVoiceMode()`（3 状态：off / starting / on）
+- 语音识别初始化: `js/voice.js:277-307` — `initRecognition()`（持续识别，自动重启）
+- 意图路由: `js/voice.js:61-73` — `handleVoiceResult()` → 根据 isPro() 选择 L1 或 L2 解析器
+- 意图执行引擎: `js/voice.js:75-227` — `executeIntent(intent)` 处理所有意图类型
+- 意图解析 L1: `js/voice-intent.js` — `parseIntentL1(text)` 免费层规则
+- 意图解析 L2: `js/voice-intent.js` — `parseIntentL2(text)` Pro 层规则
+- 意图类型枚举: `js/voice-intent.js` — `IntentType = { STITCH, UNDO, REPEAT, REPEAT_SINGLE, REPEAT_PATTERN, REPEAT_ROUND, REPEAT_ROUND_COPY, NEW_ROUND, MARK, MARK_COLOR_REPLY, GOTO, CONFIRM, UNKNOWN }`
+- 等待交互状态: `js/voice.js:229-243` — `startWaiting()` / `clearWaiting()`（MARK 颜色选择、REPEAT 确认等超时自动取消）
+- 语音反馈播报: `js/voice.js:245-255` — `speakFeedback(textZh, textEn)`（TTS 中英文自动选择）
 - 视觉效果: `js/stitch.js` — `triggerEdgeGlow()`
-- 呼吸指示器: `js/voice.js:190-200` — `setVoicePulse()`
-- 按钮状态: `js/voice.js:202-224` — `updateVoiceButton()`
-- 音效: `js/voice.js:12-48` — `playSound()`
+- 呼吸指示器: `js/voice.js:393-403` — `setVoicePulse()`
+- 按钮状态: `js/voice.js:405-424` — `updateVoiceButton()`
+- 音效: `js/voice.js:19-55` — `playSound()`（Web Audio API 合成音）
 - 底部按钮: "🎙 语音"按钮
-- 语音提示横幅: `js/render.js:278-293`
-- 语音教程: `js/voice.js:232-260` — `openVoiceTutorial()`
+- 语音设置子页面: `js/settings.js` — `renderVoiceSettings()`（完整设置页，含基础开关、交互设置、心流联动）
+- 语音教程: `js/voice.js:426-465` — `openVoiceTutorial()`（8 步教程 + 心流联动警告章节）
+
+**意图类型说明**:
+- `STITCH`: 添加指定针法 N 针（如"短针3"→加 3 针短针）
+- `UNDO`: 撤销上一针
+- `REPEAT`: 重复，根据 `voiceRepeatDefault` 设置决定行为（ask=询问 / single=重复一针 / pattern=重复整行花样）
+- `REPEAT_SINGLE`: 重复一针（REPEAT 追问后响应）
+- `REPEAT_PATTERN`: 重复当前圈图解（REPEAT 追问后响应）
+- `REPEAT_ROUND`: 询问重复当前圈还是新建（生成 REPEAT_ROUND_CLARIFY 等待）
+- `REPEAT_ROUND_COPY`: 复制当前圈结构
+- `NEW_ROUND`: 新建空白圈
+- `MARK`: 触发标记颜色选择（生成 MARK_COLOR 等待）
+- `MARK_COLOR_REPLY`: 用指定颜色标记当前位置
+- `GOTO`: 跳转到指定圈号
+- `CONFIRM`: 心流联动确认词（需 `voiceFlowSync && highlightMode` 双开关才生效）
+
+**相关设置字段**（均在 `state.data.settings` 下）:
+- `voiceEnabled`: 进入项目默认开启语音
+- `voiceSoundEnabled`: 语音模式操作音效
+- `voiceSpeakFeedback`: 语音 TTS 反馈播报
+- `voiceWaitTimeout`: 交互等待超时（3000/5000/8000ms）
+- `voiceRepeatDefault`: REPEAT 意图默认行为（'ask' / 'single' / 'pattern'）
+- `voiceFlowSync`: 心流联动开关（CONFIRM 意图是否推进流式模式）
 
 **视觉标识**:
 - 底部"🎙 语音"按钮三种状态：
@@ -1201,15 +1238,21 @@ knit/
   - 启动中: 橙色（#F59E0B）+ 脉冲动画
   - 已开启: 红色（#EF4444）+ 脉冲动画
 - 屏幕右下角红色脉冲圆点（voice breathing 动画，1.8s）
-- 语音模式按钮显示数字 1-9
+- 语音模式下针法按钮显示数字 1-9
 - 添加针法时屏幕边缘闪烁对应颜色
+- 语音等待交互时 `.voice-waiting` 类添加到 documentElement
+- 设置页语音子页面：品牌化教程卡片 + 基础设置区 + 交互设置区（超时选项按钮、重复默认行为选项按钮）+ 心流联动 PRO 开关
+- 开启心流联动时首次弹出警告对话框（localStorage 记录，仅一次）
 
 **修改指引**:
-- 修改识别语言: 编辑 `js/voice.js:54` — `r.lang = 'zh-CN'`
-- 修改撤销关键词: 编辑 `js/voice.js:62`
+- 修改识别语言: 编辑 `js/voice.js:281` — `r.lang = 'zh-CN'`
+- 新增意图类型: 在 `js/voice-intent.js` 添加枚举值 + 解析规则 + 在 `js/voice.js` executeIntent 添加 case
+- 修改交互等待超时: 编辑设置或 `js/voice.js:104` 的 `voiceWaitTimeout` 默认值
 - 修改数字映射: 编辑 `js/state.js:59-69` — `NUMBER_MAP`
-- 修改按钮颜色: 编辑 `js/voice.js:202-224`
+- 修改按钮颜色: 编辑 `js/voice.js:405-424`
 - 修改边缘闪烁时长: 编辑 `js/stitch.js` — `triggerEdgeGlow()`
+- 修改教程内容: 编辑 `js/voice.js:426-465` + locale 文件 16 个 tutorial key
+- 修改心流联动触发词: 编辑 `js/voice-intent.js` — CONFIRM 正则匹配
 
 
 ### 业务功能 - 语音提示横幅
@@ -1357,7 +1400,7 @@ knit/
 - Sheet 版: `js/settings.js:26-36` — `openSettings()`（从项目页头部按钮调用）
 - 全页版: `js/settings.js:37-240` — `renderSettings()`（通过 Tab Bar 切换调用，含 profile header + 子页面列表）
 - 子页面导航: `js/settings.js:242-295` — `navigateToSubPage(key)` + `goBackFromSubPage()`（栈式导航）
-- 子页面列表: 外观（UI 主题 + 针法颜色）/ 针法库 / 语言 & 符号 / 数据管理 / 进阶功能 / 关于
+- 子页面列表: 外观（UI 主题 + 针法颜色）/ 针法库 / 语言 & 符号 / 数据管理 / 语音模式 / 关于
 - 身份卡: `js/settings.js:71-93` — profile header（头像 + 昵称 + 统计）
 - 头像加载: `js/settings.js:47-54` — `_loadProfileAvatar()`
 - 昵称编辑: `js/settings.js:580-601` — `editProfileName()`
@@ -1379,23 +1422,38 @@ knit/
 - 修改子页面导航栈: 编辑 `js/settings.js:242-295`
 
 
-### 应用设置 - 语音默认开关 & 音效开关
+### 应用设置 - 语音模式设置子页面
 
 **用户描述方式**:
-- 主要: "默认开启语音"、"语音自动启动"、"音效开关"
-- 别名: "voice default"、"语音音效"、"提示音开关"
+- 主要: "语音设置"、"语音模式配置"、"心流联动"、"TTS 反馈"
+- 别名: "voice settings"、"语音子页面"、"语音选项"、"交互超时"
 
 **代码位置**:
-- 默认语音开关 UI + 逻辑: `js/settings.js:744-750` — `toggleVoiceDefault()`
-- 音效开关 UI + 逻辑: `js/settings.js:751-757` — `toggleVoiceSound()`
-- 存储: `state.data.settings.voiceEnabled` / `voiceSoundEnabled`
+- 子页面渲染: `js/settings.js` — `renderVoiceSettings()`（完整语音设置页 HTML）
+- 基础开关: `js/settings.js` — `toggleVoiceDefault()` / `toggleVoiceSound()` / `toggleVoiceSpeakFeedback()`
+- 交互设置: `js/settings.js` — `setVoiceWaitTimeout(ms)` / `setVoiceRepeatDefault(value)`（选项按钮组，active 态高亮）
+- 心流联动: `js/settings.js` — `toggleVoiceFlowSync()`（首次开启弹出警告 Dialog，localStorage 记录 `voice_flow_sync_warned`）
+- 样式: `styles.css` — `.settings-option-row`, `.settings-option-btn`, `.settings-option-btn.active`, `.settings-dc-note`, `.voice-tutorial-card`, `.voice-tutorial-card-left`, `.voice-tutorial-icon`, `.voice-tutorial-title`, `.voice-tutorial-sub`, `.voice-tutorial-arrow`, `.voice-tutorial-warning`, `.voice-tutorial-list`
+- 存储: `state.data.settings.voiceEnabled` / `voiceSoundEnabled` / `voiceSpeakFeedback` / `voiceWaitTimeout` / `voiceRepeatDefault` / `voiceFlowSync`
+- 教程入口: 品牌化卡片 → `openVoiceTutorial()`（8 步 + 心流联动警告章节）
+- 入口: 设置 → 语音模式子页面
 
 **视觉标识**:
+- 顶部品牌教程卡片（莫兰迪色背景 + 麦克风图标 + 标题"语音指令教程" + 副标题 + › 箭头）
+- 基础设置区：三个滑动开关（默认开启 / 音效 / TTS 反馈），每项有标题 + 描述副标题
+- 英语用户额外显示 DC 歧义提示横幅（`.settings-dc-note`）
+- 交互设置区：超时等待（3s / 5s / 8s 选项按钮）+ REPEAT 默认行为（询问 / 织一针 / 整行 选项按钮）
+- 心流联动区：开关 + PRO 装饰徽标，开启时首次弹出警告对话框
 - 滑动开关（toggle switch），开启时 `var(--accent)` 背景
+- 选项按钮选中时 `var(--accent)` 边框高亮 + 浅色背景
 
 **修改指引**:
-- 修改标签文字: 编辑 `js/settings.js:747` 和 `js/settings.js:754`
-- 修改开关样式: 编辑 `styles.css:1067-1097` — `.settings-toggle` 系列
+- 新增语音设置项: 在 `renderVoiceSettings()` 添加 HTML + 创建对应 toggle 函数 + 在 `main.js` import/注册
+- 修改超时选项: 编辑 `renderVoiceSettings()` 中的选项按钮 value
+- 修改教程卡片: 编辑 `renderVoiceSettings()` 中的 `.voice-tutorial-card` HTML
+- 修改标签文字: 编辑 locale 文件中 `settings_voice_*` / `voice_*` 系列键
+- 修改开关样式: 编辑 `styles.css` — `.settings-toggle` 系列
+- 修改心流联动警告文案: 编辑 `js/settings.js` — `toggleVoiceFlowSync()` 中的 `showConfirmDialog` 调用
 
 
 ### 其他功能 - 导出 PDF / 打印
@@ -1476,7 +1534,7 @@ knit/
 **数据结构概览**:
 ```
 state.data = {
-  schemaVersion: LATEST_SCHEMA,     // 当前 schema 版本号（11）
+  schemaVersion: LATEST_SCHEMA,     // 当前 schema 版本号（16）
   projects: [{
     id, name, archived,
     useRowTerms,                    // 用"行"还是"圈"
@@ -1517,7 +1575,11 @@ state.data = {
       colors: {}                    // 全局针法颜色自定义
     },
     voiceEnabled: false,            // 进入项目默认开启语音
-    voiceSoundEnabled: false,       // 语音模式音效
+    voiceSoundEnabled: false,       // 语音模式操作音效
+    voiceSpeakFeedback: true,       // 语音 TTS 反馈播报（v15）
+    voiceWaitTimeout: 5000,         // 语音交互等待超时 ms（v15）
+    voiceRepeatDefault: 'ask',      // REPEAT 意图默认行为（v15）
+    voiceFlowSync: false,           // 心流联动开关（v16）
     highlightEnabled: false,        // 流式模式开关（v3）
     profile: { name: '' }           // 本地昵称（v6）
   }
@@ -1540,8 +1602,8 @@ state.data = {
 **代码位置**:
 - 迁移函数: `js/storage.js:248-420` — `migrateData(d)`
 - 调用时机: `js/storage.js:234` — `loadData()` 读取数据后立即调用
-- schema 版本常量: `js/storage.js:97` — `LATEST_SCHEMA`（当前值为 11）
-- 版本历史: `js/storage.js:1-28` — 文件头注释块
+- schema 版本常量: `js/storage.js:97` — `LATEST_SCHEMA`（当前值为 16）
+- 版本历史: `js/storage.js:1-28` — 文件头注释块（v1→v16）
 - 旧 ID 映射: `stitches.js:42-45` — `OLD_ID_MAP`
 - 一次性迁移: `js/storage.js:100-138` — localStorage → IndexedDB 自动迁移
 
@@ -1582,6 +1644,19 @@ state.data = {
   - 新增 `project.markers`（记号扣，针目级彩色标记+备注）
 - **v10 → v11** (schemaVersion < 11):
   - 新增 `part.lastPosition`（钩织进度记忆，记录最后钩织位置）
+- **v11 → v12** (schemaVersion < 12):
+  - 新增 `settings.stitchTheme`（针法颜色主题，默认 "morandi"）
+- **v12 → v13** (schemaVersion < 13):
+  - 新增 `settings.customColors`（全局自定义颜色映射）
+- **v13 → v14** (schemaVersion < 14):
+  - 新增 `round.isLoopMarker` / `loopFrom` / `loopTo`（循环标记支持）
+  - 新增 `round.isTextCard`（纯文本备注卡）
+- **v14 → v15** (schemaVersion < 15):
+  - 新增 `settings.voiceSpeakFeedback`（默认 true）
+  - 新增 `settings.voiceWaitTimeout`（默认 5000）
+  - 新增 `settings.voiceRepeatDefault`（默认 'ask'）
+- **v15 → v16** (schemaVersion < 16):
+  - 新增 `settings.voiceFlowSync`（心流联动开关，默认 false）
 
 **修改指引**:
 - 添加新的数据迁移规则: 编辑 `js/storage.js:248-420`

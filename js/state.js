@@ -16,6 +16,10 @@ export const state = {
       },
       voiceEnabled: false,
       voiceSoundEnabled: false,
+      voiceSpeakFeedback: true,
+      voiceWaitTimeout: 5000,
+      voiceRepeatDefault: 'ask',
+      voiceFlowSync: false,
       highlightEnabled: false,
       profile: { name: '' }
     }

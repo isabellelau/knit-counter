@@ -10,6 +10,7 @@ const IntentType = {
   MARK:    'MARK',
   GOTO:    'GOTO',
   MOVE:    'MOVE',
+  CONFIRM: 'CONFIRM',
   UNKNOWN: 'UNKNOWN'
 };
 
@@ -114,6 +115,9 @@ function parseIntentL1(text) {
     if (/\bone more round\b|\bnext round\b|\brepeat round\b/.test(t))
       return { type: IntentType.REPEAT_ROUND };
 
+    if (/^(done|next|yes|ok|got it)$/.test(t))
+      return { type: IntentType.CONFIRM };
+
   } else {
     if (/撤销|返回|undo|back/.test(t))
       return { type: IntentType.UNDO };
@@ -133,6 +137,9 @@ function parseIntentL1(text) {
 
     if (/再来|repeat|再一次|再来一次/.test(t))
       return { type: IntentType.REPEAT };
+
+    if (/^(好|嗯|钩了|下一针|继续)$/.test(t))
+      return { type: IntentType.CONFIRM };
   }
 
   return { type: IntentType.UNKNOWN, raw: text };

@@ -15,7 +15,7 @@ function _getSubPageTitle(key) {
     color: t('settings_color'),
     permissions: t('settings_permissions'),
     data: t('settings_data'),
-    advanced: t('settings_advanced'),
+    voice: t('settings_voice'),
     about: t('settings_about'),
     lang: t('settings_language')
   };
@@ -158,11 +158,11 @@ function _buildSettingsListInnerHTML() {
         </div>
       </div>
 
-      <div class="settings-row" onclick="navigateToSubPage('advanced')">
-        <div class="settings-row-icon" style="background:var(--accent-bg);color:var(--accent)">⚡</div>
-        <span class="settings-row-label">${t('settings_advanced')}</span>
+      <div class="settings-row" onclick="navigateToSubPage('voice')">
+        <div class="settings-row-icon" style="background:var(--accent-bg);color:var(--accent)">🎤</div>
+        <span class="settings-row-label">${t('settings_voice')}</span>
         <div class="settings-row-extra">
-          <span class="settings-badge-pro">${t('settings_pro_badge')}</span>
+          <span class="settings-row-value">${t('settings_voice_sub')}</span>
           <span class="settings-row-chevron">›</span>
         </div>
       </div>
@@ -248,6 +248,9 @@ export function navigateToSubPage(key) {
     const lt = document.getElementById('large-title-wrap');
     if (lt) lt.style.display = 'none';
 
+    const tabNav = document.getElementById('tab-nav');
+    if (tabNav) tabNav.style.display = 'none';
+
     const navBack  = document.getElementById('nav-back');
     const navSmall = document.getElementById('nav-small-title');
     const navActions = document.getElementById('nav-actions');
@@ -276,8 +279,8 @@ export function navigateToSubPage(key) {
       subHTML = _buildDataSubPageHTML();
       checkStorageQuota();
       break;
-    case 'advanced':
-      subHTML = _buildAdvancedSubPageHTML();
+    case 'voice':
+      subHTML = renderVoiceSettings();
       break;
     case 'about':
       subHTML = _buildAboutSubPageHTML();
@@ -299,6 +302,9 @@ export function goBackFromSubPage() {
 
   if (_settingsMode === 'page') {
     if (_settingsStack.length === 0) {
+      const tabNav = document.getElementById('tab-nav');
+      if (tabNav) tabNav.style.display = '';
+
       _resetNavBarToSettingsRoot();
       _injectProfileHeader();
       _renderSettingsList('back');
@@ -444,51 +450,142 @@ function _buildDataSubPageHTML() {
 }
 
 // ═════════════════════════════════════
-//  子页：进阶功能
+//  子页：语音模式
 // ═════════════════════════════════════
 
-function _buildAdvancedSubPageHTML() {
-  const enabled = state.data.settings.highlightEnabled ?? false;
+function renderVoiceSettings() {
+  const s = state.data.settings;
 
   return `
-    <div class="settings-section-hd">${t('settings_stitch_assist')}</div>
+    <div class="settings-subpage">
 
-    <div class="settings-row" onclick="toggleHighlightEnabled()" style="cursor:pointer">
-      <div class="settings-row-icon" style="background:var(--accent-bg);color:var(--accent)">✦</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:var(--text-body);color:var(--text);display:flex;align-items:center;gap:8px">
-          ${t('flow_mode_toggle_label')}
-          <span class="highlight-pro-badge-inline">${t('settings_pro_badge')}</span>
+      <div class="voice-tutorial-card" onclick="openVoiceTutorial()">
+        <div class="voice-tutorial-card-left">
+          <div class="voice-tutorial-icon">🎙</div>
+          <div>
+            <div class="voice-tutorial-title">${t('voice_tutorial_btn')}</div>
+            <div class="voice-tutorial-sub">${t('voice_tutorial_btn_sub')}</div>
+          </div>
         </div>
-        <div style="font-size:var(--text-caption1);color:var(--muted);margin-top:2px">${t('flow_mode_toggle_desc')}</div>
+        <span class="voice-tutorial-arrow">›</span>
       </div>
-      <span class="settings-toggle${enabled ? ' on' : ''}" id="settings-highlight-toggle">
-        <i class="settings-toggle-knob"></i>
-      </span>
-    </div>
 
-    <div class="settings-section-desc settings-section-desc--bottom">
-      ${t('flow_mode_toggle_footer')}
+      ${getLang() === 'en' ? `
+      <div class="settings-section">
+        <div class="settings-dc-note">Note: 'DC' is treated as double crochet (US terms). Say 'single crochet' or 'treble' for unambiguous results.</div>
+      </div>
+      ` : ''}
+
+      <div class="settings-section">
+        <div class="settings-section-title">${t('voice_basic_settings')}</div>
+
+        <div class="settings-item settings-item--row">
+          <div>
+            <div class="settings-item-title">${t('voice_auto_enable')}</div>
+          </div>
+          <div class="settings-toggle-wrap">
+            <label class="settings-toggle">
+              <input type="checkbox"
+                ${s.voiceEnabled ? 'checked' : ''}
+                onchange="toggleVoiceDefault()">
+              <span class="settings-toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="settings-item settings-item--row">
+          <div>
+            <div class="settings-item-title">${t('voice_sound_effects')}</div>
+            <div class="settings-item-sub">${t('voice_sound_effects_sub')}</div>
+          </div>
+          <div class="settings-toggle-wrap">
+            <label class="settings-toggle">
+              <input type="checkbox"
+                ${s.voiceSoundEnabled ? 'checked' : ''}
+                onchange="toggleVoiceSound()">
+              <span class="settings-toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="settings-item settings-item--row">
+          <div>
+            <div class="settings-item-title">${t('voice_speak_feedback')}</div>
+            <div class="settings-item-sub">${t('voice_speak_feedback_sub')}</div>
+          </div>
+          <div class="settings-toggle-wrap">
+            <label class="settings-toggle">
+              <input type="checkbox"
+                ${s.voiceSpeakFeedback ? 'checked' : ''}
+                onchange="toggleVoiceSpeakFeedback()">
+              <span class="settings-toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">${t('voice_interaction')}</div>
+
+        <div class="settings-item">
+          <div class="settings-item-title">${t('voice_wait_timeout')}</div>
+          <div class="settings-item-sub">${t('voice_wait_timeout_sub')}</div>
+          <div class="settings-option-row">
+            ${[
+              { label: t('voice_time_label').replace('{value}', 3), value: 3000 },
+              { label: t('voice_time_label').replace('{value}', 5), value: 5000 },
+              { label: t('voice_time_label').replace('{value}', 8), value: 8000 },
+            ].map(o => `
+              <button class="settings-option-btn
+                ${s.voiceWaitTimeout === o.value ? 'active' : ''}"
+                onclick="setVoiceWaitTimeout(${o.value})">
+                ${o.label}
+              </button>
+            `).join('')}
+          </div>
+        </div>
+
+        <div class="settings-item">
+          <div class="settings-item-title">${t('voice_repeat_default')}</div>
+          <div class="settings-item-sub">${t('voice_repeat_default_sub')}</div>
+          <div class="settings-option-row">
+            ${[
+              { label: t('voice_repeat_ask'), value: 'ask' },
+              { label: t('voice_repeat_single'), value: 'single' },
+              { label: t('voice_repeat_pattern'), value: 'pattern' },
+            ].map(o => `
+              <button class="settings-option-btn
+                ${s.voiceRepeatDefault === o.value ? 'active' : ''}"
+                onclick="setVoiceRepeatDefault('${o.value}')">
+                ${o.label}
+              </button>
+            `).join('')}
+          </div>
+        </div>
+
+        <div class="settings-item settings-item--row">
+          <div>
+            <div class="settings-item-title">
+              心流 + 语音联动
+              <span class="pro-badge">PRO</span>
+            </div>
+            <div class="settings-item-sub">
+              心流模式下说"好"/"钩了"即可推进，无需念针法名称，原有语音指令保持不变
+            </div>
+          </div>
+          <div class="settings-toggle-wrap">
+            <label class="settings-toggle">
+              <input type="checkbox"
+                ${s.voiceFlowSync ? 'checked' : ''}
+                onchange="toggleVoiceFlowSync()">
+              <span class="settings-toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
     </div>
   `;
-}
-
-export function toggleHighlightEnabled() {
-  const enabled = !state.data.settings.highlightEnabled;
-  state.data.settings.highlightEnabled = enabled;
-  state.highlightMode = enabled;
-  state.highlightIndex = 0;
-  saveData();
-
-  const el = document.getElementById('settings-highlight-toggle');
-  if (el) el.classList.toggle('on', enabled);
-
-  // 如果在项目页，刷新底部调色板
-  if (state.curProjId) {
-    window.renderProject();
-  }
-
-  showToast(enabled ? t('flow_mode_enabled_toast') : t('flow_mode_disabled_toast'));
 }
 
 // ═════════════════════════════════════
@@ -753,6 +850,50 @@ export function toggleVoiceSound() {
   saveData();
   const el = document.getElementById('settings-voice-sound-toggle');
   if (el) el.classList.toggle('on');
+}
+
+export function toggleVoiceSpeakFeedback() {
+  state.data.settings.voiceSpeakFeedback =
+    !state.data.settings.voiceSpeakFeedback;
+  saveData();
+  navigateToSubPage('voice');
+}
+
+export function setVoiceWaitTimeout(ms) {
+  state.data.settings.voiceWaitTimeout = ms;
+  saveData();
+  navigateToSubPage('voice');
+}
+
+export function setVoiceRepeatDefault(value) {
+  state.data.settings.voiceRepeatDefault = value;
+  saveData();
+  navigateToSubPage('voice');
+}
+
+export function toggleVoiceFlowSync() {
+  const newVal = !state.data.settings.voiceFlowSync;
+  state.data.settings.voiceFlowSync = newVal;
+  saveData();
+
+  if (newVal) {
+    const warned = localStorage.getItem('voice_flow_sync_warned');
+    if (!warned) {
+      showConfirmDialog(
+        '心流联动模式使用"好"、"嗯"等高频词作为触发词，\n在与他人交流或背景嘈杂的环境中容易误触发。\n\n建议仅在安静、独处时开启。',
+        () => {
+          localStorage.setItem('voice_flow_sync_warned', '1');
+          navigateToSubPage('voice');
+        },
+        { title: '使用前请注意', confirmLabel: '我知道了' }
+      );
+      const cancelBtn = document.querySelector('#dialog .dialog-btn:not(.ok)');
+      if (cancelBtn) cancelBtn.style.display = 'none';
+      return;
+    }
+  }
+
+  navigateToSubPage('voice');
 }
 
 export function clearAllData() {

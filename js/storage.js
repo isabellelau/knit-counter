@@ -21,6 +21,9 @@
  *   v11 — 新增 part.lastPosition（钩织进度记忆，记录最后钩织位置）
  *   v12 — 新增 round.clusterRanges（复合针法簇范围，平行于 seq 的元数据）
  *   v13 — clusterRanges → seq 内 cluster token：将平行元数据数组内嵌为 seq 元素
+ *   v14 — 将 seq 中的 cluster token 展开为独立针
+ *   v15 — 新增语音设置字段 voiceSpeakFeedback / voiceWaitTimeout / voiceRepeatDefault
+ *   v16 — 新增心流语音联动开关 voiceFlowSync
  *
  * Rule: whenever you change the shape of state.data, you MUST:
  *   1. Bump LATEST_SCHEMA by 1
@@ -96,7 +99,7 @@ export const storageAdapter = {
 
 const STORAGE_KEY = 'crochet_v4';
 const OLD_KEYS = ['crochet_v3_fixed', 'crochet_v3'];
-const LATEST_SCHEMA = 14;
+const LATEST_SCHEMA = 16;
 
 // ═══════════════════════════════════════
 //  一次性迁移：localStorage → IndexedDB
@@ -526,6 +529,20 @@ export function migrateData(d) {
         });
       });
     });
+  }
+
+  // v14 → v15: 补全语音设置字段
+  if (d.schemaVersion < 15) {
+    if (!d.settings) d.settings = {};
+    d.settings.voiceSpeakFeedback = d.settings.voiceSpeakFeedback ?? true;
+    d.settings.voiceWaitTimeout = d.settings.voiceWaitTimeout ?? 5000;
+    d.settings.voiceRepeatDefault = d.settings.voiceRepeatDefault ?? 'ask';
+  }
+
+  // v15 → v16: 补全心流语音联动开关
+  if (d.schemaVersion < 16) {
+    if (!d.settings) d.settings = {};
+    d.settings.voiceFlowSync = d.settings.voiceFlowSync ?? false;
   }
 
   d.schemaVersion = LATEST_SCHEMA;

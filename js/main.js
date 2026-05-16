@@ -4,7 +4,7 @@ import { saveData, loadData, migrateData, exportPDF, exportData, exportSinglePro
 import { esc, showToast, showSheet, closeSheet, showEntryChoiceSheet, showConfirmDialog, confirmDialog, closeDialog } from './ui.js';
 import { playSound, initRecognition, toggleVoiceMode, setVoicePulse, updateVoiceButton, openVoiceTutorial } from './voice.js';
 import { parseIntentL1, parseIntentL2 } from './voice-intent.js';
-import { openSettings, renderSettings, changeTheme, changeStitchTheme, toggleVoiceDefault, toggleVoiceSound, toggleHighlightEnabled, clearAllData, navigateToSubPage, goBackFromSubPage, editProfileName, pickProfileAvatar, showAvatarSheet, openGlobalStitchLibrary, openGlobalStitchCustomize, saveGlobalStitchCustomize, resetGlobalStitchCustomize, deleteGlobalCustomStitch, openGlobalNewStitchForm, saveGlobalNewStitch } from './settings.js';
+import { openSettings, renderSettings, changeTheme, changeStitchTheme, toggleVoiceDefault, toggleVoiceSound, toggleVoiceSpeakFeedback, setVoiceWaitTimeout, setVoiceRepeatDefault, toggleVoiceFlowSync, clearAllData, navigateToSubPage, goBackFromSubPage, editProfileName, pickProfileAvatar, showAvatarSheet, openGlobalStitchLibrary, openGlobalStitchCustomize, saveGlobalStitchCustomize, resetGlobalStitchCustomize, deleteGlobalCustomStitch, openGlobalNewStitchForm, saveGlobalNewStitch } from './settings.js';
 import {
   startImportFlow, startManualFlow, dismissEntryChoice,
   toggleSelectAllInSetup, startImportFromSetup,
@@ -234,7 +234,7 @@ const _globals = {
   instrEditorInsert, instrEditorInsertNum, instrEditorInsertSymbol, instrEditorBackspace, instrEditorClear, instrEditorConfirm, instrEditorToggleKB,
   openMultiRoundEditor, instrEditorPrevRound, instrEditorNextRound, instrEditorConfirmMulti,
   toggleHighlightMode, updateHighlightButton, updateImmersiveButton,
-  openSettings, changeTheme, changeStitchTheme, toggleVoiceDefault, toggleVoiceSound, toggleHighlightEnabled, clearAllData,
+  openSettings, changeTheme, changeStitchTheme, toggleVoiceDefault, toggleVoiceSound, toggleVoiceSpeakFeedback, setVoiceWaitTimeout, setVoiceRepeatDefault, toggleVoiceFlowSync, clearAllData,
   switchTab, renderSettings, updateTabNav,
   navigateToSubPage, goBackFromSubPage,
   editProfileName, pickProfileAvatar, showAvatarSheet,

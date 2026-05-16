@@ -5,6 +5,7 @@ import { addRoundBlank, setActiveRound } from './round.js';
 import { saveData } from './storage.js';
 import { extractStitches } from '../stitches.js';
 import { parseIntentL1, parseIntentL2 } from './voice-intent.js';
+import { getNextStitchSid } from './highlight.js';
 import { t, getLang } from './i18n.js';
 
 let _audioCtx = null;
@@ -99,15 +100,27 @@ async function executeIntent(intent) {
     }
 
     case 'REPEAT': {
-      if (activeRound?.instruction && state.voiceLastSid) {
+      if (!state.voiceLastSid) break;
+      const timeout = state.data.settings.voiceWaitTimeout ?? 5000;
+      const repeatDefault = state.data.settings.voiceRepeatDefault ?? 'ask';
+
+      if (repeatDefault === 'ask' && activeRound?.instruction) {
         speakFeedback('一针还是重复花样？', 'One stitch or repeat pattern?');
-        startWaiting('REPEAT_CLARIFY', 5000);
-      } else if (state.voiceLastSid) {
+        startWaiting('REPEAT_CLARIFY', timeout);
+      } else if (repeatDefault === 'single') {
         await pushStitch(state.voiceLastSid);
         if (state.data.settings.voiceSoundEnabled) {
           playSound('stitch');
         }
         triggerEdgeGlow(state.voiceLastSid);
+      } else if (repeatDefault === 'pattern' && activeRound?.instruction) {
+        const tokens = extractStitches(activeRound.instruction);
+        for (const sid of tokens) {
+          if (typeof sid === 'string') await pushStitch(sid);
+        }
+        if (state.data.settings.voiceSoundEnabled) {
+          playSound('stitch');
+        }
       }
       break;
     }
@@ -140,8 +153,9 @@ async function executeIntent(intent) {
 
     case 'REPEAT_ROUND': {
       if (activeRound?.instruction) {
+        const timeout = state.data.settings.voiceWaitTimeout ?? 5000;
         speakFeedback('重复这圈还是新建一圈？', 'Repeat this round or new round?');
-        startWaiting('REPEAT_ROUND_CLARIFY', 5000);
+        startWaiting('REPEAT_ROUND_CLARIFY', timeout);
       } else {
         addRoundBlank();
         speakFeedback('已新建', 'New round added');
@@ -167,7 +181,7 @@ async function executeIntent(intent) {
 
     case 'MARK': {
       speakFeedback('什么颜色？', 'What color?');
-      startWaiting('MARK_COLOR', 5000);
+      startWaiting('MARK_COLOR', state.data.settings.voiceWaitTimeout ?? 5000);
       break;
     }
 
@@ -190,6 +204,18 @@ async function executeIntent(intent) {
         speakFeedback(`第${intent.target}圈`, `Round ${intent.target}`);
       } else {
         speakFeedback('没有找到', 'Not found');
+      }
+      break;
+    }
+
+    case 'CONFIRM': {
+      if (state.data.settings.voiceFlowSync && state.highlightMode) {
+        const nextSid = getNextStitchSid(proj);
+        if (nextSid) {
+          await pushStitch(nextSid);
+          speakFeedback(null, null);
+          triggerEdgeGlow(nextSid);
+        }
       }
       break;
     }
@@ -220,7 +246,7 @@ function speakFeedback(textZh, textEn) {
   const lang = getLang();
   const text = lang === 'en' ? textEn : textZh;
   if (!text) return;
-  if (!state.data.settings.voiceSoundEnabled) return;
+  if (!state.data.settings.voiceSpeakFeedback) return;
   const utter = new SpeechSynthesisUtterance(text);
   utter.lang = lang === 'en' ? 'en-US' : 'zh-CN';
   utter.rate = 1.1;
@@ -398,29 +424,39 @@ export function updateVoiceButton() {
 }
 
 export function openVoiceTutorial() {
+  const steps = [1, 2, 3, 4, 5, 6, 7, 8].map(i => `
+    <div>
+      <div style="font-weight:700;margin-bottom:4px">${t('voice_tutorial_step' + i + '_title')}</div>
+      <div style="color:var(--muted);font-size:13px">${t('voice_tutorial_step' + i + '_body')}</div>
+    </div>
+  `).join('');
+
   const content = `<div class="sheet-handle"></div>
   <div class="sheet-title">${t('voice_tutorial_title')}</div>
   <div style="padding:14px 16px;font-size:14px;line-height:1.8;color:var(--text)">
-    <div style="background:#FEF3C7;border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:#92400E;line-height:1.6">
+    <div style="background:#F0F0EE;border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--text-secondary);line-height:1.6">
       ${t('voice_tutorial_warning')}
     </div>
     ${getLang() === 'en' ? `<div style="background:#E0F2FE;border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:#075985;line-height:1.6">Note: 'DC' is treated as double crochet (US terms). Say 'single crochet' or 'treble' for unambiguous results.</div>` : ''}
-    <div style="display:flex;flex-direction:column;gap:12px">
-      <div>
-        <div style="font-weight:700;margin-bottom:4px">${t('voice_tutorial_step1_title')}</div>
-        <div style="color:var(--muted);font-size:13px">${t('voice_tutorial_step1_body')}</div>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      ${steps}
+    </div>
+
+    <div style="margin-top:20px">
+      <div style="font-weight:700;margin-bottom:4px;padding:0 16px">
+        ⚠️ 心流联动模式
       </div>
-      <div>
-        <div style="font-weight:700;margin-bottom:4px">${t('voice_tutorial_step2_title')}</div>
-        <div style="color:var(--muted);font-size:13px">${t('voice_tutorial_step2_body')}</div>
-      </div>
-      <div>
-        <div style="font-weight:700;margin-bottom:4px">${t('voice_tutorial_step3_title')}</div>
-        <div style="color:var(--muted);font-size:13px">${t('voice_tutorial_step3_body')}</div>
-      </div>
-      <div>
-        <div style="font-weight:700;margin-bottom:4px">${t('voice_tutorial_step4_title')}</div>
-        <div style="color:var(--muted);font-size:13px">${t('voice_tutorial_step4_body')}</div>
+      <div class="voice-tutorial-warning">
+        <p>开启后说"好"、"嗯"、"钩了"、"done"、"ok"
+        即可推进心流模式的当前针，无需念出针法名称。</p>
+        <p style="margin-top:8px">
+        由于确认词在日常对话中出现频率较高，
+        建议仅在以下场景使用：</p>
+        <ul class="voice-tutorial-list">
+          <li>安静环境独自钩织</li>
+          <li>佩戴耳机收听指令</li>
+          <li>与他人交流前先暂停语音模式</li>
+        </ul>
       </div>
     </div>
   </div>
