@@ -5,6 +5,8 @@ import { parsePattern, extractStitches } from '../stitches.js';
 import { setPageView } from './main.js';
 import { t, term } from './i18n.js';
 
+let _confirmRounds = null;
+
 export function startImportFlow() {
   document.getElementById("sheet").classList.remove("show");
   document.getElementById("overlay").classList.remove("show");
@@ -182,6 +184,7 @@ export async function handleOCR(input) {
 }
 
 export function openParseConfirmSheet(parsed) {
+  _confirmRounds = parsed;
   const roundCount = parsed.filter(p => p.type === 'round').length;
   const textCount = parsed.filter(p => p.type === 'text').length;
 
@@ -200,15 +203,17 @@ export function openParseConfirmSheet(parsed) {
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px">${badge}</div>
         <input id="edit-${idx}" value="${esc(item.instruction)}"
+          placeholder="${t('confirm_round_placeholder')}"
           style="width:100%;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:13px;background:var(--bg);color:var(--text);outline:none;font-family:inherit"
           onchange="state.flowState.pendingParsed[${idx}].instruction=this.value.trim()">
-        ${item.seq.length ? `<div style="font-size:11px;color:var(--muted);margin-top:3px">${t('detected_stitches')}${[...new Set(item.seq)].map(s => (s && typeof s === 'object' && s.type === 'cluster') ? s.raw : s).join(' · ')}</div>` : ''}
+        ${item.seq && item.seq.length ? `<div style="font-size:11px;color:var(--muted);margin-top:3px">${t('detected_stitches')}${[...new Set(item.seq)].map(s => (s && typeof s === 'object' && s.type === 'cluster') ? s.raw : s).join(' · ')}</div>` : ''}
       </div>
       <button onclick="removeParsedItem(${idx})" style="background:none;border:none;color:#D0B0A0;font-size:20px;padding:4px 8px;cursor:pointer;line-height:1;margin-top:20px">×</button>
     </div>`;
   });
 
-  html += `</div>`;
+  html += `</div>
+  <button class="pattern-add-round-btn" onclick="addConfirmRound()">${t('add_confirm_round')}</button>`;
   const currentPart = proj ? getActivePart(proj) : null;
   const isEmpty = isPartEmpty(currentPart);
 
@@ -235,20 +240,30 @@ export function openParseConfirmSheet(parsed) {
 }
 
 export function removeParsedItem(idx) {
-  if (!state.flowState.pendingParsed) return;
-  state.flowState.pendingParsed.splice(idx, 1);
-  if (state.flowState.pendingParsed.length === 0) {
+  if (!_confirmRounds) return;
+  _confirmRounds.splice(idx, 1);
+  if (_confirmRounds.length === 0) {
     closeSheet();
+    _confirmRounds = null;
     state.flowState.pendingParsed = null;
     return;
   }
-  openParseConfirmSheet(state.flowState.pendingParsed);
+  openParseConfirmSheet(_confirmRounds);
+}
+
+export function addConfirmRound() {
+  if (!_confirmRounds) return;
+  const roundCount = _confirmRounds.filter(r => r.type === 'round').length;
+  _confirmRounds.push({ type: 'round', instruction: '', roundNum: roundCount + 1, seq: [] });
+  openParseConfirmSheet(_confirmRounds);
 }
 
 export function confirmImport(mode) {
-  const parsed = state.flowState.pendingParsed;
+  const parsed = _confirmRounds;
   if (!parsed || parsed.length === 0) {
     closeSheet();
+    _confirmRounds = null;
+    state.flowState.pendingParsed = null;
     return;
   }
 
@@ -317,6 +332,7 @@ export function confirmImport(mode) {
 
   window.normalizeRoundNums(targetPart.rounds);
 
+  _confirmRounds = null;
   state.flowState.pendingParsed = null;
   proj.lastModified = Date.now();
   saveData();

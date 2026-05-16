@@ -913,10 +913,13 @@ export function renderSeqHTML(r, proj) {
   }
 
   const expanded = expandInstructionFull(r.instruction);
-  const clusterRanges = _getClusterRanges(r.instruction);
   let html = '';
 
-  if (expanded && expanded.length > 0) {
+  // 当 seq 长度 >= instruction 展开长度时，视为跟织预填充或已完成，
+  // 展开显示全部预期针目（含 done/pending 状态）；
+  // 否则普通模式进行中，只渲染已钩的真实 seq 胶囊。
+  if (expanded && expanded.length > 0 && r.seq.length >= expanded.length) {
+    const clusterRanges = _getClusterRanges(r.instruction);
     let i = 0;
     while (i < expanded.length) {
       const cr = clusterRanges.find(c => c.start === i);
@@ -938,7 +941,7 @@ export function renderSeqHTML(r, proj) {
       i++;
     }
   } else {
-    // No instruction: render only completed stitches
+    // 普通模式进行中：只渲染已钩的 seq 胶囊
     let i = 0;
     while (i < r.seq.length) {
       html += renderSpillHTML(r.seq[i], i, r, proj, true);

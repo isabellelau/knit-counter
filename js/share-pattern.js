@@ -113,8 +113,18 @@ async function decodeAndDecompress(b64) {
   try {
     const bytes = base64ToUint8Array(b64);
 
+    // 对应导出的无压缩 fallback：先尝试直接解析
+    try {
+      const json = new TextDecoder().decode(bytes);
+      console.log('[import] decompressed length (direct):', json.length);
+      console.log('[import] json preview:', json.slice(0, 200));
+      return JSON.parse(json);
+    } catch {
+      // 直接解析失败，说明是 gzip 压缩数据
+    }
+
     if (typeof DecompressionStream === 'undefined') {
-      return JSON.parse(new TextDecoder().decode(bytes));
+      return null;
     }
 
     try {
@@ -137,9 +147,12 @@ async function decodeAndDecompress(b64) {
         combined.set(c, offset);
         offset += c.length;
       }
-      return JSON.parse(new TextDecoder().decode(combined));
+      const json = new TextDecoder().decode(combined);
+      console.log('[import] decompressed length (gzip):', json.length);
+      console.log('[import] json preview (gzip):', json.slice(0, 200));
+      return JSON.parse(json);
     } catch {
-      return JSON.parse(new TextDecoder().decode(bytes));
+      return null;
     }
   } catch (e) {
     console.warn('decodeAndDecompress failed:', e);
@@ -236,6 +249,9 @@ window._doImportShared = async function() {
   const raw = textarea.value.trim();
   if (!raw) return;
 
+  console.log('[import] raw input length:', raw.length);
+  console.log('[import] KNIT1 match:', /KNIT1:(\S+)/.test(raw));
+
   const match = raw.match(/KNIT1:(\S+)/);
   if (!match || !match[1]) {
     showToast(t('import_share_error'));
@@ -248,6 +264,10 @@ window._doImportShared = async function() {
     showToast(t('import_share_error'));
     return;
   }
+
+  console.log('[import] parsed proj name:', data.name);
+  console.log('[import] parts count:', data.parts?.length);
+  console.log('[import] first part rounds:', data.parts?.[0]?.rounds?.length);
 
   const newId = uid();
   const proj = {
@@ -277,6 +297,8 @@ window._doImportShared = async function() {
 
   // 询问导入模式：跟织模式 / 作为自己项目
   state.flowState.pendingImportProj = proj;
+
+  console.log('[import] showing mode dialog');
 
   const html = `
     <div class="sheet-handle"></div>
@@ -311,6 +333,8 @@ window._applyImportMode = function(mode) {
   // 跟织模式：保留原有 seq（已包含 cluster token）
 
   state.data.projects.push(proj);
+  console.log('[import] total projects now:', state.data.projects.length);
+  console.log('[import] imported proj id:', proj.id);
   saveData();
   closeSheet();
   window.openProject(proj.id);

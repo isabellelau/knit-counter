@@ -9,7 +9,7 @@ import {
   toggleSelectAllInSetup, startImportFromSetup,
   openPatternPasteSheet, cancelPasteSheet, handleParsePattern,
   showLoading, hideLoading, loadTesseract, handleOCR,
-  openParseConfirmSheet, removeParsedItem, confirmImport,
+  openParseConfirmSheet, removeParsedItem, addConfirmRound, confirmImport,
   updateCurrentPart, addNewPart, normalizeRoundNums,
   startStitchOnlyFlow,
 } from './pattern.js';
@@ -212,7 +212,7 @@ const _globals = {
   pushStitch, undoStitch, stitchTap,
   changeStitch, deleteStitch, startInsert, doInsert,
   showSheet, closeSheet, openPatternPasteSheet,
-  handleParsePattern, handleOCR, removeParsedItem, confirmImport, updateCurrentPart, addNewPart,
+  handleParsePattern, handleOCR, removeParsedItem, addConfirmRound, confirmImport, updateCurrentPart, addNewPart,
   showLoading, hideLoading, loadTesseract,
   startImportFlow, startManualFlow, startStitchOnlyFlow, dismissEntryChoice,
   toggleSelectAllInSetup, startImportFromSetup, cancelPasteSheet,

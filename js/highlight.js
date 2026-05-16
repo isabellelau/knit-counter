@@ -266,7 +266,7 @@ export function renderHighlightReel(proj) {
   const part = getActivePart(proj);
   if (!part) { container.innerHTML = ''; return; }
   const r = part.rounds.find(x => x.id === part.activeRoundId);
-  if (!r || !r.instruction || r.seq.length === 0) { container.innerHTML = ''; return; }
+  if (!r || !r.instruction) { container.innerHTML = ''; return; }
 
   const expanded = expandInstructionFull(r.instruction);
   if (!expanded || expanded.length === 0) { container.innerHTML = ''; return; }
@@ -275,6 +275,37 @@ export function renderHighlightReel(proj) {
   const settings = state.data?.settings || {};
   const clusterRanges = _getClusterRanges(r.instruction);
 
+  // 增量更新：已渲染且 round 未切换
+  const existingReel = container.querySelector('.highlight-reel');
+  if (existingReel && existingReel.dataset.roundId === String(r.id)) {
+    const tokens = existingReel.querySelectorAll('.reel-token');
+    tokens.forEach(el => {
+      const start = parseInt(el.dataset.start, 10);
+      const len = parseInt(el.dataset.len, 10);
+      const end = start + len;
+      el.classList.toggle('reel-done', end <= idx);
+      el.classList.toggle('reel-current', start <= idx && idx < end);
+    });
+
+    // 更新 cluster 内部 mini 颜色
+    const minis = existingReel.querySelectorAll('.reel-mini');
+    minis.forEach(mini => {
+      const globalIdx = parseInt(mini.dataset.idx, 10);
+      const isDone = globalIdx < idx;
+      const sid = mini.textContent;
+      mini.style.color = isDone ? resolveColor(sid, settings) : 'var(--muted)';
+    });
+
+    requestAnimationFrame(() => {
+      const cur = existingReel.querySelector('.reel-current');
+      if (cur) {
+        cur.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+    });
+    return;
+  }
+
+  // 首次渲染：生成所有 token
   const items = [];
   let i = 0;
   while (i < expanded.length) {
@@ -286,19 +317,18 @@ export function renderHighlightReel(proj) {
       const isCurrent = i <= idx && idx < i + cr.length;
       const isDone = i + cr.length <= idx;
 
-      let cls = 'highlight-reel-item';
-      if (isDone) cls += ' highlight-reel-item--done';
-      else if (isCurrent) cls += ' highlight-reel-item--current';
-      else cls += ' highlight-reel-item--upcoming';
-      cls += ' reel-cluster';
+      let cls = 'reel-token';
+      if (isDone) cls += ' reel-done';
+      else if (isCurrent) cls += ' reel-current';
 
       const style = `--reel-color:${color}`;
       const minis = stitches.map((s, j) => {
-        const miniDone = i + j < idx;
+        const globalIdx = i + j;
+        const miniDone = globalIdx < idx;
         const miniColor = miniDone ? resolveColor(s, settings) : 'var(--muted)';
-        return `<span class="reel-mini" style="color:${miniColor}">${s}</span>`;
+        return `<span class="reel-mini" data-idx="${globalIdx}" style="color:${miniColor}">${s}</span>`;
       }).join('');
-      items.push(`<div class="${cls}" style="${style}">${minis}</div>`);
+      items.push(`<div class="${cls} reel-cluster" style="${style}" data-start="${i}" data-len="${cr.length}">${minis}</div>`);
       i += cr.length;
     } else {
       const sid = expanded[i];
@@ -306,24 +336,24 @@ export function renderHighlightReel(proj) {
       const label = lib ? lib.label : sid;
       const color = resolveColor(sid, settings);
 
-      let cls = 'highlight-reel-item';
-      if (i < idx) cls += ' highlight-reel-item--done';
-      else if (i === idx) cls += ' highlight-reel-item--current';
-      else cls += ' highlight-reel-item--upcoming';
+      let cls = 'reel-token';
+      if (i < idx) cls += ' reel-done';
+      else if (i === idx) cls += ' reel-current';
 
       const style = `--reel-color:${color}`;
       const sidDisplay = getShowSymbol() ? ` (${sid})` : '';
-      items.push(`<div class="${cls}" style="${style}" title="${label}">${label}${sidDisplay}</div>`);
+      items.push(`<div class="${cls}" style="${style}" title="${label}" data-start="${i}" data-len="1">${label}${sidDisplay}</div>`);
       i++;
     }
   }
 
-  container.innerHTML = `<div class="highlight-reel"><div class="highlight-reel-track">${items.join('')}</div></div>`;
+  container.innerHTML = `<div class="highlight-reel" data-round-id="${r.id}"><div class="highlight-reel-track">${items.join('')}</div></div>`;
 
   requestAnimationFrame(() => {
-    const current = container.querySelector('.highlight-reel-item--current');
-    if (current) {
-      current.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    const reel = container.querySelector('.highlight-reel');
+    const cur = reel.querySelector('.reel-current');
+    if (cur) {
+      cur.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }
   });
 }

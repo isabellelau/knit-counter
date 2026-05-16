@@ -178,6 +178,8 @@ export default {
   import_as_new_part: 'Import as new part',
   import_new_part_hint: 'Keep current progress, create a new section',
   back_to_edit: '← Back',
+  add_confirm_round: '＋ Add round manually',
+  confirm_round_placeholder: 'e.g. 20X or 5SC',
   new_part_label: 'Part ',
   pattern_synced: 'Pattern synced to ',
 

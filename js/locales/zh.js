@@ -178,6 +178,8 @@ export default {
   import_as_new_part: '作为新部件导入',
   import_new_part_hint: '保留当前进度，创建新分类',
   back_to_edit: '← 返回修改',
+  add_confirm_round: '＋ 手动加圈',
+  confirm_round_placeholder: '输入图解，如 20X 或 5SC',
   new_part_label: '部件 ',
   pattern_synced: '图解已同步至 ',
 
