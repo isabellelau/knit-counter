@@ -75,6 +75,7 @@ export async function renderHome() {
             <span class="stats-card-sep"></span>
             <span class="stats-card-stat">${t('home_stats_focus')} <strong>${formatFocusTime(totalFocusAll)}</strong></span>
           </div>
+          <button class="stats-detail-btn" onclick="openStatsPage()">${t('stats_detail_btn')}</button>
         </div>
       `;
     }

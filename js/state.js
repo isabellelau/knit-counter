@@ -34,6 +34,9 @@ export const state = {
   currentTab: 'projects',
   voiceMode: false,
   recognition: null,
+  voiceWaitingFor: null,
+  voiceWaitTimer: null,
+  voiceLastSid: null,
   flowState: {
     importMode: null,
     newProjectFlow: false,

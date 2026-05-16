@@ -76,14 +76,17 @@ function generateTextPattern(proj) {
 
 // ── Full project export (Pro) ──
 function stripProjectForExport(proj) {
+  console.log('[export] proj.markers:', JSON.stringify(proj.markers));
   return {
     name: proj.name,
     useRowTerms: proj.useRowTerms,
+    markers: proj.markers || [],
     parts: (proj.parts || []).map(part => ({
       title: part.title,
       customPalette: part.customPalette,
-      markers: part.markers,
+      activeRoundId: part.activeRoundId,
       rounds: (part.rounds || []).map(r => ({
+        id: r.id,
         instruction: r.instruction || '',
         seq: r.seq || [],
         ...(r.expectedCount != null ? { expectedCount: r.expectedCount } : {}),
@@ -227,6 +230,7 @@ export function openImportShareSheet() {
   document.getElementById("sheet").classList.remove("show");
   document.getElementById("overlay").classList.remove("show");
   state.flowState.importMode = 'create';
+  state.flowState.importSourceProjId = state.curProjId;
 
   const html = `
     <div class="sheet-handle"></div>
@@ -265,28 +269,70 @@ window._doImportShared = async function() {
     return;
   }
 
-  console.log('[import] parsed proj name:', data.name);
-  console.log('[import] parts count:', data.parts?.length);
-  console.log('[import] first part rounds:', data.parts?.[0]?.rounds?.length);
+  // 防御性深拷贝：彻底切断与 state 中任何既有项目的引用关系
+  const importData = JSON.parse(JSON.stringify(data));
+
+  console.log('[import] raw data.name:', data.name);
+  console.log('[import] parsed proj name:', importData.name);
+  console.log('[import] parts count:', importData.parts?.length);
+  console.log('[import] first part rounds:', importData.parts?.[0]?.rounds?.length);
+  console.log('[import] first round seq:', importData.parts?.[0]?.rounds?.[0]?.seq?.length);
 
   const newId = uid();
-  const proj = {
-    id: newId,
-    name: data.name || t('imported_project'),
-    useRowTerms: data.useRowTerms || false,
-    parts: (data.parts || []).map(part => ({
-      ...part,
-      id: uid(),
-      rounds: (part.rounds || []).map(r => ({
+  const roundIdMap = {}; // old round id -> new round id
+
+  const parts = (importData.parts || []).map(part => {
+    const newPartId = uid();
+    const rounds = (part.rounds || []).map(r => {
+      const newRoundId = uid();
+      roundIdMap[r.id] = newRoundId;
+      return {
         ...r,
-        id: uid(),
+        id: newRoundId,
         seq: r.seq || [],
         instruction: r.instruction || ''
-      }))
-    })),
+      };
+    });
+    return {
+      ...part,
+      id: newPartId,
+      rounds
+    };
+  });
+
+  const proj = {
+    id: newId,
+    name: importData.name || t('imported_project'),
+    useRowTerms: importData.useRowTerms || false,
+    markers: (importData.markers || []).map(m => ({ ...m })),
+    parts,
+    activePartId: parts[0]?.id || null,
     createdAt: Date.now(),
     lastModified: Date.now()
   };
+
+  console.log('[import] final proj.name:', proj.name);
+  console.log('[import] roundIdMap size:', Object.keys(roundIdMap).length);
+  console.log('[import] markers before remap:', importData.markers?.length);
+  console.log('[import] markers after remap:', proj.markers.length);
+
+  // 重写记号扣 roundId 为新的 round id，找不到映射的保留原值
+  if (proj.markers.length) {
+    let updated = 0;
+    proj.markers = proj.markers.map(m => {
+      const mappedId = roundIdMap[m.roundId];
+      if (mappedId) { updated++; }
+      return { ...m, id: uid(), roundId: mappedId ?? m.roundId };
+    });
+    console.log('[import] markers remapped:', updated, '/', proj.markers.length);
+  }
+
+  // 同步更新每个 part 的 activeRoundId
+  proj.parts.forEach(part => {
+    if (part.activeRoundId && roundIdMap[part.activeRoundId]) {
+      part.activeRoundId = roundIdMap[part.activeRoundId];
+    }
+  });
 
   // 兼容 v12 旧数据：移除 clusterRanges，seq 保持单针
   proj.parts.forEach(part => {
@@ -330,12 +376,46 @@ window._applyImportMode = function(mode) {
       });
     });
   }
-  // 跟织模式：保留原有 seq（已包含 cluster token）
+  if (mode === 'follow') {
+    proj.isFollowMode = true;
+    proj.parts.forEach((part, pi) => {
+      (part.rounds || []).forEach((r, ri) => {
+        r.followProgress = 0;
+        console.log(`[import] part${pi} round${ri} id:${r.id} seq:${r.seq?.length} followProgress:${r.followProgress}`);
+      });
+    });
+    console.log('[import] isFollowMode:', proj.isFollowMode);
+  }
 
-  state.data.projects.push(proj);
-  console.log('[import] total projects now:', state.data.projects.length);
-  console.log('[import] imported proj id:', proj.id);
+  // 打印每个 part 的 activeRoundId
+  proj.parts.forEach((part, i) => {
+    console.log(`[import] part${i} activeRoundId:`, part.activeRoundId);
+  });
+
+  // 合并到已有空白项目，保留用户命名的项目名称
+  const existingProj = getProj(state.curProjId);
+  if (existingProj) {
+    existingProj.parts = proj.parts;
+    existingProj.markers = proj.markers || [];
+    existingProj.isFollowMode = proj.isFollowMode || false;
+    existingProj.useRowTerms = proj.useRowTerms || false;
+    existingProj.activePartId = proj.activePartId;
+    existingProj.lastModified = Date.now();
+    // 保留 existingProj.name 和 existingProj.id
+    console.log('[import] merged into existing project:', existingProj.id, existingProj.name);
+  } else {
+    // fallback：没有现有项目时才新建
+    state.data.projects.push(proj);
+    state.curProjId = proj.id;
+    console.log('[import] pushed new project:', proj.id, proj.name);
+  }
+
   saveData();
+  state.flowState.importMode = null; // 防止 closeSheet 触发创建方式选择
+  state.flowState.importSourceProjId = null;
+  state.flowState.newProjectFlow = false; // 防止 closeSheet 触发 renderProject
   closeSheet();
-  window.openProject(proj.id);
+
+  document.documentElement.classList.add('in-project');
+  window.renderProject();
 };

@@ -1,7 +1,11 @@
-import { state, NUMBER_MAP, getProj } from './state.js';
+import { state, getProj, getActivePart, uid } from './state.js';
 import { showToast } from './ui.js';
-import { refreshBottomBar } from './stitch.js';
-import { t } from './i18n.js';
+import { refreshBottomBar, pushStitch, undoStitch, triggerEdgeGlow, copyRoundStructure } from './stitch.js';
+import { addRoundBlank, setActiveRound } from './round.js';
+import { saveData } from './storage.js';
+import { extractStitches } from '../stitches.js';
+import { parseIntentL1, parseIntentL2 } from './voice-intent.js';
+import { t, getLang } from './i18n.js';
 
 let _audioCtx = null;
 
@@ -49,40 +53,213 @@ export function playSound(type) {
   } catch (_) { /* audio is non-critical */ }
 }
 
+// ═══════════════════════════════════════════
+//  Intent Layer
+// ═══════════════════════════════════════════
+
+function isPro() {
+  return true; // TODO: wire up to billing
+}
+
+function handleVoiceResult(text, isFinal) {
+  if (!isFinal) return;
+
+  const intent = isPro()
+    ? parseIntentL2(text)
+    : parseIntentL1(text);
+
+  executeIntent(intent);
+}
+
+function executeIntent(intent) {
+  const proj = getProj(state.curProjId);
+  const part = getActivePart(proj);
+  const activeRound = part?.rounds.find(r => r.id === part.activeRoundId);
+
+  switch (intent.type) {
+
+    case 'STITCH': {
+      const count = intent.count || 1;
+      for (let i = 0; i < count; i++) {
+        pushStitch(intent.sid);
+      }
+      state.voiceLastSid = intent.sid;
+      if (state.data.settings.voiceSoundEnabled) {
+        playSound('stitch');
+      }
+      triggerEdgeGlow(intent.sid);
+      break;
+    }
+
+    case 'UNDO': {
+      undoStitch();
+      triggerEdgeGlow(null);
+      speakFeedback('已撤销', 'Undone');
+      break;
+    }
+
+    case 'REPEAT': {
+      if (activeRound?.instruction && state.voiceLastSid) {
+        speakFeedback('一针还是重复花样？', 'One stitch or repeat pattern?');
+        startWaiting('REPEAT_CLARIFY', 5000);
+      } else if (state.voiceLastSid) {
+        pushStitch(state.voiceLastSid);
+        if (state.data.settings.voiceSoundEnabled) {
+          playSound('stitch');
+        }
+        triggerEdgeGlow(state.voiceLastSid);
+      }
+      break;
+    }
+
+    case 'REPEAT_SINGLE': {
+      clearWaiting();
+      if (state.voiceLastSid) {
+        pushStitch(state.voiceLastSid);
+        if (state.data.settings.voiceSoundEnabled) {
+          playSound('stitch');
+        }
+        triggerEdgeGlow(state.voiceLastSid);
+      }
+      break;
+    }
+
+    case 'REPEAT_PATTERN': {
+      clearWaiting();
+      if (activeRound?.instruction) {
+        const tokens = extractStitches(activeRound.instruction);
+        tokens.forEach(sid => {
+          if (typeof sid === 'string') pushStitch(sid);
+        });
+        if (state.data.settings.voiceSoundEnabled) {
+          playSound('stitch');
+        }
+      }
+      break;
+    }
+
+    case 'REPEAT_ROUND': {
+      if (activeRound?.instruction) {
+        speakFeedback('重复这圈还是新建一圈？', 'Repeat this round or new round?');
+        startWaiting('REPEAT_ROUND_CLARIFY', 5000);
+      } else {
+        addRoundBlank();
+        speakFeedback('已新建', 'New round added');
+      }
+      break;
+    }
+
+    case 'REPEAT_ROUND_COPY': {
+      clearWaiting();
+      if (activeRound) {
+        copyRoundStructure(activeRound.id);
+        speakFeedback('已复制', 'Round copied');
+      }
+      break;
+    }
+
+    case 'NEW_ROUND': {
+      clearWaiting();
+      addRoundBlank();
+      speakFeedback('已新建', 'New round added');
+      break;
+    }
+
+    case 'MARK': {
+      speakFeedback('什么颜色？', 'What color?');
+      startWaiting('MARK_COLOR', 5000);
+      break;
+    }
+
+    case 'MARK_COLOR_REPLY': {
+      clearWaiting();
+      const pos = state.selectedStitch ||
+        { roundId: part?.activeRoundId,
+          idx: (activeRound?.seq.length || 1) - 1 };
+      if (pos.roundId !== undefined) {
+        saveMarkerDirect(pos.roundId, pos.idx, intent.color);
+        speakFeedback('已标记', 'Marked');
+      }
+      break;
+    }
+
+    case 'GOTO': {
+      const targetRound = part?.rounds.find(r => r.roundNum === intent.target);
+      if (targetRound) {
+        setActiveRound(proj, targetRound.id);
+        speakFeedback(`第${intent.target}圈`, `Round ${intent.target}`);
+      } else {
+        speakFeedback('没有找到', 'Not found');
+      }
+      break;
+    }
+
+    case 'UNKNOWN':
+    default:
+      break;
+  }
+}
+
+function startWaiting(waitFor, timeout) {
+  state.voiceWaitingFor = waitFor;
+  state.voiceWaitTimer = setTimeout(() => {
+    speakFeedback('已取消', 'Cancelled');
+    clearWaiting();
+  }, timeout);
+  document.documentElement.classList.add('voice-waiting');
+}
+
+function clearWaiting() {
+  state.voiceWaitingFor = null;
+  clearTimeout(state.voiceWaitTimer);
+  state.voiceWaitTimer = null;
+  document.documentElement.classList.remove('voice-waiting');
+}
+
+function speakFeedback(textZh, textEn) {
+  const lang = getLang();
+  const text = lang === 'en' ? textEn : textZh;
+  if (!text) return;
+  if (!state.data.settings.voiceSoundEnabled) return;
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = lang === 'en' ? 'en-US' : 'zh-CN';
+  utter.rate = 1.1;
+  utter.volume = 0.8;
+  window.speechSynthesis.speak(utter);
+}
+
+function saveMarkerDirect(roundId, idx, color) {
+  const proj = getProj(state.curProjId);
+  if (!proj) return;
+  if (!proj.markers) proj.markers = [];
+  proj.markers.push({
+    id: uid(),
+    roundId,
+    index: idx,
+    color,
+    note: ''
+  });
+  proj.lastModified = Date.now();
+  saveData();
+  window.renderProject();
+}
+
+// ═══════════════════════════════════════════
+//  Speech Recognition
+// ═══════════════════════════════════════════
+
 export function initRecognition() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) return null;
   const r = new SR();
-  r.lang = 'zh-CN';
+  r.lang = getLang() === 'en' ? 'en-US' : 'zh-CN';
   r.continuous = true;
   r.interimResults = false;
 
   r.onresult = (e) => {
     const transcript = e.results[e.results.length - 1][0].transcript.trim();
-    console.log('[voice] 识别到：', transcript);
-
-    if (transcript === '撤销' || transcript === '撤回' || transcript === '后退' || transcript === '返回' || transcript === '取消') {
-      window.undoStitch();
-      window.triggerEdgeGlow(null);
-      return;
-    }
-
-    const palBtns = document.querySelectorAll('#bottom-bar .pal-btn[data-sid]');
-    console.log('[voice] 找到按钮数量：', palBtns.length);
-    console.log('[voice] NUMBER_MAP 查询结果：', NUMBER_MAP[transcript]);
-
-    const num = NUMBER_MAP[transcript];
-    if (num == null) return;
-
-    const target = palBtns[num - 1];
-    if (!target) return;
-
-    const sid = target.dataset.sid;
-    window.pushStitch(sid);
-    window.triggerEdgeGlow(sid);
-    if (state.data.settings.voiceSoundEnabled) {
-      playSound('stitch');
-    }
+    console.log('[voice] recognized:', transcript);
+    handleVoiceResult(transcript, true);
   };
 
   r.onend = () => {
@@ -98,7 +275,6 @@ export function initRecognition() {
       updateVoiceButton();
       showToast(t('voice_mic_denied'));
     }
-    // 其他错误静默，onend 会自动重启
   };
 
   return r;
@@ -128,6 +304,7 @@ export async function toggleVoiceMode() {
       try { state.recognition.stop(); } catch(_) {}
       state.recognition = null;
     }
+    clearWaiting();
     playSound('exit');
     setVoicePulse(false);
     const proj = getProj(state.curProjId);
@@ -227,6 +404,7 @@ export function openVoiceTutorial() {
     <div style="background:#FEF3C7;border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:#92400E;line-height:1.6">
       ${t('voice_tutorial_warning')}
     </div>
+    ${getLang() === 'en' ? `<div style="background:#E0F2FE;border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:#075985;line-height:1.6">Note: 'DC' is treated as double crochet (US terms). Say 'single crochet' or 'treble' for unambiguous results.</div>` : ''}
     <div style="display:flex;flex-direction:column;gap:12px">
       <div>
         <div style="font-weight:700;margin-bottom:4px">${t('voice_tutorial_step1_title')}</div>

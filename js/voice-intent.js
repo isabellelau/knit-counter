@@ -1,0 +1,202 @@
+import { state, getProj } from './state.js';
+import { ALIAS_TO_ID } from '../stitches.js';
+import { getLang } from './i18n.js';
+
+const IntentType = {
+  STITCH:  'STITCH',
+  REPEAT:  'REPEAT',
+  REPEAT_ROUND: 'REPEAT_ROUND',
+  UNDO:    'UNDO',
+  MARK:    'MARK',
+  GOTO:    'GOTO',
+  MOVE:    'MOVE',
+  UNKNOWN: 'UNKNOWN'
+};
+
+const EN_ALIAS = {
+  'single crochet': 'X',  'sc': 'X',
+  'double crochet': 'F',  'dc': 'F',
+  'half double crochet': 'T', 'hdc': 'T',
+  'treble': 'E',  'treble crochet': 'E', 'tr': 'E',
+  'chain': 'CH',  'chain stitch': 'CH',
+  'slip stitch': 'SL', 'sl st': 'SL', 'slst': 'SL',
+  'skip': 'SK',   'skip stitch': 'SK',
+  'increase': 'V', 'inc': 'V',
+  'decrease': 'A', 'dec': 'A',
+  'popcorn': 'G',  'popcorn stitch': 'G',
+  'bobble': 'Q',   'bobble stitch': 'Q',
+};
+
+const EN_NUM = {
+  'one':1, 'two':2, 'three':3, 'four':4, 'five':5,
+  'six':6, 'seven':7, 'eight':8, 'nine':9, 'ten':10,
+};
+
+const EN_COLOR_MAP = {
+  'red': '#EF4444',
+  'orange': '#F97316',
+  'yellow': '#EAB308',
+  'green': '#22C55E',
+  'blue': '#3B82F6',
+  'purple': '#A855F7',
+};
+
+const ZH_COLOR_MAP = {
+  '红':'#EF4444','红色':'#EF4444',
+  '橙':'#F97316','橙色':'#F97316',
+  '黄':'#EAB308','黄色':'#EAB308',
+  '绿':'#22C55E','绿色':'#22C55E',
+  '蓝':'#3B82F6','蓝色':'#3B82F6',
+  '紫':'#A855F7','紫色':'#A855F7',
+};
+
+function parseChineseNum(s) {
+  const map = { '一':1,'二':2,'三':3,'四':4,'五':5,
+                '六':6,'七':7,'八':8,'九':9,'十':10 };
+  return map[s] || parseInt(s, 10) || 1;
+}
+
+function aliasToSid(text) {
+  if (!text) return null;
+  const lang = getLang();
+  const lower = text.trim().toLowerCase();
+
+  if (lang === 'en') {
+    const sid = EN_ALIAS[lower];
+    if (sid) return sid;
+  } else {
+    const sid = ALIAS_TO_ID[text.trim().toUpperCase()];
+    if (sid) return sid;
+  }
+
+  const customStitches = state.data?.settings?.globalCustomStitches || {};
+  const customMatch = Object.values(customStitches).find(s => {
+    if (s.label && s.label.toLowerCase() === lower) return true;
+    if (s.id && s.id.toLowerCase() === lower) return true;
+    return false;
+  });
+  return customMatch?.id || null;
+}
+
+function parseColor(text) {
+  const t = text.toLowerCase().trim();
+  const lang = getLang();
+  if (lang === 'en') return EN_COLOR_MAP[t] || null;
+  return ZH_COLOR_MAP[text] || null;
+}
+
+function parseIntentL1(text) {
+  const t = text.trim().toLowerCase();
+  const lang = getLang();
+
+  if (lang === 'en') {
+    if (/\bundo\b|\bgo back\b/.test(t))
+      return { type: IntentType.UNDO };
+
+    for (const [alias, sid] of Object.entries(EN_ALIAS)) {
+      for (const [word, num] of Object.entries(EN_NUM)) {
+        if (t === `${word} ${alias}`) {
+          return { type: IntentType.STITCH, sid, count: num };
+        }
+      }
+      const numMatch = t.match(new RegExp(`^(\\d+)\\s+${alias}$`));
+      if (numMatch) {
+        return { type: IntentType.STITCH, sid, count: parseInt(numMatch[1], 10) };
+      }
+      if (t === alias) {
+        return { type: IntentType.STITCH, sid, count: 1 };
+      }
+    }
+
+    if (/\bagain\b|\bone more\b|\brepeat\b/.test(t))
+      return { type: IntentType.REPEAT };
+
+    if (/\bone more round\b|\bnext round\b|\brepeat round\b/.test(t))
+      return { type: IntentType.REPEAT_ROUND };
+
+  } else {
+    if (/撤销|返回|undo|back/.test(t))
+      return { type: IntentType.UNDO };
+
+    const numStitch = t.match(/^([一二三四五六七八九十\d]+)\s*(短针|中长针|长针|长长针|锁针|引拔|加针|减针|空针|.*针)/);
+    if (numStitch) {
+      const count = parseChineseNum(numStitch[1]);
+      const sid = aliasToSid(numStitch[2]);
+      if (sid) return { type: IntentType.STITCH, sid, count };
+    }
+
+    const sid = aliasToSid(t);
+    if (sid) return { type: IntentType.STITCH, sid, count: 1 };
+
+    if (/再来一圈|one more round|下一圈花样/.test(t))
+      return { type: IntentType.REPEAT_ROUND };
+
+    if (/再来|repeat|再一次|再来一次/.test(t))
+      return { type: IntentType.REPEAT };
+  }
+
+  return { type: IntentType.UNKNOWN, raw: text };
+}
+
+function parseIntentL2(text) {
+  const t = text.trim().toLowerCase();
+  const lang = getLang();
+
+  const l1 = parseIntentL1(t);
+  if (l1.type !== IntentType.UNKNOWN) return l1;
+
+  if (lang === 'en') {
+    const gotoMatch = t.match(/\bgo to round\s+(\d+)/);
+    if (gotoMatch)
+      return { type: IntentType.GOTO, target: parseInt(gotoMatch[1], 10) };
+
+    if (/\bmark\b|\bmarker\b/.test(t))
+      return { type: IntentType.MARK };
+
+    if (state.voiceWaitingFor === 'MARK_COLOR') {
+      const color = parseColor(t);
+      if (color) return { type: 'MARK_COLOR_REPLY', color };
+    }
+
+    if (state.voiceWaitingFor === 'REPEAT_CLARIFY') {
+      if (/\bone stitch\b|\bsingle\b|\bjust one\b/.test(t))
+        return { type: 'REPEAT_SINGLE' };
+      if (/\bpattern\b|\bwhole group\b|\ball\b/.test(t))
+        return { type: 'REPEAT_PATTERN' };
+    }
+
+    if (state.voiceWaitingFor === 'REPEAT_ROUND_CLARIFY') {
+      if (/\brepeat\b|\bsame\b|\bcopy\b/.test(t))
+        return { type: 'REPEAT_ROUND_COPY' };
+      if (/\bnew\b|\bblank\b|\bempty\b/.test(t))
+        return { type: 'NEW_ROUND' };
+    }
+
+  } else {
+    const gotoMatch = t.match(/(?:去|跳到|到)第?\s*([一二三四五六七八九十\d]+)\s*圈/);
+    if (gotoMatch)
+      return { type: IntentType.GOTO, target: parseChineseNum(gotoMatch[1]) };
+
+    if (/加记号|mark|标记/.test(t))
+      return { type: IntentType.MARK };
+
+    if (state.voiceWaitingFor === 'MARK_COLOR') {
+      const color = parseColor(t);
+      if (color) return { type: 'MARK_COLOR_REPLY', color };
+    }
+
+    if (state.voiceWaitingFor === 'REPEAT_CLARIFY') {
+      if (/一针|单针/.test(t)) return { type: 'REPEAT_SINGLE' };
+      if (/花样|整组|全部/.test(t)) return { type: 'REPEAT_PATTERN' };
+    }
+
+    if (state.voiceWaitingFor === 'REPEAT_ROUND_CLARIFY') {
+      if (/重复|一样/.test(t)) return { type: 'REPEAT_ROUND_COPY' };
+      if (/新建|空白|新的/.test(t)) return { type: 'NEW_ROUND' };
+    }
+  }
+
+  return { type: IntentType.UNKNOWN, raw: text };
+}
+
+export { IntentType, parseIntentL1, parseIntentL2, parseColor, parseChineseNum };

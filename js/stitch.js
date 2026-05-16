@@ -920,16 +920,17 @@ export function renderSeqHTML(r, proj) {
   // 否则普通模式进行中，只渲染已钩的真实 seq 胶囊。
   if (expanded && expanded.length > 0 && r.seq.length >= expanded.length) {
     const clusterRanges = _getClusterRanges(r.instruction);
+    const followProgress = proj?.isFollowMode ? (r.followProgress || 0) : r.seq.length;
     let i = 0;
     while (i < expanded.length) {
       const cr = clusterRanges.find(c => c.start === i);
       if (cr) {
         const stitches = expanded.slice(i, i + cr.length);
-        const doneCount = Math.max(0, Math.min(cr.length, r.seq.length - i));
+        const doneCount = Math.max(0, Math.min(cr.length, followProgress - i));
         html += renderClusterHTML(stitches, doneCount, i, r, proj);
         i += cr.length;
       } else {
-        const isDone = i < r.seq.length;
+        const isDone = i < followProgress;
         const sid = isDone ? r.seq[i] : expanded[i];
         html += renderSpillHTML(sid, i, r, proj, isDone);
         i++;
@@ -942,9 +943,13 @@ export function renderSeqHTML(r, proj) {
     }
   } else {
     // 普通模式进行中：只渲染已钩的 seq 胶囊
+    // 跟织模式下也按 followProgress 区分 done/pending
+    const isFollow = proj?.isFollowMode;
+    const followProgress = isFollow ? (r.followProgress || 0) : r.seq.length;
     let i = 0;
     while (i < r.seq.length) {
-      html += renderSpillHTML(r.seq[i], i, r, proj, true);
+      const isDone = i < followProgress;
+      html += renderSpillHTML(r.seq[i], i, r, proj, isDone);
       i++;
     }
   }
@@ -1019,7 +1024,9 @@ export function saveLastPosition(proj, part) {
   if (!proj || !part) return;
   const r = part.rounds.find(x => x.id === part.activeRoundId);
   if (!r) return;
-  const stitchIndex = r.seq.length - 1;
+  const stitchIndex = proj.isFollowMode
+    ? ((r.followProgress || 0) - 1)
+    : (r.seq.length - 1);
   // 验证：stitchIndex 必须在有效范围（-1 表示空圈，不作为恢复目标时不写入）
   if (stitchIndex < -1) return;
   part.lastPosition = {
@@ -1106,7 +1113,11 @@ export function pushStitch(sid) {
   const r = part.rounds.find(x => x.id === part.activeRoundId);
   if (!r) return;
 
-  r.seq.push(sid);
+  if (proj.isFollowMode) {
+    r.followProgress = (r.followProgress || 0) + 1;
+  } else {
+    r.seq.push(sid);
+  }
 
   proj.lastModified = Date.now();
   saveData();
@@ -1145,9 +1156,16 @@ export function undoStitch() {
   const part = getActivePart(proj);
   if (!part) return;
   const r = part.rounds.find(x => x.id === part.activeRoundId);
-  if (!r || !r.seq.length) return;
+  const canUndo = proj.isFollowMode
+    ? (r?.followProgress || 0) > 0
+    : (r?.seq.length || 0) > 0;
+  if (!r || !canUndo) return;
 
-  r.seq.pop();
+  if (proj.isFollowMode) {
+    r.followProgress = Math.max(0, (r.followProgress || 0) - 1);
+  } else {
+    r.seq.pop();
+  }
   proj.lastModified = Date.now();
   saveData();
   saveLastPosition(proj, part);
@@ -1165,7 +1183,10 @@ export function undoStitch() {
   if (roundEl) {
     const seqWrap = roundEl.querySelector('.seq-wrap');
     if (seqWrap) {
-      if (r.seq.length === 0) {
+      const isEmpty = proj.isFollowMode
+        ? (r.followProgress || 0) === 0
+        : r.seq.length === 0;
+      if (isEmpty) {
         seqWrap.innerHTML = '<span class="seq-empty">' + t('empty_round_hint') + '</span>';
       } else {
         seqWrap.innerHTML = renderSeqHTML(r, proj);

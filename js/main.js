@@ -3,6 +3,7 @@ import { state, NUMBER_MAP, uid, getProj, getActivePart, isPartEmpty, getEditing
 import { saveData, loadData, migrateData, exportPDF, exportData, exportSingleProject, checkStorageQuota } from './storage.js';
 import { esc, showToast, showSheet, closeSheet, showEntryChoiceSheet, showConfirmDialog, confirmDialog, closeDialog } from './ui.js';
 import { playSound, initRecognition, toggleVoiceMode, setVoicePulse, updateVoiceButton, openVoiceTutorial } from './voice.js';
+import { parseIntentL1, parseIntentL2 } from './voice-intent.js';
 import { openSettings, renderSettings, changeTheme, changeStitchTheme, toggleVoiceDefault, toggleVoiceSound, toggleHighlightEnabled, clearAllData, navigateToSubPage, goBackFromSubPage, editProfileName, pickProfileAvatar, showAvatarSheet, openGlobalStitchLibrary, openGlobalStitchCustomize, saveGlobalStitchCustomize, resetGlobalStitchCustomize, deleteGlobalCustomStitch, openGlobalNewStitchForm, saveGlobalNewStitch } from './settings.js';
 import {
   startImportFlow, startManualFlow, dismissEntryChoice,
@@ -48,6 +49,7 @@ import {
 import { pickCover, setProjectCover, removeProjectCover, addRefImage, removeRefImage, getRefImage, showRefImagesSheet, openRefImageViewer, pickRefImages } from './image.js';
 import { handleGenerateShare, showShareSheet, downloadShareImage, shareImageNative } from './share.js';
 import { openShareSheet, openImportShareSheet } from './share-pattern.js';
+import { openStatsPage, showProHint } from './stats.js';
 import { openAnnotator, saveAnnotation } from './annotator.js';
 import { expandInstruction, getNextStitchSid, renderHighlightReel } from './highlight.js';
 import { renderHome, renderProject } from './render.js';
@@ -241,6 +243,7 @@ const _globals = {
   pickCover, setProjectCover, removeProjectCover, addRefImage, removeRefImage, getRefImage, showRefImagesSheet, openRefImageViewer, pickRefImages,
   handleGenerateShare, showShareSheet, downloadShareImage, shareImageNative,
   openShareSheet, openImportShareSheet,
+  openStatsPage, showProHint,
   startFocusSession, tickFocusSession, flushFocusSession, getTotalFocusTime, formatFocusTime, getTodayFocusTime, getTodayStitchCount, bumpDailyCount,
   expandInstruction, getNextStitchSid, renderHighlightReel,
   setPageView,
