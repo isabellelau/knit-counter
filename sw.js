@@ -23,7 +23,7 @@ async function getVersionFromHtml() {
   }
 }
 
-let CACHE_NAME = 'crochet-1.126';
+let CACHE_NAME = 'crochet-1.127';
 
 self.addEventListener('install', (e) => {
   e.waitUntil(

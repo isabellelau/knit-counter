@@ -1106,7 +1106,7 @@ export function checkResumePosition(proj, part) {
   });
 }
 
-export function pushStitch(sid) {
+export async function pushStitch(sid) {
   const proj = getProj(state.curProjId);
   const part = getActivePart(proj);
   if (!part) return;
@@ -1120,7 +1120,7 @@ export function pushStitch(sid) {
   }
 
   proj.lastModified = Date.now();
-  saveData();
+  await saveData();
   saveLastPosition(proj, part);
   addDailyCount(1);
   window.bumpDailyCount(proj, 1);
@@ -1151,7 +1151,7 @@ export function pushStitch(sid) {
   refreshBottomBar(proj);
 }
 
-export function undoStitch() {
+export async function undoStitch() {
   const proj = getProj(state.curProjId);
   const part = getActivePart(proj);
   if (!part) return;
@@ -1167,7 +1167,7 @@ export function undoStitch() {
     r.seq.pop();
   }
   proj.lastModified = Date.now();
-  saveData();
+  await saveData();
   saveLastPosition(proj, part);
   addDailyCount(-1);
   window.bumpDailyCount(proj, -1);

@@ -236,6 +236,20 @@ export async function loadData() {
     state.data.settings = { theme: "morandi", customColors: {}, globalCustomStitches: {}, voiceEnabled: false };
   }
 
+  // 紧急备份恢复：崩溃前未落盘的数据
+  const emergencyBackup = localStorage.getItem('knit_emergency_backup');
+  if (emergencyBackup) {
+    try {
+      const backup = JSON.parse(emergencyBackup);
+      if (backup.projects?.length > (state.data.projects?.length || 0)) {
+        showToast('检测到未保存的数据，已自动恢复');
+        Object.keys(state.data).forEach(k => delete state.data[k]);
+        Object.assign(state.data, backup);
+      }
+    } catch (e) { /* ignore */ }
+    localStorage.removeItem('knit_emergency_backup');
+  }
+
   // 1) 先跑 schema 迁移（v1→v2 可能把 coverImage 写入 localStorage img_*）
   migrateData(state.data);
 

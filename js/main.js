@@ -322,6 +322,13 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
+window.addEventListener('beforeunload', () => {
+  flushFocusSession();
+  try {
+    localStorage.setItem('knit_emergency_backup', JSON.stringify(state.data));
+  } catch (e) { /* ignore */ }
+});
+
 // ===== Onboarding =====
 
 function onboardNext() {

@@ -71,7 +71,7 @@ function handleVoiceResult(text, isFinal) {
   executeIntent(intent);
 }
 
-function executeIntent(intent) {
+async function executeIntent(intent) {
   const proj = getProj(state.curProjId);
   const part = getActivePart(proj);
   const activeRound = part?.rounds.find(r => r.id === part.activeRoundId);
@@ -81,7 +81,7 @@ function executeIntent(intent) {
     case 'STITCH': {
       const count = intent.count || 1;
       for (let i = 0; i < count; i++) {
-        pushStitch(intent.sid);
+        await pushStitch(intent.sid);
       }
       state.voiceLastSid = intent.sid;
       if (state.data.settings.voiceSoundEnabled) {
@@ -92,7 +92,7 @@ function executeIntent(intent) {
     }
 
     case 'UNDO': {
-      undoStitch();
+      await undoStitch();
       triggerEdgeGlow(null);
       speakFeedback('已撤销', 'Undone');
       break;
@@ -103,7 +103,7 @@ function executeIntent(intent) {
         speakFeedback('一针还是重复花样？', 'One stitch or repeat pattern?');
         startWaiting('REPEAT_CLARIFY', 5000);
       } else if (state.voiceLastSid) {
-        pushStitch(state.voiceLastSid);
+        await pushStitch(state.voiceLastSid);
         if (state.data.settings.voiceSoundEnabled) {
           playSound('stitch');
         }
@@ -115,7 +115,7 @@ function executeIntent(intent) {
     case 'REPEAT_SINGLE': {
       clearWaiting();
       if (state.voiceLastSid) {
-        pushStitch(state.voiceLastSid);
+        await pushStitch(state.voiceLastSid);
         if (state.data.settings.voiceSoundEnabled) {
           playSound('stitch');
         }
@@ -128,9 +128,9 @@ function executeIntent(intent) {
       clearWaiting();
       if (activeRound?.instruction) {
         const tokens = extractStitches(activeRound.instruction);
-        tokens.forEach(sid => {
-          if (typeof sid === 'string') pushStitch(sid);
-        });
+        for (const sid of tokens) {
+          if (typeof sid === 'string') await pushStitch(sid);
+        }
         if (state.data.settings.voiceSoundEnabled) {
           playSound('stitch');
         }
