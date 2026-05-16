@@ -28,7 +28,7 @@ import {
   instrEditorBackspace, instrEditorClear, instrEditorConfirm, instrEditorToggleKB,
   openMultiRoundEditor, instrEditorPrevRound, instrEditorNextRound, instrEditorConfirmMulti,
   openMarkerSheet, openMarkersReviewSheet, saveMarker, removeMarker, markerSelectColor,
-  copyRoundStructure
+  copyRoundStructure, openProjectSettings, setNotationAndRefresh
 } from './stitch.js';
 import {
   addRound, addRoundBlank, toggleRound, deleteRound, undoDeleteRound, setActiveRound
@@ -73,6 +73,7 @@ function goHome() {
 }
 
 function _doGoHome() {
+  document.documentElement.classList.remove('in-project');
   document.documentElement.classList.remove('ipad-split');
   const splitLeft = document.getElementById('ipad-split-left');
   if (splitLeft) splitLeft.remove();
@@ -248,7 +249,8 @@ const _globals = {
   initStaticText,
   openMarkerSheet, openMarkersReviewSheet, saveMarker, removeMarker, markerSelectColor,
   copyRoundStructure,
-  openAnnotator, saveAnnotation
+  openAnnotator, saveAnnotation,
+  openProjectSettings, setNotationAndRefresh
 };
 Object.entries(_globals).forEach(([k, v]) => { window[k] = v; });
 

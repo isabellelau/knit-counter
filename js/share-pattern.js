@@ -256,8 +256,10 @@ window._doImportShared = async function() {
     useRowTerms: data.useRowTerms || false,
     parts: (data.parts || []).map(part => ({
       ...part,
+      id: uid(),
       rounds: (part.rounds || []).map(r => ({
         ...r,
+        id: uid(),
         seq: r.seq || [],
         instruction: r.instruction || ''
       }))
@@ -266,8 +268,50 @@ window._doImportShared = async function() {
     lastModified: Date.now()
   };
 
-  state.data.projects[newId] = proj;
+  // 兼容 v12 旧数据：移除 clusterRanges，seq 保持单针
+  proj.parts.forEach(part => {
+    (part.rounds || []).forEach(r => {
+      delete r.clusterRanges;
+    });
+  });
+
+  // 询问导入模式：跟织模式 / 作为自己项目
+  state.flowState.pendingImportProj = proj;
+
+  const html = `
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">${t('import_mode_title')}</div>
+    <div style="padding:14px 16px;display:flex;flex-direction:column;gap:12px">
+      <div onclick="window._applyImportMode('follow')" style="background:var(--card);border:2px solid var(--accent);border-radius:14px;padding:18px 16px;cursor:pointer;">
+        <div style="font-size:15px;font-weight:700;">${t('import_mode_follow')}</div>
+        <div style="font-size:12px;color:var(--muted)">${t('import_mode_follow_sub')}</div>
+      </div>
+      <div onclick="window._applyImportMode('own')" style="background:var(--card);border:2px solid var(--border);border-radius:14px;padding:18px 16px;cursor:pointer;">
+        <div style="font-size:15px;font-weight:700;">${t('import_mode_own')}</div>
+        <div style="font-size:12px;color:var(--muted)">${t('import_mode_own_sub')}</div>
+      </div>
+    </div>
+  `;
+  showSheet(html);
+};
+
+window._applyImportMode = function(mode) {
+  const proj = state.flowState.pendingImportProj;
+  if (!proj) return;
+  state.flowState.pendingImportProj = null;
+
+  if (mode === 'own') {
+    // 作为自己项目：清空 seq，只保留图解文字
+    proj.parts.forEach(part => {
+      part.rounds.forEach(r => {
+        r.seq = [];
+      });
+    });
+  }
+  // 跟织模式：保留原有 seq（已包含 cluster token）
+
+  state.data.projects.push(proj);
   saveData();
   closeSheet();
-  window.openProject(newId);
+  window.openProject(proj.id);
 };

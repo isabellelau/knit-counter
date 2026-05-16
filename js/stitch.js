@@ -7,7 +7,7 @@ import { getNextStitchSid, renderHighlightReel, expandInstructionFull } from './
 import { getRefImage, addRefImage } from './image.js';
 import { setActiveRound } from './round.js';
 import { normalizeRoundNums } from './pattern.js';
-import { t, term, getShowSymbol } from './i18n.js';
+import { t, term, getShowSymbol, setNotation, getNotationKey } from './i18n.js';
 
 // ── 动态 token 正则：合并内置针法 + 自定义针法 ──
 
@@ -23,7 +23,8 @@ export function rebuildDynamicTokenRE() {
   const allIds = [...new Set([...customIds, ...STITCH_IDS])]
     .sort((a, b) => b.length - a.length);
 
-  setTokenRE(new RegExp(`\\b(\\d*)\\s*(${allIds.join('|')})(?![a-zA-Z])`, 'gi'));
+  // 永久包含复合针法占位符 _C\d+[A-Z]+，与 buildTokenRE 保持一致
+  setTokenRE(new RegExp(`\\b(\\d*)\\s*(${allIds.join('|')}|_C\\d+[A-Z]+)(?![a-zA-Z])`, 'gi'));
 }
 
 // 每次 extractStitches 调用前自动刷新正则（幂等，开销极低）
@@ -44,6 +45,9 @@ export function toggleRowTerms() {
 }
 
 function resolveLabel(sid) {
+  if (sid && typeof sid === 'object' && sid.type === 'cluster') {
+    sid = sid.stitches[0];
+  }
   const globalCustoms = state.data?.settings?.globalStitchCustomizations;
   if (globalCustoms?.names?.[sid]) return globalCustoms.names[sid];
   const cs = state.data?.settings?.globalCustomStitches?.[sid];
@@ -78,21 +82,56 @@ export function getCustomStitchesGlobal() {
 }
 
 export function getProjColor(sid) {
-  if (!STITCH_LIB[sid] && !getCustomStitchesGlobal()[sid]) {
+  const sidStr = (sid && typeof sid === 'object' && sid.type === 'cluster') ? sid.stitches[0] : sid;
+  if (!STITCH_LIB[sidStr] && !getCustomStitchesGlobal()[sidStr]) {
     return 'var(--muted)';
   }
   const stitchKey = state.data?.settings?.stitchTheme || "morandi";
   const ext = ALL_THEMES[stitchKey];
-  if (ext && ext[sid]) return ext[sid];
-  const color = resolveColor(sid, state.data.settings);
+  if (ext && ext[sidStr]) return ext[sidStr];
+  const color = resolveColor(sidStr, state.data.settings);
   if (color !== '#ccc') return color;
-  const cs = getCustomStitchesGlobal()[sid];
+  const cs = getCustomStitchesGlobal()[sidStr];
   return cs?.color || (color !== '#ccc' ? color : '#A8A29E');
 }
 
+export function _getClusterRanges(instruction) {
+  if (!instruction) return [];
+  const parsed = extractStitches(instruction);
+  const ranges = [];
+  let idx = 0;
+  for (const token of parsed) {
+    if (token && typeof token === 'object' && token.type === 'cluster') {
+      ranges.push({ start: idx, length: token.stitches.length });
+      idx += token.stitches.length;
+    } else {
+      idx++;
+    }
+  }
+  return ranges;
+}
+
 export function getStitchInfo(sid) {
-  // 复合针法：(5F), (3X) 等
-  const compoundMatch = sid.match(/^\((\d+)([A-Z]+)\)$/i);
+  // cluster 对象（新数据）
+  if (sid && typeof sid === 'object' && sid.type === 'cluster') {
+    const innerSid = sid.stitches[0];
+    const count = sid.stitches.length;
+    const innerLib = STITCH_LIB[innerSid] || getCustomStitchesGlobal()[innerSid];
+    const label = innerLib ? resolveLabel(innerSid) : innerSid;
+    return {
+      id: sid.raw,
+      label: count + label,
+      abbr: innerLib?.abbr || innerSid,
+      color: getProjColor(innerSid),
+      category: innerLib?.category || 'basic',
+      isCompound: true,
+      innerCount: count,
+      innerSid
+    };
+  }
+
+  // 字符串复合针法：(5F), (3X) 等（兼容旧数据）
+  const compoundMatch = String(sid).match(/^\((\d+)([A-Z]+)\)$/i);
   if (compoundMatch) {
     const count = parseInt(compoundMatch[1], 10);
     const innerSid = compoundMatch[2].toUpperCase();
@@ -121,6 +160,12 @@ export function getStitchInfo(sid) {
     category: cs?.category || lib?.category || 'basic',
     isCustom: !!cs
   };
+}
+
+// 展开 seq 中的 cluster token，返回实际针数
+export function countSeqStitches(seq) {
+  if (!Array.isArray(seq)) return 0;
+  return seq.reduce((sum, t) => sum + (t?.type === 'cluster' ? t.stitches.length : 1), 0);
 }
 
 function getAllStitchesForProject() {
@@ -169,7 +214,15 @@ export function openInstructionEdit(roundId) {
     if (hasPattern) {
       const planned = new Set();
       part.rounds.forEach(r => {
-        if (r.instruction) extractStitches(r.instruction).forEach(sid => planned.add(sid));
+        if (r.instruction) {
+          extractStitches(r.instruction).forEach(sid => {
+            if (sid && typeof sid === 'object' && sid.type === 'cluster') {
+              sid.stitches.forEach(innerSid => planned.add(innerSid));
+            } else {
+              planned.add(sid);
+            }
+          });
+        }
       });
       displayIds = Array.from(planned);
     } else {
@@ -571,7 +624,15 @@ export function openMultiRoundEditor(projId) {
     if (hasPattern) {
       const planned = new Set();
       part.rounds.forEach(r => {
-        if (r.instruction) extractStitches(r.instruction).forEach(sid => planned.add(sid));
+        if (r.instruction) {
+          extractStitches(r.instruction).forEach(sid => {
+            if (sid && typeof sid === 'object' && sid.type === 'cluster') {
+              sid.stitches.forEach(innerSid => planned.add(innerSid));
+            } else {
+              planned.add(sid);
+            }
+          });
+        }
       });
       displayIds = Array.from(planned);
     } else {
@@ -794,24 +855,101 @@ export function saveRoundInstruction(roundId) {
 
 export function getRoundStitches(round) {
   if (!round || !round.instruction || !round.instruction.trim()) return [];
-  return [...new Set(extractStitches(round.instruction))];
+  const raw = extractStitches(round.instruction);
+  const expanded = [];
+  raw.forEach(sid => {
+    if (sid && typeof sid === 'object' && sid.type === 'cluster') {
+      expanded.push(...sid.stitches);
+    } else {
+      expanded.push(sid);
+    }
+  });
+  return [...new Set(expanded)];
 }
 
-export function renderSpillHTML(sid, idx, r, proj) {
+export function renderSpillHTML(sid, idx, r, proj, isDone = true) {
   const info = getStitchInfo(sid);
   if (!info) return '';
   const sel = state.selectedStitch && state.selectedStitch.roundId === r.id && state.selectedStitch.idx === idx;
-  const bg = info.color + "28";
+  const bg = isDone ? info.color + "28" : 'var(--bg-secondary)';
+  const borderColor = isDone ? info.color : 'var(--border)';
+  const color = isDone ? info.color : 'var(--muted)';
   const compoundClass = info.isCompound ? ' spill--compound' : '';
+  const pendingClass = isDone ? '' : ' spill--pending';
   const marker = proj.markers && proj.markers.find(m => m.roundId === r.id && m.index === idx);
   const markerDot = marker ? `<span class="spill-marker-dot" style="background:${marker.color}"></span>` : '';
-  return `<span class="spill${sel ? " selected" : ""}${compoundClass}"
-    style="position:relative;background:${bg};border-color:${info.color};color:${info.color}"
+  return `<span class="spill${sel ? " selected" : ""}${compoundClass}${pendingClass}"
+    style="position:relative;background:${bg};border-color:${borderColor};color:${color}"
     onclick="stitchTap('${r.id}',${idx})">
     <span class="spill-idx">${idx + 1}</span>
-    <span class="spill-abbr">${esc(info.label)}${getShowSymbol() ? ` (${sid})` : ''}</span>
+    <span class="spill-abbr">${esc(info.label)}${getShowSymbol() ? ` (${info.id})` : ''}</span>
     ${markerDot}
   </span>`;
+}
+
+export function renderClusterHTML(stitches, doneCount, idx, r, proj) {
+  const sel = state.selectedStitch && state.selectedStitch.roundId === r.id && state.selectedStitch.idx === idx;
+  const marker = proj.markers && proj.markers.find(m => m.roundId === r.id && m.index === idx);
+  const markerDot = marker ? `<span class="spill-marker-dot" style="background:${marker.color}"></span>` : '';
+
+  const minis = stitches.map((sid, i) => {
+    const isDone = i < doneCount;
+    const color = getProjColor(sid);
+    const cls = isDone ? 'spill-mini' : 'spill-mini spill-mini--pending';
+    const style = isDone ? `background:${color}` : '';
+    return `<span class="${cls}" style="${style}">${sid}</span>`;
+  }).join('');
+
+  return `<span class="spill-cluster${sel ? ' selected' : ''}" onclick="stitchTap('${r.id}',${idx})">
+    ${minis}
+    ${markerDot}
+  </span>`;
+}
+
+export function renderSeqHTML(r, proj) {
+  // seq 为空时不渲染任何胶囊（普通模式不展开虚拟针目）
+  if (r.seq.length === 0) {
+    return `<span class="seq-empty">${t('empty_round_hint')}</span>`;
+  }
+
+  const expanded = expandInstructionFull(r.instruction);
+  const clusterRanges = _getClusterRanges(r.instruction);
+  let html = '';
+
+  if (expanded && expanded.length > 0) {
+    let i = 0;
+    while (i < expanded.length) {
+      const cr = clusterRanges.find(c => c.start === i);
+      if (cr) {
+        const stitches = expanded.slice(i, i + cr.length);
+        const doneCount = Math.max(0, Math.min(cr.length, r.seq.length - i));
+        html += renderClusterHTML(stitches, doneCount, i, r, proj);
+        i += cr.length;
+      } else {
+        const isDone = i < r.seq.length;
+        const sid = isDone ? r.seq[i] : expanded[i];
+        html += renderSpillHTML(sid, i, r, proj, isDone);
+        i++;
+      }
+    }
+    // Extra stitches beyond instruction
+    while (i < r.seq.length) {
+      html += renderSpillHTML(r.seq[i], i, r, proj, true);
+      i++;
+    }
+  } else {
+    // No instruction: render only completed stitches
+    let i = 0;
+    while (i < r.seq.length) {
+      html += renderSpillHTML(r.seq[i], i, r, proj, true);
+      i++;
+    }
+  }
+
+  if (html === '') {
+    html += `<span class="seq-empty">${t('empty_round_hint')}</span>`;
+  }
+  return html;
 }
 
 export function updateRoundHeader(r, proj) {
@@ -819,7 +957,7 @@ export function updateRoundHeader(r, proj) {
   if (!roundEl) return;
   const countEl = roundEl.querySelector('.round-count');
   if (countEl) {
-    const total = r.seq.length;
+    const total = countSeqStitches(r.seq);
     const dots = r.seq.slice(-8).map(sid => {
       const c = getProjColor(sid);
       return `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${c};margin-right:2px"></span>`;
@@ -830,7 +968,7 @@ export function updateRoundHeader(r, proj) {
 
 export function updateHeaderStats(proj) {
   const allRounds = (proj.parts || []).reduce((s, pt) => s + (pt.rounds?.length || 0), 0);
-  const allNeedles = (proj.parts || []).reduce((s, pt) => s + (pt.rounds || []).reduce((ss, r) => ss + (r.seq?.length || 0), 0), 0);
+  const allNeedles = (proj.parts || []).reduce((s, pt) => s + (pt.rounds || []).reduce((ss, r) => ss + countSeqStitches(r.seq), 0), 0);
   const largeTitleSub = document.getElementById("large-title-sub");
   const unit = getUnitLabel(proj);
   if (largeTitleSub) largeTitleSub.textContent = t('header_stats').replace('{parts}', (proj.parts||[]).length).replace('{rounds}', allRounds).replace('{unit}', unit).replace('{stitches}', allNeedles);
@@ -844,15 +982,28 @@ function updateTaskSlideProgress(r) {
 }
 
 export function reindexSpills(seqWrap, roundId) {
-  const spills = seqWrap.querySelectorAll('.spill');
-  spills.forEach((spill, i) => {
+  const proj = getProj(state.curProjId);
+  const r = findRound(proj, roundId);
+  if (!r) return;
+  const clusterRanges = _getClusterRanges(r.instruction);
+  const spills = seqWrap.querySelectorAll('.spill, .spill-cluster');
+  let seqIdx = 0;
+  spills.forEach((spill) => {
+    if (seqIdx >= r.seq.length) return;
     const idxEl = spill.querySelector('.spill-idx');
-    if (idxEl) idxEl.textContent = i + 1;
-    spill.setAttribute('onclick', `stitchTap('${roundId}',${i})`);
-    if (state.selectedStitch && state.selectedStitch.roundId === roundId && state.selectedStitch.idx === i) {
+    if (idxEl) idxEl.textContent = seqIdx + 1;
+    spill.setAttribute('onclick', `stitchTap('${roundId}',${seqIdx})`);
+    if (state.selectedStitch && state.selectedStitch.roundId === roundId && state.selectedStitch.idx === seqIdx) {
       spill.classList.add('selected');
     } else {
       spill.classList.remove('selected');
+    }
+    // cluster 元素对应 seq[] 中多个位置
+    if (spill.classList.contains('spill-cluster')) {
+      const cr = clusterRanges.find(c => c.start === seqIdx);
+      seqIdx += cr ? cr.length : 1;
+    } else {
+      seqIdx++;
     }
   });
 }
@@ -875,6 +1026,22 @@ export function saveLastPosition(proj, part) {
     savedAt: Date.now()
   };
   saveData();
+}
+
+function _seqIdxToVisualIndex(round, targetIdx) {
+  const ranges = _getClusterRanges(round.instruction);
+  let visualIdx = 0;
+  let seqIdx = 0;
+  while (seqIdx < targetIdx && seqIdx < round.seq.length) {
+    const cr = ranges.find(c => c.start === seqIdx);
+    if (cr) {
+      seqIdx += cr.length;
+    } else {
+      seqIdx++;
+    }
+    visualIdx++;
+  }
+  return visualIdx;
 }
 
 export function checkResumePosition(proj, part) {
@@ -912,7 +1079,9 @@ export function checkResumePosition(proj, part) {
         const roundEl = document.getElementById('round-' + lp.roundId);
         if (roundEl) {
           roundEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          const spill = roundEl.querySelectorAll('.spill')[lp.stitchIndex];
+          const visualIdx = _seqIdxToVisualIndex(round, lp.stitchIndex);
+          const spills = roundEl.querySelectorAll('.spill, .spill-cluster');
+          const spill = visualIdx >= 0 ? spills[visualIdx] : null;
           if (spill) {
             spill.classList.add('spill--resume');
             setTimeout(() => spill.classList.remove('spill--resume'), 1500);
@@ -953,10 +1122,7 @@ export function pushStitch(sid) {
   if (roundEl) {
     const seqWrap = roundEl.querySelector('.seq-wrap');
     if (seqWrap) {
-      const emptySpan = seqWrap.querySelector('.seq-empty');
-      if (emptySpan) emptySpan.remove();
-      const idx = r.seq.length - 1;
-      seqWrap.insertAdjacentHTML('beforeend', renderSpillHTML(sid, idx, r, proj));
+      seqWrap.innerHTML = renderSeqHTML(r, proj);
     }
     updateRoundHeader(r, proj);
     updateHeaderStats(proj);
@@ -977,6 +1143,7 @@ export function undoStitch() {
   if (!part) return;
   const r = part.rounds.find(x => x.id === part.activeRoundId);
   if (!r || !r.seq.length) return;
+
   r.seq.pop();
   proj.lastModified = Date.now();
   saveData();
@@ -995,10 +1162,10 @@ export function undoStitch() {
   if (roundEl) {
     const seqWrap = roundEl.querySelector('.seq-wrap');
     if (seqWrap) {
-      const lastSpill = seqWrap.querySelector('.spill:last-child');
-      if (lastSpill) lastSpill.remove();
       if (r.seq.length === 0) {
         seqWrap.innerHTML = '<span class="seq-empty">' + t('empty_round_hint') + '</span>';
+      } else {
+        seqWrap.innerHTML = renderSeqHTML(r, proj);
       }
     }
     updateRoundHeader(r, proj);
@@ -1020,25 +1187,19 @@ function openStitchSheet(roundId, idx) {
   const proj = getProj(state.curProjId);
   const r = findRound(proj, roundId);
   const sid = r.seq[idx];
-  const s = SM[sid];
-  const projColor = getProjColor(sid);
-  const projLabel = resolveLabel(sid);
-
   const info = getStitchInfo(sid);
-  const isCompound = info && info.isCompound;
+  if (!info) return;
+  const projColor = info.color;
+  const projLabel = info.label;
 
   let html = `<div class="sheet-handle"></div>
   <div class="sheet-title">${t('stitch_detail_title').replace('{idx}', idx + 1)} · <span style="color:${projColor};font-weight:700">${esc(projLabel)}</span></div>`;
 
-  if (isCompound) {
-    const innerLabel = resolveLabel(info.innerSid);
-    html += `<div style="padding:8px 14px;margin:0 14px;font-size:12px;color:var(--accent);background:var(--accent-bg);border-radius:10px;text-align:center">${t('compound_stitch_warning').replace('{count}', info.innerCount).replace('{stitch}', innerLabel)}</div>`;
-  }
-
   html += `<div class="sheet-section">${t('change_to')}</div>`;
   html += `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:8px 14px">`;
+  const compareId = sid;
   getAllStitchesForProject(proj).forEach(st => {
-    if (st.id === sid) return;
+    if (st.id === compareId) return;
     html += `<button class="picker-btn" style="background:${st.color}" onclick="changeStitch('${roundId}',${idx},'${st.id}')">${esc(st.label)}</button>`;
   });
   html += `</div>`;
@@ -1227,18 +1388,7 @@ export function changeStitch(roundId, idx, sid) {
   if (roundEl) {
     const seqWrap = roundEl.querySelector('.seq-wrap');
     if (seqWrap) {
-      const spills = seqWrap.querySelectorAll('.spill');
-      if (spills[idx]) {
-        const info = getStitchInfo(sid);
-        if (info) {
-          const bg = info.color + "28";
-          spills[idx].style.background = bg;
-          spills[idx].style.borderColor = info.color;
-          spills[idx].style.color = info.color;
-          const abbrEl = spills[idx].querySelector('.spill-abbr');
-          if (abbrEl) abbrEl.textContent = esc(info.label) + (getShowSymbol() ? ` (${sid})` : '');
-        }
-      }
+      seqWrap.innerHTML = renderSeqHTML(r, proj);
     }
     updateRoundHeader(r, proj);
   } else {
@@ -1250,6 +1400,7 @@ export function deleteStitch(roundId, idx) {
   const proj = getProj(state.curProjId);
   const r = findRound(proj, roundId);
   if (!r) return;
+
   r.seq.splice(idx, 1);
   proj.lastModified = Date.now();
   saveData(); closeSheet();
@@ -1259,12 +1410,10 @@ export function deleteStitch(roundId, idx) {
   if (roundEl) {
     const seqWrap = roundEl.querySelector('.seq-wrap');
     if (seqWrap) {
-      const spills = seqWrap.querySelectorAll('.spill');
-      if (spills[idx]) spills[idx].remove();
       if (r.seq.length === 0) {
         seqWrap.innerHTML = '<span class="seq-empty">' + t('empty_round_hint') + '</span>';
       } else {
-        reindexSpills(seqWrap, roundId);
+        seqWrap.innerHTML = renderSeqHTML(r, proj);
       }
     }
     updateRoundHeader(r, proj);
@@ -1301,6 +1450,7 @@ export function doInsert(sid) {
   const r = findRound(proj, roundId);
   if (!r) return;
   const pos = dir === "before" ? idx : idx + 1;
+
   r.seq.splice(pos, 0, sid);
   state.pendingInsert = null;
   proj.lastModified = Date.now();
@@ -1311,20 +1461,7 @@ export function doInsert(sid) {
   if (roundEl) {
     const seqWrap = roundEl.querySelector('.seq-wrap');
     if (seqWrap) {
-      const emptySpan = seqWrap.querySelector('.seq-empty');
-      if (emptySpan) emptySpan.remove();
-
-      const spills = seqWrap.querySelectorAll('.spill');
-      const spillHtml = renderSpillHTML(sid, pos, r, proj);
-
-      if (spills[pos]) {
-        spills[pos].insertAdjacentHTML('beforebegin', spillHtml);
-      } else if (spills.length > 0) {
-        spills[spills.length - 1].insertAdjacentHTML('afterend', spillHtml);
-      } else {
-        seqWrap.insertAdjacentHTML('beforeend', spillHtml);
-      }
-      reindexSpills(seqWrap, roundId);
+      seqWrap.innerHTML = renderSeqHTML(r, proj);
     }
     updateRoundHeader(r, proj);
     updateHeaderStats(proj);
@@ -1342,7 +1479,9 @@ function calcExpectedCount(instruction) {
   // 优先用智能解析器（正确处理括号嵌套）
   try {
     const expanded = expandInstructionFull(instruction);
-    if (expanded !== null && expanded.length > 0) return expanded.length;
+    if (expanded !== null && expanded.length > 0) {
+      return expanded.length;
+    }
   } catch {}
 
   // 回退：剥离前缀后交给旧逻辑（处理 [...]*N 方括号等语法）
@@ -1443,7 +1582,7 @@ export function renderTaskSlide(proj) {
     </div>`;
   }
 
-  const done = activeRound.seq?.length || 0;
+  const done = countSeqStitches(activeRound.seq);
   const autoExpected = calcExpectedCount(instruction);
   const expected = activeRound.expectedCount != null ? activeRound.expectedCount : autoExpected;
   const expectedDisplay = expected != null ? expected : '--';
@@ -1544,7 +1683,15 @@ export function renderDynamicPalette(proj) {
     if (hasPattern) {
       const planned = new Set();
       part.rounds.forEach(r => {
-        if (r.instruction) extractStitches(r.instruction).forEach(sid => planned.add(sid));
+        if (r.instruction) {
+          extractStitches(r.instruction).forEach(sid => {
+            if (sid && typeof sid === 'object' && sid.type === 'cluster') {
+              sid.stitches.forEach(innerSid => planned.add(innerSid));
+            } else {
+              planned.add(sid);
+            }
+          });
+        }
       });
       displayIds = Array.from(planned);
     } else {
@@ -1574,7 +1721,7 @@ export function renderDynamicPalette(proj) {
   // ── 心流状态栏（仅心流模式显示）──
   if (flowMode && next) {
     if (next.status === 'ok') {
-      html += `<div class="palette-status-bar">${t('flow_mode_status_current').replace('{n}', next.index + 1).replace('{total}', next.total)}</div>`;
+      html += `<div class="palette-status-bar">${t('flow_mode_status_current').replace('{n}', (next.stitchIndex ?? next.index) + 1).replace('{total}', next.stitchTotal ?? next.total)}</div>`;
     } else if (next.status === 'round_complete') {
       html += `<div class="palette-status-bar palette-status-bar--complete">${t('flow_mode_status_done')}</div>`;
     } else if (next.status === 'parse_error') {
@@ -1594,7 +1741,8 @@ export function renderDynamicPalette(proj) {
 
     // 当前针高亮：始终生效（免费 + Pro）
     if (next && next.status === 'ok') {
-      if (sid === next.sid) {
+      const isCurrent = sid === next.sid;
+      if (isCurrent) {
         btnClass += ' palette-btn--highlight';
       } else if (flowMode) {
         // 其余按钮变暗：仅心流模式
@@ -1648,16 +1796,15 @@ export function renderToggleRow() {
 }
 
 export function renderBarRow() {
+  const unit = getUnitLabel();
   const hint = state.voiceMode
     ? `<div style="text-align:center;font-size:11px;color:#EF4444;padding:2px 0 4px;opacity:.8">${t('voice_hint_bar')}</div>`
     : '';
-  return `${hint}<div class="bar-row bar-row--icons">
-    ${renderImmersiveToggle()}
-    <button class="bar-btn" onclick="undoStitch()" title="${t('immersive_undo')}">↩</button>
-    <button class="bar-btn" onclick="openPatternPasteSheet()" title="${t('import_pattern')}">📥</button>
-    <button class="bar-btn" id="voice-mode-btn" onclick="toggleVoiceMode()" title="${t('voice_btn')}">🎙</button>
-    <button class="bar-btn" id="highlight-mode-btn" onclick="toggleHighlightMode()" title="${t('flow_mode_btn')}">✦</button>
-    <button class="bar-btn primary" onclick="addRound()">+R</button>
+  return `${hint}<div class="bar-row bar-row--main">
+    <button class="bar-btn bar-btn--undo" onclick="undoStitch()">${t('immersive_undo')}</button>
+    <button class="bar-btn" id="voice-mode-btn" onclick="toggleVoiceMode()">${t('voice_btn')}</button>
+    <button class="bar-btn" id="highlight-mode-btn" onclick="toggleHighlightMode()">${t('flow_mode_btn')}</button>
+    <button class="bar-btn bar-btn--primary" onclick="addRound()">${t('add_round_btn').replace('{unit}', unit)}</button>
   </div>`;
 }
 
@@ -1678,7 +1825,7 @@ export function renderImmersive(proj) {
 
   /* ③ 当前活跃圈卡片 */
   html += `<div class="rounds-wrap">`;
-  const total = r.seq.length;
+  const total = countSeqStitches(r.seq);
 
   html += `<div class="round-card" id="round-${r.id}">
     <div class="round-hdr" onclick="toggleRound('${r.id}')">
@@ -1692,12 +1839,7 @@ export function renderImmersive(proj) {
     </div>
     <div class="round-body open">
       <div class="seq-wrap">`;
-  r.seq.forEach((sid, idx) => {
-    html += renderSpillHTML(sid, idx, r, proj);
-  });
-  if (r.seq.length === 0) {
-    html += `<span class="seq-empty">${t('empty_round_hint')}</span>`;
-  }
+  html += renderSeqHTML(r, proj);
   html += `</div>
     </div>
   </div>`;
@@ -1892,7 +2034,6 @@ export function refreshBottomBar(proj) {
   }
 
   let bhtml = renderDynamicPalette(proj);
-  bhtml += renderToggleRow();
   bhtml += renderBarRow();
   bar.innerHTML = bhtml;
   updateVoiceButton();
@@ -2301,4 +2442,75 @@ export function triggerEdgeGlow(sid) {
       el.style.transition = 'opacity 0.08s ease-in';
     }, 400);
   }, 120);
+}
+
+export function setNotationAndRefresh(key) {
+  setNotation(key);
+  openProjectSettings();
+}
+
+export function openProjectSettings() {
+  const proj = getProj(state.curProjId);
+  if (!proj) return;
+  const isRow = proj.useRowTerms;
+  const currentNotation = getNotationKey();
+  const unit = getUnitLabel(proj);
+
+  const notationOptions = [
+    { key: 'symbol', label: t('setting_notation_symbol') },
+    { key: 'zh',     label: t('setting_notation_zh') },
+    { key: 'en_us',  label: t('setting_notation_en_us') },
+    { key: 'en_uk',  label: t('setting_notation_en_uk') },
+  ];
+
+  const notationHTML = notationOptions.map(o => `
+    <button class="proj-setting-notation-btn ${currentNotation === o.key ? 'active' : ''}"
+      onclick="setNotationAndRefresh('${o.key}')">${o.label}</button>
+  `).join('');
+
+  showSheet(`
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">${t('project_settings')}</div>
+
+    <div class="sheet-section">
+      <div class="sheet-item sheet-item--row">
+        <div>
+          <div class="sheet-item-title">${t('setting_count_unit')}</div>
+          <div class="sheet-item-sub">${t('setting_current_unit').replace('{unit}', unit)}</div>
+        </div>
+        <button class="sheet-item-action" onclick="toggleRowTerms();closeSheet();renderProject()">
+          ${t('setting_switch_to').replace('{unit}', isRow ? t('round_unit') : t('row_unit'))}
+        </button>
+      </div>
+    </div>
+
+    <div class="sheet-section">
+      <div class="sheet-item-title" style="padding:0 16px 8px">${t('settings_notation')}</div>
+      <div class="proj-setting-notation-grid">${notationHTML}</div>
+    </div>
+
+    <div class="sheet-section">
+      <div class="sheet-item sheet-item--row" onclick="toggleFilterByRound();openProjectSettings()">
+        <div>
+          <div class="sheet-item-title">${t('setting_filter_round')}</div>
+          <div class="sheet-item-sub">${t('setting_filter_round_sub')}</div>
+        </div>
+        <div class="proj-setting-toggle ${state.filterByRound ? 'active' : ''}">
+          ${state.filterByRound ? t('on') : t('off')}
+        </div>
+      </div>
+    </div>
+
+    <div class="sheet-section">
+      <div class="sheet-item sheet-item--row" onclick="closeSheet();openPatternPasteSheet()">
+        <div>
+          <div class="sheet-item-title">${t('import_pattern')}</div>
+          <div class="sheet-item-sub">${t('import_pattern_desc')}</div>
+        </div>
+        <span class="sheet-item-arrow">›</span>
+      </div>
+    </div>
+
+    <button class="sheet-cancel" onclick="closeSheet()">${t('close')}</button>
+  `);
 }

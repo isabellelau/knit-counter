@@ -202,7 +202,7 @@ export function openParseConfirmSheet(parsed) {
         <input id="edit-${idx}" value="${esc(item.instruction)}"
           style="width:100%;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:13px;background:var(--bg);color:var(--text);outline:none;font-family:inherit"
           onchange="state.flowState.pendingParsed[${idx}].instruction=this.value.trim()">
-        ${item.seq.length ? `<div style="font-size:11px;color:var(--muted);margin-top:3px">${t('detected_stitches')}${[...new Set(item.seq)].join(' · ')}</div>` : ''}
+        ${item.seq.length ? `<div style="font-size:11px;color:var(--muted);margin-top:3px">${t('detected_stitches')}${[...new Set(item.seq)].map(s => (s && typeof s === 'object' && s.type === 'cluster') ? s.raw : s).join(' · ')}</div>` : ''}
       </div>
       <button onclick="removeParsedItem(${idx})" style="background:none;border:none;color:#D0B0A0;font-size:20px;padding:4px 8px;cursor:pointer;line-height:1;margin-top:20px">×</button>
     </div>`;
@@ -279,13 +279,15 @@ export function confirmImport(mode) {
   parsed.forEach((item, idx) => {
     const input = document.getElementById(`edit-${idx}`);
     const instruction = input ? input.value.trim() : item.instruction;
-    targetPart.rounds.push({
+    const round = {
       id: uid(),
       seq: [],
       instruction,
       isTextCard: item.type === 'text',
       roundNum: item.roundNum
-    });
+    };
+    // 粘贴图解：只保留 instruction 文字，seq 由用户后续钩织产生
+    targetPart.rounds.push(round);
   });
 
   // 将第一圈设为活跃圈
@@ -294,10 +296,18 @@ export function confirmImport(mode) {
   targetPart.activeRoundId = firstRound.id;
   state.expandedRounds.add(firstRound.id);
 
-  // 自动配置 customPalette 为解析识别出的针法
+  // 自动配置 customPalette 为解析识别出的针法（cluster 展开为内层 stitches）
   const detectedIds = new Set();
   parsed.forEach(item => {
-    if (item.seq) item.seq.forEach(sid => detectedIds.add(sid));
+    if (item.seq) {
+      item.seq.forEach(sid => {
+        if (sid && typeof sid === 'object' && sid.type === 'cluster') {
+          sid.stitches.forEach(innerSid => detectedIds.add(innerSid));
+        } else {
+          detectedIds.add(sid);
+        }
+      });
+    }
   });
   if (detectedIds.size > 0) {
     targetPart.customPalette = Array.from(detectedIds);

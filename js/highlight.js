@@ -1,6 +1,7 @@
 import { state, getProj, getActivePart } from './state.js';
 import { extractStitches, ALIAS_TO_ID, STITCH_LIB, resolveColor } from '../stitches.js';
 import { getShowSymbol } from './i18n.js';
+import { _getClusterRanges } from './stitch.js';
 
 // ── 针法 token 模式（ALIAS_TO_ID 全部 key，长优先，避免短缩写截断）──
 const STITCH_KEYS = Object.keys(ALIAS_TO_ID).sort((a, b) => b.length - a.length);
@@ -146,15 +147,47 @@ function parseOne(tokens, i, groups) {
 
   if (next.type === 'LPAREN') {
     i++; // skip LPAREN
-    const inner = [];
-    while (i < tokens.length && tokens[i].type !== 'RPAREN') {
-      i = parseOne(tokens, i, inner);
-    }
-    i++; // skip RPAREN
-    // 外层乘数：将括号内整体作为一组顺序重复 count 次
-    for (let n = 0; n < count; n++) {
-      for (const g of inner) {
-        groups.push({ sid: g.sid, count: g.count });
+
+    // 检测单 token 复合针法：(5F) 或 (F)
+    // 模式：NUMBER? STITCH RPAREN
+    const isCompound = (
+      (i + 2 < tokens.length &&
+       tokens[i].type === 'NUMBER' &&
+       tokens[i + 1].type === 'STITCH' &&
+       tokens[i + 2].type === 'RPAREN') ||
+      (i + 1 < tokens.length &&
+       tokens[i].type === 'STITCH' &&
+       tokens[i + 1].type === 'RPAREN')
+    );
+
+    if (isCompound) {
+      let innerCount = 1;
+      let stitchToken;
+      if (tokens[i].type === 'NUMBER') {
+        innerCount = tokens[i].value;
+        stitchToken = tokens[i + 1];
+        i += 3; // NUMBER, STITCH, RPAREN
+      } else {
+        stitchToken = tokens[i];
+        i += 2; // STITCH, RPAREN
+      }
+      const sid = normalizeStitchId(stitchToken.value);
+      // cluster 拆开为独立针（心流模式逐针推进）
+      for (let n = 0; n < innerCount; n++) {
+        groups.push({ sid, count });
+      }
+    } else {
+      // 普通括号组（重复组）
+      const inner = [];
+      while (i < tokens.length && tokens[i].type !== 'RPAREN') {
+        i = parseOne(tokens, i, inner);
+      }
+      i++; // skip RPAREN
+      // 外层乘数：将括号内整体作为一组顺序重复 count 次
+      for (let n = 0; n < count; n++) {
+        for (const g of inner) {
+          groups.push({ sid: g.sid, count: g.count });
+        }
       }
     }
   } else if (next.type === 'STITCH') {
@@ -212,7 +245,10 @@ export function getNextStitchSid(proj) {
   const idx = state.highlightIndex;
   if (idx >= expanded.length) return { status: 'round_complete' };
 
-  return { status: 'ok', sid: expanded[idx], index: idx, total: expanded.length };
+  const token = expanded[idx];
+  // 所有元素均为单针，index 与 stitchIndex 一致
+  const result = { status: 'ok', sid: token, index: idx, total: expanded.length, stitchIndex: idx, stitchTotal: expanded.length };
+  return result;
 }
 
 // ═══════════════════════════════════════
@@ -230,29 +266,59 @@ export function renderHighlightReel(proj) {
   const part = getActivePart(proj);
   if (!part) { container.innerHTML = ''; return; }
   const r = part.rounds.find(x => x.id === part.activeRoundId);
-  if (!r || !r.instruction) { container.innerHTML = ''; return; }
+  if (!r || !r.instruction || r.seq.length === 0) { container.innerHTML = ''; return; }
 
   const expanded = expandInstructionFull(r.instruction);
   if (!expanded || expanded.length === 0) { container.innerHTML = ''; return; }
 
   const idx = state.highlightIndex;
   const settings = state.data?.settings || {};
+  const clusterRanges = _getClusterRanges(r.instruction);
 
-  const items = expanded.map((sid, i) => {
-    const lib = STITCH_LIB[sid];
-    const label = lib ? lib.label : sid;
-    const color = resolveColor(sid, settings);
+  const items = [];
+  let i = 0;
+  while (i < expanded.length) {
+    const cr = clusterRanges.find(c => c.start === i);
+    if (cr) {
+      const stitches = expanded.slice(i, i + cr.length);
+      const sid = stitches[0];
+      const color = resolveColor(sid, settings);
+      const isCurrent = i <= idx && idx < i + cr.length;
+      const isDone = i + cr.length <= idx;
 
-    let cls = 'highlight-reel-item';
-    if (i < idx) cls += ' highlight-reel-item--done';
-    else if (i === idx) cls += ' highlight-reel-item--current';
-    else cls += ' highlight-reel-item--upcoming';
+      let cls = 'highlight-reel-item';
+      if (isDone) cls += ' highlight-reel-item--done';
+      else if (isCurrent) cls += ' highlight-reel-item--current';
+      else cls += ' highlight-reel-item--upcoming';
+      cls += ' reel-cluster';
 
-    const style = `--reel-color:${color}`;
-    return `<div class="${cls}" style="${style}" title="${label}">${label}${getShowSymbol() ? ` (${sid})` : ''}</div>`;
-  }).join('');
+      const style = `--reel-color:${color}`;
+      const minis = stitches.map((s, j) => {
+        const miniDone = i + j < idx;
+        const miniColor = miniDone ? resolveColor(s, settings) : 'var(--muted)';
+        return `<span class="reel-mini" style="color:${miniColor}">${s}</span>`;
+      }).join('');
+      items.push(`<div class="${cls}" style="${style}">${minis}</div>`);
+      i += cr.length;
+    } else {
+      const sid = expanded[i];
+      const lib = STITCH_LIB[sid];
+      const label = lib ? lib.label : sid;
+      const color = resolveColor(sid, settings);
 
-  container.innerHTML = `<div class="highlight-reel"><div class="highlight-reel-track">${items}</div></div>`;
+      let cls = 'highlight-reel-item';
+      if (i < idx) cls += ' highlight-reel-item--done';
+      else if (i === idx) cls += ' highlight-reel-item--current';
+      else cls += ' highlight-reel-item--upcoming';
+
+      const style = `--reel-color:${color}`;
+      const sidDisplay = getShowSymbol() ? ` (${sid})` : '';
+      items.push(`<div class="${cls}" style="${style}" title="${label}">${label}${sidDisplay}</div>`);
+      i++;
+    }
+  }
+
+  container.innerHTML = `<div class="highlight-reel"><div class="highlight-reel-track">${items.join('')}</div></div>`;
 
   requestAnimationFrame(() => {
     const current = container.querySelector('.highlight-reel-item--current');

@@ -1012,6 +1012,19 @@ html.theme-dark .stats-card-row {
       opacity: .85
     }
 
+    .bar-row--main .bar-btn--undo {
+      background: transparent;
+      color: var(--accent);
+      border-color: var(--accent)
+    }
+
+    .bar-row--main .bar-btn--primary {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 500;
+      flex: 1.3
+    }
+
     .bar-row--icons {
       justify-content: space-around;
       gap: 4px;
@@ -1871,6 +1884,30 @@ html.theme-dark .stats-card-row {
       font-size: 14px;
       font-weight: 600;
       color: var(--text)
+    }
+
+    .sheet-item--row {
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sheet-item-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .sheet-item-action {
+      padding: 5px 10px;
+      border-radius: 8px;
+      border: 0.5px solid var(--border);
+      background: var(--card);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      flex-shrink: 0;
     }
 
     .sheet-item-sub {
@@ -3013,6 +3050,34 @@ html.theme-dark .stats-card-row {
       color: var(--muted);
     }
 
+    .task-state-pills {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .task-state-pill {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+
+    .task-state-pill.active {
+      background: var(--accent);
+      color: white;
+      border: none;
+    }
+
+    .task-state-pill.inactive {
+      background: none;
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+
     .exp-count {
       color: var(--accent);
       border-bottom: 1px dashed var(--accent);
@@ -3492,5 +3557,157 @@ html.immersive-mode .pal-btn small {
 .share-qr-wrap canvas {
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0,0,0,.1);
+}
+
+/* ── 同针簇 (In-Stitch Cluster) ── */
+.spill-cluster {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 1px;
+  position: relative;
+  padding: 0 4px;
+  padding-top: 8px;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.spill-cluster::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 4px;
+  right: 4px;
+  height: 6px;
+  border: 1.5px solid var(--accent);
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  opacity: 0.7;
+}
+
+.spill-mini {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 22px;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.25);
+}
+
+.spill-mini--pending {
+  background: var(--bg-secondary);
+  color: var(--muted);
+  text-shadow: none;
+  border: 1px solid var(--border);
+}
+
+.spill--pending {
+  opacity: 0.5;
+}
+
+.spill-cluster.selected {
+  box-shadow: 0 0 0 2.5px var(--text);
+  border-radius: 6px;
+}
+
+.highlight-reel-item.reel-cluster {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 6px;
+  border-radius: 8px;
+  border: 1.5px solid var(--accent);
+  background: var(--accent-bg);
+}
+
+.reel-mini {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 18px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 600;
+  color: white;
+}
+
+.float-state-pills {
+  position: fixed;
+  right: 0;
+  top: 42%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 15;
+  pointer-events: auto;
+}
+
+.float-pill {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-size: 11px;
+  padding: 10px 5px;
+  border-radius: 10px 0 0 10px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  line-height: 1;
+  letter-spacing: 0.05em;
+  background: var(--card);
+  color: var(--muted);
+  border: 0.5px solid var(--border);
+  border-right: none;
+}
+
+.float-pill.active {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.float-state-pills { display: none; }
+html.in-project .float-state-pills { display: flex; }
+
+.proj-setting-notation-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 0 16px 8px;
+}
+
+.proj-setting-notation-btn {
+  padding: 7px 0;
+  border-radius: 8px;
+  font-size: 13px;
+  border: 0.5px solid var(--border);
+  background: var(--card);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.proj-setting-notation-btn.active {
+  background: var(--accent-bg);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.proj-setting-toggle {
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 10px;
+  border: 0.5px solid var(--border);
+  color: var(--muted);
+  background: var(--card);
+}
+
+.proj-setting-toggle.active {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
 }
 

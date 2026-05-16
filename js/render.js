@@ -3,7 +3,7 @@ import { esc } from './ui.js';
 import { saveData } from './storage.js';
 import { renderTaskSlide, refreshBottomBar,
          renderFilterToggle,
-         renderSpillHTML, getProjColor, getUnitLabel } from './stitch.js';
+         renderSeqHTML, getProjColor, getUnitLabel, countSeqStitches } from './stitch.js';
 import { setPageView } from './main.js';
 import { renderHighlightReel } from './highlight.js';
 import { getProjImage, getRefImage } from './image.js';
@@ -24,6 +24,8 @@ function getProjectInitial(name) {
 
 export async function renderHome() {
   try {
+    document.documentElement.classList.remove('in-project');
+
     // --- Nav Bar：首页状态 ---
     setPageView('home-view');
     const navBar       = document.getElementById('nav-bar');
@@ -47,7 +49,7 @@ export async function renderHome() {
       const totalProjsCount = activeProjs.length;
       const totalNeedlesAll = state.data.projects.reduce((sum, p) =>
         sum + (p.parts || []).reduce((s, pt) =>
-          s + (pt.rounds || []).reduce((ss, r) => ss + (r.seq?.length || 0), 0), 0), 0);
+          s + (pt.rounds || []).reduce((ss, r) => ss + countSeqStitches(r.seq), 0), 0), 0);
 
       let todayStitchesAll = 0;
       let totalFocusAll = 0;
@@ -94,7 +96,7 @@ export async function renderHome() {
     }
     activeProjs.forEach(p => {
       const allRounds = (p.parts || []).reduce((s, pt) => s + (pt.rounds?.length || 0), 0);
-      const allNeedles = (p.parts || []).reduce((s, pt) => s + (pt.rounds || []).reduce((ss, r) => ss + (r.seq?.length || 0), 0), 0);
+      const allNeedles = (p.parts || []).reduce((s, pt) => s + (pt.rounds || []).reduce((ss, r) => ss + countSeqStitches(r.seq), 0), 0);
       const coverImg = coverMap.get(p.id) || null;
       const coverHtml = coverImg
         ? `<img class="proj-thumb" src="${coverImg}" alt="">`
@@ -128,7 +130,7 @@ export async function renderHome() {
       html += `<div class="proj-list">`;
       archivedProjs.forEach(p => {
         const allRounds = (p.parts || []).reduce((s, pt) => s + (pt.rounds?.length || 0), 0);
-        const allNeedles = (p.parts || []).reduce((s, pt) => s + (pt.rounds || []).reduce((ss, r) => ss + (r.seq?.length || 0), 0), 0);
+        const allNeedles = (p.parts || []).reduce((s, pt) => s + (pt.rounds || []).reduce((ss, r) => ss + countSeqStitches(r.seq), 0), 0);
         const coverImgArc = coverMap.get(p.id) || null;
         const coverHtmlArc = coverImgArc
           ? `<img class="proj-thumb" src="${coverImgArc}" alt="">`
@@ -172,6 +174,8 @@ export async function renderHome() {
 export function renderProject() {
   // 编辑模式下禁止 DOM 重构，避免打断输入焦点
   if (window.editingPartId !== null) return;
+
+  document.documentElement.classList.add('in-project');
 
   // 恢复在 blur 之前捕获的编辑状态
   window.editingPartId = state.flowState.captureEdit || window.editingPartId;
@@ -238,11 +242,8 @@ export function renderProject() {
 
   if (navActions) {
     navActions.innerHTML = `
-      <button class="nav-btn nav-toggle-mode" onclick="toggleRowTerms()" aria-label="${t('toggle_row_terms')}">
-        <span class="toggle-mode-dot">◉</span> <span class="toggle-mode-label">${unit}</span>
-      </button>
-      <button class="nav-btn" onclick="openSettings()" aria-label="${t('settings')}">⚙︎</button>
       <button class="nav-btn" onclick="showRefImagesSheet('${proj.id}')" aria-label="${t('ref_images_title')}">🖼</button>
+      <button class="nav-btn" onclick="openProjectSettings()" aria-label="${t('project_settings')}">⚙︎</button>
     `;
   }
 
@@ -291,7 +292,7 @@ export function renderProject() {
     const isActive = r.id === activeRid;
     const isLoop = r.isLoopMarker;
     const exp = state.expandedRounds.has(r.id) || isActive;
-    const total = r.seq.length;
+    const total = countSeqStitches(r.seq);
     const dots = r.seq.slice(-8).map(sid => `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${getProjColor(sid)};margin-right:2px"></span>`).join("");
 
     const roundMarkers = (proj.markers || []).filter(m => m.roundId === r.id);
@@ -328,13 +329,7 @@ export function renderProject() {
           onclick="copyRoundStructure('${r.id}')">↻ ${t('copy_structure_btn')}</button>
       </div>
       <div class="seq-wrap">`;
-      if (r.seq.length === 0) {
-        html += `<span class="seq-empty">${t('empty_round_hint')}</span>`;
-      } else {
-        r.seq.forEach((sid, idx) => {
-          html += renderSpillHTML(sid, idx, r, proj);
-        });
-      }
+      html += renderSeqHTML(r, proj);
       html += `</div>
     </div></div>`;
     } else {
@@ -353,19 +348,19 @@ export function renderProject() {
     <div class="round-body${exp ? " open" : ""}">`;
 
     html += `<div class="seq-wrap">`;
-    if (r.seq.length === 0) {
-      html += `<span class="seq-empty">${t('empty_round_hint')}</span>`;
-    } else {
-      r.seq.forEach((sid, idx) => {
-        html += renderSpillHTML(sid, idx, r, proj);
-      });
-    }
+    html += renderSeqHTML(r, proj);
     html += `</div>`;
     html += `</div></div>`;
     }
   });
 
   html += `</div>`;
+  html += `<div class="float-state-pills" id="float-state-pills">
+    <button class="float-pill ${state.immersiveMode ? 'active' : ''}"
+      onclick="toggleImmersiveMode()" aria-label="${t('immersive_enter')}">专注</button>
+    <button class="float-pill ${state.filterByRound ? 'active' : ''}"
+      onclick="toggleFilterByRound()" aria-label="${t('filter_by_round')}">本圈</button>
+  </div>`;
   document.getElementById("screen-content").innerHTML = html;
 
   const bar = document.getElementById("bottom-bar");

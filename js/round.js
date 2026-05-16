@@ -3,7 +3,7 @@ import { showConfirmDialog, showToast, showSheet, closeSheet, esc } from './ui.j
 import { saveData } from './storage.js';
 import { t, term } from './i18n.js';
 import { normalizeRoundNums } from './pattern.js';
-import { getUnitLabel, refreshBottomBar, renderFilterToggle, renderTaskSlide, updateHighlightButton, renderImmersive, getProjColor } from './stitch.js';
+import { getUnitLabel, refreshBottomBar, renderFilterToggle, renderTaskSlide, updateHighlightButton, renderImmersive, getProjColor, countSeqStitches } from './stitch.js';
 import { getNextStitchSid, renderHighlightReel } from './highlight.js';
 
 export function addRound() {
@@ -24,7 +24,7 @@ export function addRound() {
     const unit = getUnitLabel(proj);
     let itemsHtml = '';
     roundsWithSeq.forEach(({ round, part: pt }, i) => {
-      const total = round.seq.length;
+      const total = countSeqStitches(round.seq);
       const dots = round.seq.slice(-6).map(sid => {
         const c = getProjColor(sid);
         return `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${c};margin-right:1px;flex-shrink:0"></span>`;

@@ -82,7 +82,8 @@ export const SM = Object.fromEntries(STITCHES.map(s => [s.id, s]));
 const STITCH_IDS = Object.keys(STITCH_LIB).sort((a, b) => b.length - a.length);
 
 function buildTokenRE(ids) {
-  return new RegExp(`\\b(\\d*)\\s*(${ids.join('|')})(?![a-zA-Z])`, 'gi');
+  // 永久包含复合针法占位符 _C\d+[A-Z]+，避免 extractStitches 运行时 patch source
+  return new RegExp(`\\b(\\d*)\\s*(${ids.join('|')}|_C\\d+[A-Z]+)(?![a-zA-Z])`, 'gi');
 }
 
 let _tokenRE = buildTokenRE(STITCH_IDS);
@@ -147,10 +148,10 @@ export function expandRepeatGroups(line) {
         const times = parseInt(repeatMatch[1], 10);
         const trimmed = inner.trim();
 
-        // 单 token 复合针法 (如 5F) — 不展开
+        // 单 token 复合针法 (如 5F) — 按 times 展开为多个簇
         if (/^\d+[A-Z]+$/i.test(trimmed) && !/[,，]/.test(trimmed)) {
-          // 这是 (5F) 复合针法，整体保留
-          result += line.substring(i, j + repeatMatch[0].length);
+          const compoundToken = line.substring(i, j); // "(5F)"
+          result += Array(times).fill(compoundToken).join(', ');
           i = j + repeatMatch[0].length;
           continue;
         }
@@ -368,14 +369,17 @@ export function extractStitches(text) {
 
   // 保护复合针法：(5F) → _C5F，防止被后续正则以 \b 拆分为 5×F
   // 前置数字也保护：3(5F) → 3 _C5F，正则匹配为 3×_C5F → push 3 次 (5F)
+  const compoundIds = new Set();
   processed = processed.replace(/(\d*)\s*[\(\[](\d+[A-Z]+)[\)\]]/gi, (_, prefix, inner) => {
     const compoundId = '_C' + inner.toUpperCase();
-    ALIAS_TO_ID[compoundId] = compoundId; // 注册供 token 正则匹配
+    compoundIds.add(compoundId);
+    ALIAS_TO_ID[compoundId] = compoundId; // 注册供 normalizeStitch 使用
     return (prefix || '') + ' ' + compoundId;
   });
 
-  // 用动态 token 正则匹配针法
+  // 用动态 token 正则匹配针法（已永久包含 _C\d+[A-Z]+ 复合针法占位符）
   const re = getTokenRE();
+
   const result = [];
   let m;
   while ((m = re.exec(processed)) !== null) {
@@ -389,9 +393,24 @@ export function extractStitches(text) {
     }
 
     const count = m[1] ? parseInt(m[1], 10) : 1;
-    const id = normalizeStitch(m[2]);
-    if (id) {
-      for (let i = 0; i < count; i++) result.push(id);
+    let id = m[2];
+    if (id.startsWith('_C')) {
+      const cm = id.match(/_C(\d+)([A-Z]+)/);
+      if (cm) {
+        const innerSid = cm[2].toUpperCase();
+        const innerCount = parseInt(cm[1], 10);
+        const cluster = {
+          type: 'cluster',
+          stitches: Array(innerCount).fill(innerSid),
+          raw: `(${innerCount}${innerSid})`
+        };
+        for (let i = 0; i < count; i++) result.push(cluster);
+      }
+    } else {
+      id = normalizeStitch(id);
+      if (id) {
+        for (let i = 0; i < count; i++) result.push(id);
+      }
     }
   }
   return result;
@@ -458,24 +477,32 @@ function extractRemarks(text) {
  * @returns {string|null}
  */
 export function normalizeStitch(token) {
-  // 复合针法占位符：_C5F → (5F)
+  // 复合针法占位符：_C5F → cluster 对象
   const compoundPlaceholder = token.match(/^_C(\d+)([A-Z]+)$/i);
   if (compoundPlaceholder) {
-    const count = compoundPlaceholder[1];
+    const count = parseInt(compoundPlaceholder[1], 10);
     const innerSid = compoundPlaceholder[2].toUpperCase();
     const resolved = ALIAS_TO_ID[innerSid];
     if (!resolved) return null;
-    return `(${count}${resolved})`;
+    return {
+      type: 'cluster',
+      stitches: Array(count).fill(resolved),
+      raw: `(${count}${resolved})`
+    };
   }
 
   // 复合针法直接格式：(5F), [5F], (3X) 等
   const compoundMatch = token.match(/^[\(\[](\d+)([A-Z]+)[\)\]]$/i);
   if (compoundMatch) {
-    const count = compoundMatch[1];
+    const count = parseInt(compoundMatch[1], 10);
     const innerSid = compoundMatch[2].toUpperCase();
     const resolved = ALIAS_TO_ID[innerSid];
     if (!resolved) return null;
-    return `(${count}${resolved})`;
+    return {
+      type: 'cluster',
+      stitches: Array(count).fill(resolved),
+      raw: `(${count}${resolved})`
+    };
   }
 
   // 去掉头尾数字，得到纯字母核心

@@ -19,6 +19,8 @@
  *   v9 — 新增 project.focusSessions（专注时长记录）+ project.dailyCount（每日针数）
  *   v10 — 新增 project.markers（记号扣，针目级彩色标记+备注）
  *   v11 — 新增 part.lastPosition（钩织进度记忆，记录最后钩织位置）
+ *   v12 — 新增 round.clusterRanges（复合针法簇范围，平行于 seq 的元数据）
+ *   v13 — clusterRanges → seq 内 cluster token：将平行元数据数组内嵌为 seq 元素
  *
  * Rule: whenever you change the shape of state.data, you MUST:
  *   1. Bump LATEST_SCHEMA by 1
@@ -94,7 +96,7 @@ export const storageAdapter = {
 
 const STORAGE_KEY = 'crochet_v4';
 const OLD_KEYS = ['crochet_v3_fixed', 'crochet_v3'];
-const LATEST_SCHEMA = 11;
+const LATEST_SCHEMA = 14;
 
 // ═══════════════════════════════════════
 //  一次性迁移：localStorage → IndexedDB
@@ -435,6 +437,71 @@ export function migrateData(d) {
     d.projects.forEach(p => {
       (p.parts || []).forEach(part => {
         if (!part.lastPosition) part.lastPosition = null;
+      });
+    });
+  }
+
+  // v11 → v12: 补全 round.clusterRanges
+  if (d.schemaVersion < 12) {
+    d.projects.forEach(p => {
+      (p.parts || []).forEach(part => {
+        (part.rounds || []).forEach(r => {
+          if (!Array.isArray(r.clusterRanges)) r.clusterRanges = [];
+        });
+      });
+    });
+  }
+
+  // v12 → v13: 将 clusterRanges 平行数组迁移为 seq 内的 cluster token
+  if (d.schemaVersion < 13) {
+    d.projects.forEach(p => {
+      (p.parts || []).forEach(part => {
+        (part.rounds || []).forEach(r => {
+          if (Array.isArray(r.clusterRanges) && r.clusterRanges.length > 0 && Array.isArray(r.seq)) {
+            const newSeq = [];
+            let seqIdx = 0;
+            const sortedRanges = [...r.clusterRanges].sort((a, b) => a.start - b.start);
+            while (seqIdx < r.seq.length) {
+              const cr = sortedRanges.find(c => c.start === seqIdx);
+              if (cr) {
+                newSeq.push({
+                  type: 'cluster',
+                  stitches: r.seq.slice(cr.start, cr.start + cr.length),
+                  raw: cr.raw || `(${cr.length}${r.seq[cr.start]})`
+                });
+                seqIdx += cr.length;
+              } else {
+                newSeq.push(r.seq[seqIdx]);
+                seqIdx++;
+              }
+            }
+            r.seq = newSeq;
+          }
+          delete r.clusterRanges;
+        });
+      });
+    });
+  }
+
+  // v13 → v14: 将 seq 中的 cluster token 拆分为独立针
+  if (d.schemaVersion < 14) {
+    d.projects.forEach(p => {
+      (p.parts || []).forEach(part => {
+        (part.rounds || []).forEach(r => {
+          if (Array.isArray(r.seq)) {
+            const newSeq = [];
+            for (const token of r.seq) {
+              if (token && typeof token === 'object' && token.type === 'cluster') {
+                for (const innerSid of token.stitches) {
+                  newSeq.push(innerSid);
+                }
+              } else {
+                newSeq.push(token);
+              }
+            }
+            r.seq = newSeq;
+          }
+        });
       });
     });
   }
