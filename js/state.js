@@ -106,11 +106,16 @@ export function getDailyLog() {
 }
 
 export function addDailyCount(n) {
-  const key = getTodayKey();
-  const log = getDailyLog();
-  log[key] = Math.max(0, (log[key] || 0) + n);
-  if (log[key] === 0) delete log[key];
-  localStorage.setItem(DAILY_LOG_KEY, JSON.stringify(log));
+  try {
+    const key = getTodayKey();
+    const log = getDailyLog();
+    log[key] = Math.max(0, (log[key] || 0) + n);
+    if (log[key] === 0) delete log[key];
+    localStorage.setItem(DAILY_LOG_KEY, JSON.stringify(log));
+  } catch (e) {
+    // Safari 隐私模式 QuotaExceededError，静默忽略
+    // 计数丢失但不影响主流程
+  }
 }
 
 export function calcTotalDays() {

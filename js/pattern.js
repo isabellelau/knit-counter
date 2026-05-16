@@ -5,6 +5,8 @@ import { parsePattern, extractStitches } from '../stitches.js';
 import { setPageView } from './main.js';
 import { t, term } from './i18n.js';
 
+const MAX_ROUNDS = 200;
+
 let _confirmRounds = null;
 
 export function startImportFlow() {
@@ -184,6 +186,10 @@ export async function handleOCR(input) {
 }
 
 export function openParseConfirmSheet(parsed) {
+  if (parsed.length > MAX_ROUNDS) {
+    showToast(`图解包含 ${parsed.length} 圈，超出上限 ${MAX_ROUNDS} 圈，已截取前 ${MAX_ROUNDS} 圈，其余可手动补充`);
+    parsed = parsed.slice(0, MAX_ROUNDS);
+  }
   _confirmRounds = parsed;
   const roundCount = parsed.filter(p => p.type === 'round').length;
   const textCount = parsed.filter(p => p.type === 'text').length;

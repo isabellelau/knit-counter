@@ -3,6 +3,8 @@ import { extractStitches, ALIAS_TO_ID, STITCH_LIB, resolveColor } from '../stitc
 import { getShowSymbol } from './i18n.js';
 import { _getClusterRanges } from './stitch.js';
 
+const HIGHLIGHT_WINDOW = 20; // 当前针前后各显示 10 个
+
 // ── 针法 token 模式（ALIAS_TO_ID 全部 key，长优先，避免短缩写截断）──
 const STITCH_KEYS = Object.keys(ALIAS_TO_ID).sort((a, b) => b.length - a.length);
 const STITCH_RE = new RegExp(
@@ -278,37 +280,54 @@ export function renderHighlightReel(proj) {
   // 增量更新：已渲染且 round 未切换
   const existingReel = container.querySelector('.highlight-reel');
   if (existingReel && existingReel.dataset.roundId === String(r.id)) {
-    const tokens = existingReel.querySelectorAll('.reel-token');
-    tokens.forEach(el => {
-      const start = parseInt(el.dataset.start, 10);
-      const len = parseInt(el.dataset.len, 10);
-      const end = start + len;
-      el.classList.toggle('reel-done', end <= idx);
-      el.classList.toggle('reel-current', start <= idx && idx < end);
-    });
+    const winStart = parseInt(existingReel.dataset.windowStart || '0', 10);
+    const winEnd = parseInt(existingReel.dataset.windowEnd || String(expanded.length), 10);
+    if (idx >= winStart && idx < winEnd) {
+      const tokens = existingReel.querySelectorAll('.reel-token');
+      tokens.forEach(el => {
+        const start = parseInt(el.dataset.start, 10);
+        const len = parseInt(el.dataset.len, 10);
+        const end = start + len;
+        el.classList.toggle('reel-done', end <= idx);
+        el.classList.toggle('reel-current', start <= idx && idx < end);
+      });
 
-    // 更新 cluster 内部 mini 颜色
-    const minis = existingReel.querySelectorAll('.reel-mini');
-    minis.forEach(mini => {
-      const globalIdx = parseInt(mini.dataset.idx, 10);
-      const isDone = globalIdx < idx;
-      const sid = mini.textContent;
-      mini.style.color = isDone ? resolveColor(sid, settings) : 'var(--muted)';
-    });
+      // 更新 cluster 内部 mini 颜色
+      const minis = existingReel.querySelectorAll('.reel-mini');
+      minis.forEach(mini => {
+        const globalIdx = parseInt(mini.dataset.idx, 10);
+        const isDone = globalIdx < idx;
+        const sid = mini.textContent;
+        mini.style.color = isDone ? resolveColor(sid, settings) : 'var(--muted)';
+      });
 
-    requestAnimationFrame(() => {
-      const cur = existingReel.querySelector('.reel-current');
-      if (cur) {
-        cur.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-      }
-    });
-    return;
+      requestAnimationFrame(() => {
+        const cur = existingReel.querySelector('.reel-current');
+        if (cur) {
+          cur.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+      });
+      return;
+    }
   }
 
-  // 首次渲染：生成所有 token
+  // 首次渲染：生成窗口内的 token
+  const halfWindow = HIGHLIGHT_WINDOW / 2;
+  const winStart = Math.max(0, idx - halfWindow);
+  const winEnd = Math.min(expanded.length, idx + halfWindow);
+
+  // 窗口边界对齐到 cluster 边界，避免截断
+  let renderStart = winStart;
+  const startCluster = clusterRanges.find(c => c.start <= winStart && winStart < c.start + c.length);
+  if (startCluster) renderStart = startCluster.start;
+
+  let renderEnd = winEnd;
+  const endCluster = clusterRanges.find(c => c.start < winEnd && winEnd < c.start + c.length);
+  if (endCluster) renderEnd = endCluster.start + endCluster.length;
+
   const items = [];
-  let i = 0;
-  while (i < expanded.length) {
+  let i = renderStart;
+  while (i < renderEnd) {
     const cr = clusterRanges.find(c => c.start === i);
     if (cr) {
       const stitches = expanded.slice(i, i + cr.length);
@@ -347,7 +366,7 @@ export function renderHighlightReel(proj) {
     }
   }
 
-  container.innerHTML = `<div class="highlight-reel" data-round-id="${r.id}"><div class="highlight-reel-track">${items.join('')}</div></div>`;
+  container.innerHTML = `<div class="highlight-reel" data-round-id="${r.id}" data-window-start="${renderStart}" data-window-end="${renderEnd}"><div class="highlight-reel-track">${items.join('')}</div></div>`;
 
   requestAnimationFrame(() => {
     const reel = container.querySelector('.highlight-reel');
