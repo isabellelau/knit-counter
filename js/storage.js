@@ -147,8 +147,11 @@ export async function saveData() {
   try {
     await storageAdapter.set(STORAGE_KEY, state.data);
   } catch (e) {
-    if (e.name === 'QuotaExceededError') {
-      showToast(t('storage_quota'));
+    if (e?.name === 'QuotaExceededError') {
+      showToast('存储空间不足，请导出备份后清理数据');
+    } else {
+      console.error('[saveData] unexpected error:', e);
+      showToast('保存失败，请检查设备存储状态');
     }
   }
   checkStorageQuota();
@@ -251,7 +254,12 @@ export async function loadData() {
   }
 
   // 1) 先跑 schema 迁移（v1→v2 可能把 coverImage 写入 localStorage img_*）
-  migrateData(state.data);
+  try {
+    migrateData(state.data);
+  } catch (e) {
+    console.error('[migrateData] failed:', e);
+    showToast('数据格式异常，部分功能可能受影响，建议导出备份');
+  }
 
   // 2) 再跑 localStorage → IndexedDB 迁移（一次补齐封面）
   await migrateFromLocalStorage();

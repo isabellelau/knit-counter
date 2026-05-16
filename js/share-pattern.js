@@ -172,6 +172,22 @@ function validateProjectData(data) {
   return true;
 }
 
+function validateImportData(data) {
+  const errors = [];
+  if (!data.name || data.name.trim() === '') {
+    errors.push('项目名称为空');
+  }
+  if (!Array.isArray(data.parts) || data.parts.length === 0) {
+    errors.push('项目不包含任何部件');
+  }
+  data.parts?.forEach((part, i) => {
+    if (!Array.isArray(part.rounds)) {
+      errors.push(`部件 ${i + 1} 缺少圈数据`);
+    }
+  });
+  return errors;
+}
+
 // ═══════════════════════════════════════════
 //  Public API
 // ═══════════════════════════════════════════
@@ -271,6 +287,13 @@ window._doImportShared = async function() {
 
   // 防御性深拷贝：彻底切断与 state 中任何既有项目的引用关系
   const importData = JSON.parse(JSON.stringify(data));
+
+  const errors = validateImportData(importData);
+  if (errors.length > 0) {
+    showToast(`导入失败：${errors[0]}`);
+    console.warn('[import] validation failed:', errors);
+    return;
+  }
 
   console.log('[import] raw data.name:', data.name);
   console.log('[import] parsed proj name:', importData.name);
