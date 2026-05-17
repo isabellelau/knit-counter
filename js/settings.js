@@ -12,7 +12,7 @@ let _settingsMode = 'page'; // 'page' | 'sheet'
 
 function _getSubPageTitle(key) {
   const titles = {
-    pro: t('settings_pro_title'),
+    pro: '',
     tutorial: t('settings_tutorial_title'),
     color: t('settings_color'),
     permissions: t('settings_permissions'),
