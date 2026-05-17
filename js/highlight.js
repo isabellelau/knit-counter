@@ -1,23 +1,22 @@
 import { state, getProj, getActivePart } from './state.js';
-import { extractStitches, ALIAS_TO_ID, STITCH_LIB, resolveColor } from '../stitches.js';
+import { extractStitches, expandRepeatGroups, SKIP_PREFIXES, ALIAS_TO_ID, STITCH_LIB, resolveColor } from '../stitches.js';
 import { getShowSymbol } from './i18n.js';
 import { _getClusterRanges } from './stitch.js';
 
 const HIGHLIGHT_WINDOW = 20; // 当前针前后各显示 10 个
 
-// ── 针法 token 模式（ALIAS_TO_ID 全部 key，长优先，避免短缩写截断）──
-const STITCH_KEYS = Object.keys(ALIAS_TO_ID).sort((a, b) => b.length - a.length);
-const STITCH_RE = new RegExp(
-  STITCH_KEYS.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'),
-  'i'
-);
-
 // ═══════════════════════════════════════
 //  tokenize — 将图解指令拆成 token 数组
+//              每次调用从 ALIAS_TO_ID 动态构建 stitch regex，
+//              确保运行时新增的自定义针法能被识别
 // ═══════════════════════════════════════
 function tokenize(str) {
   const tokens = [];
   let i = 0;
+
+  // 动态构建 stitch regex（每次调用读取最新 ALIAS_TO_ID，支持 runtime 自定义针法）
+  const _stitchKeys = Object.keys(ALIAS_TO_ID).sort((a, b) => b.length - a.length);
+  const _stitchRe = new RegExp('^(?:' + _stitchKeys.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')', 'i');
 
   while (i < str.length) {
     // 空白 & 分隔符
@@ -78,12 +77,28 @@ function tokenize(str) {
       continue;
     }
 
-    // 针法缩写（含中文别名）
-    const stitchRe = new RegExp('^(?:' + STITCH_RE.source + ')', 'i');
-    const stitchMatch = str.slice(i).match(stitchRe);
+    // 针法缩写（含中文别名）—— 从当前 ALIAS_TO_ID 动态匹配
+    const stitchMatch = str.slice(i).match(_stitchRe);
     if (stitchMatch) {
-      tokens.push({ type: 'STITCH', value: stitchMatch[0].toUpperCase() });
-      i += stitchMatch[0].length;
+      const matched = stitchMatch[0];
+      const after = str[i + matched.length];
+
+      // ASCII 别名需要 trailing word boundary，防止 "sc" 截断 "sc3" 或 "scalar"
+      const isAsciiToken = /^[a-zA-Z]+$/.test(matched);
+      if (isAsciiToken && after && /\w/.test(after)) {
+        // 前缀假匹配，退回到 unknown alphabetic 路径
+        const unknownMatch = str.slice(i).match(/^[A-Za-z]+/);
+        if (unknownMatch) {
+          tokens.push({ type: 'STITCH', value: unknownMatch[0].toUpperCase() });
+          i += unknownMatch[0].length;
+        } else {
+          i++;
+        }
+        continue;
+      }
+
+      tokens.push({ type: 'STITCH', value: matched.toUpperCase() });
+      i += matched.length;
       continue;
     }
 
@@ -107,7 +122,8 @@ function normalizeStitchId(token) {
   const upper = token.toUpperCase();
   if (ALIAS_TO_ID[upper]) return ALIAS_TO_ID[upper];
   if (STITCH_LIB[upper]) return upper;
-  return upper;
+  // 非已知针法 → 不识别，避免英文注释被当针法执行
+  return null;
 }
 
 // ═══════════════════════════════════════
@@ -174,9 +190,11 @@ function parseOne(tokens, i, groups) {
         i += 2; // STITCH, RPAREN
       }
       const sid = normalizeStitchId(stitchToken.value);
-      // cluster 拆开为独立针（心流模式逐针推进）
-      for (let n = 0; n < innerCount; n++) {
-        groups.push({ sid, count });
+      if (sid) {
+        // cluster 拆开为独立针（心流模式逐针推进）
+        for (let n = 0; n < innerCount; n++) {
+          groups.push({ sid, count });
+        }
       }
     } else {
       // 普通括号组（重复组）
@@ -211,7 +229,18 @@ function parseOne(tokens, i, groups) {
 export function expandInstructionFull(instruction) {
   if (!instruction || typeof instruction !== 'string' || !instruction.trim()) return null;
   try {
-    const tokens = tokenize(instruction);
+    // 0) 预处理：展开括号重复，与 extractStitches 保持一致
+    let text = expandRepeatGroups(instruction);
+
+    // 1) 移除说明性前缀片段（如"当作1个长针"）
+    for (const prefix of SKIP_PREFIXES) {
+      text = text.replace(
+        new RegExp(prefix + '[^，,。\\.\\n]+', 'gi'),
+        ' '
+      );
+    }
+
+    const tokens = tokenize(text);
     const result = parseTokens(tokens);
     return result.length > 0 ? result : null;
   } catch (e) {

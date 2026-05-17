@@ -101,7 +101,7 @@ export { STITCH_IDS };
 const ROUND_PREFIX_RE = /^(?:R|Round|第)?\s*(\d+)\s*[:：.]\s*(.*)/i;
 
 // 说明性前缀词 — 这些词引导的片段是注释而非针法指令，解析时需跳过
-const SKIP_PREFIXES = [
+export const SKIP_PREFIXES = [
   '当作', '相当于', '代替', '作为', '视为', '等于', '即',
   'work as', 'treat as', 'count as', 'same as',
   'instead of', 'equivalent to', 'acts as'
