@@ -299,6 +299,10 @@ export default {
   //  Settings
   // ═════════════════════════════════════
   settings: 'Settings',
+  settings_pro_title: 'Early Access Perks',
+  settings_pro_subtitle: 'All PRO features free for early users',
+  settings_tutorial_title: 'User Guide',
+  settings_tutorial_subtitle: 'Features and how to use them',
   settings_color: 'Appearance',
   settings_permissions: 'Permissions',
   settings_data: 'Data',
@@ -565,4 +569,50 @@ export default {
   pro_hint_unlock: 'Unlock full stats',
   pro_hint_toast: 'PRO feature coming soon',
   pro_feature_hint: 'PRO feature, coming soon',
+
+  // ═════════════════════════════════════
+  //  Early Access Perks page
+  // ═════════════════════════════════════
+  pro_page_title: 'Early Access Perks',
+  pro_page_desc: 'Thank you for joining ZhiYing early. All PRO features are completely free during this period.',
+  pro_flow_name: 'Flow Mode',
+  pro_flow_sub: 'Auto-highlight the next stitch following the pattern; single tap to advance and catch mistakes in real time',
+  pro_voice_name: 'Voice Pro',
+  pro_voice_sub: 'Say sequences like "sc 3, dc 2" to record in batches; jump rounds and place stitch markers hands-free',
+  pro_stats_name: 'Detailed Stats',
+  pro_stats_sub: 'Heatmap, time-of-day distribution, stitch rankings, and personal records — full analytics',
+  pro_page_footnote: 'Enjoy the full experience before in-app purchase launches ✦',
+
+  // ═════════════════════════════════════
+  //  User Guide page
+  // ═════════════════════════════════════
+  tutorial_project_title: 'Project Management',
+  tutorial_project_desc: 'Create a separate project for each crochet piece. Set a cover image and organize work into multiple sections.\nArchive completed projects to keep them intact without cluttering your active list.\nDeleted projects cannot be recovered — we recommend archiving instead of deleting.',
+
+  tutorial_stitch_title: 'Stitch Recording',
+  tutorial_stitch_desc: 'Record stitch sequences round by round. The bottom palette shows available stitches for the current round.\nTap a stitch pill to replace, delete, or insert stitches before/after it.\nTap a specific stitch position to add coloured stitch markers with notes, matching your physical markers.\nThe undo button at the bottom removes the last stitch.',
+
+  tutorial_pattern_title: 'Pattern Import',
+  tutorial_pattern_desc: 'Paste a written pattern to auto-parse each round\'s stitches and total count.\nOr snap a photo and use OCR to recognize the text automatically.\nAfter parsing, review and edit each round. Loop markers are supported (e.g. rounds 2–5 repeat).\nHow to import: Choose "Paste Pattern" when creating a new project,\nor tap the "Pattern" button at the bottom inside a project.',
+
+  tutorial_refimage_title: 'Reference Images & Annotations',
+  tutorial_refimage_desc: 'Upload multiple reference images per project for quick visual reference while crocheting.\nTap a reference image to enter annotation mode and mark key areas with the brush tool.\nAnnotations are saved separately and do not alter the original image.\nOn iPad in landscape, the reference image stays pinned on the left while you work on the right.',
+
+  tutorial_immersive_title: 'Focus Mode',
+  tutorial_immersive_desc: 'Hides extra UI and enlarges stitch buttons — ideal for when you don\'t need to look down at the screen.\nAccess: floating pill button on the right side of the project page.\nIn Focus Mode, tap "Next Round" to auto-advance without manual switching.\nFocus time is automatically tracked when entering and exiting a project, shown on the home screen.',
+
+  tutorial_highlight_title: 'Flow Mode',
+  tutorial_highlight_desc: 'Turn on after importing a pattern — the next stitch is auto-highlighted.\nOnly the correct stitch button lights up on the palette, so mistakes are caught instantly.\nThe full stitch sequence for the current round is shown at the top, with a pulse animation at your current position.\nEnable Voice + Flow Sync to advance by saying "ok" or "go" — no need to look at the screen.\nAccess: floating pill button on the right side of the project page.',
+
+  tutorial_voice_title: 'Voice Mode',
+  tutorial_voice_desc: 'Turn on to record stitches by speaking their names — hands-free crocheting.\n\nBasic commands (free):\n· "single crochet" / "dc 3" — records the corresponding stitch\n· "undo" — removes the last stitch\n· "repeat" / "again" — repeats the last stitch\n\nPro commands (PRO):\n· "sc 3, dc 2, undo" — speak a sequence to execute in order\n· "go to round 8" — jump directly to that round\n· "mark red" — place a coloured stitch marker at the current position\n· "ok" / "go" — advance the highlight when Flow Sync is on\n\nAccess: "Voice" button at the bottom of the project page.\nSettings → Voice Mode to adjust recognition language, sound feedback, and response timeout.',
+
+  tutorial_stats_title: 'Detailed Stats',
+  tutorial_stats_desc: 'Aggregated crochet data across all your projects, showing your full crochet habits.\n\nFree visibility:\n· Total crochet days\n· Current streak\n\nPRO data:\n· Activity heatmap (daily stitch counts for the last 84 days)\n· Time-of-day distribution (morning / afternoon / evening / night)\n· Top 3 stitch types (across all projects)\n· Best single-day record\n· Longest single round (by stitch count)\n· Average focus session length\n\nAccess: stats entry at the top of the Settings page.',
+
+  tutorial_stitchlib_title: 'Global Stitch Library',
+  tutorial_stitchlib_desc: 'Customize stitch names and colours in Settings — changes apply globally across all projects.\nYou can also create new custom stitch types with an abbreviation ID, name, and category.\nCustom stitches automatically participate in pattern parsing and can be used in written patterns.\nAccess: Settings → Stitch Library.',
+
+  tutorial_data_title: 'Data Management',
+  tutorial_data_desc: 'All data is stored locally on your device — nothing is uploaded to any server.\nWe recommend exporting regular backups to protect against device loss or data corruption.\n\n· Export backup: export all projects as a JSON file\n· Import backup: restore all data from a JSON file\n· Export single project: export one project as a .knt file from the project menu\n· Share pattern: export stitch sequences as a written pattern,\n  or as KNIT1 format for others to import (requires ZhiYing)\n\nAccess: Settings → Data Management.',
 };

@@ -12,6 +12,8 @@ let _settingsMode = 'page'; // 'page' | 'sheet'
 
 function _getSubPageTitle(key) {
   const titles = {
+    pro: t('settings_pro_title'),
+    tutorial: t('settings_tutorial_title'),
     color: t('settings_color'),
     permissions: t('settings_permissions'),
     data: t('settings_data'),
@@ -116,6 +118,24 @@ function _buildSettingsListInnerHTML() {
   const themeName = theme === 'morandi' ? t('theme_morandi') : theme === 'night' ? t('theme_night') : t('theme_system');
   return `
     <div class="settings-list">
+      <div class="settings-row" onclick="navigateToSubPage('pro')">
+        <div class="settings-row-icon" style="background:var(--accent-bg);color:var(--accent)">✦</div>
+        <span class="settings-row-label">${t('settings_pro_title')}</span>
+        <div class="settings-row-extra">
+          <span class="settings-row-value">${t('settings_pro_subtitle')}</span>
+          <span class="settings-row-chevron">›</span>
+        </div>
+      </div>
+
+      <div class="settings-row" onclick="navigateToSubPage('tutorial')">
+        <div class="settings-row-icon" style="background:var(--accent-bg);color:var(--accent)">📖</div>
+        <span class="settings-row-label">${t('settings_tutorial_title')}</span>
+        <div class="settings-row-extra">
+          <span class="settings-row-value">${t('settings_tutorial_subtitle')}</span>
+          <span class="settings-row-chevron">›</span>
+        </div>
+      </div>
+
       <div class="settings-row" onclick="navigateToSubPage('color')">
         <div class="settings-row-icon" style="background:var(--accent-bg);color:var(--accent)">🎨</div>
         <span class="settings-row-label">${t('settings_color')}</span>
@@ -287,6 +307,12 @@ export function navigateToSubPage(key) {
       break;
     case 'lang':
       subHTML = _buildLangSubPageHTML();
+      break;
+    case 'pro':
+      subHTML = _buildProSubPageHTML();
+      break;
+    case 'tutorial':
+      subHTML = _buildTutorialSubPageHTML();
       break;
     default:
       _settingsStack.pop();
@@ -662,6 +688,81 @@ function _buildAboutSubPageHTML() {
       <button class="settings-btn settings-btn-primary" onclick="showPwaTutorial()">${t('settings_install_btn')}</button>
     </div>
     `}
+  `;
+}
+
+// ═════════════════════════════════════
+//  子页：早期用户特权
+// ═════════════════════════════════════
+
+function _buildProSubPageHTML() {
+  return `
+    <div class="settings-subpage">
+      <div style="text-align:center;padding:24px 16px 16px">
+        <div style="font-size:48px;margin-bottom:12px">✦</div>
+        <div style="font-size:var(--text-title2);font-weight:700;color:var(--text)">${t('pro_page_title')}</div>
+      </div>
+      <div style="font-size:15px;color:var(--text-secondary);line-height:1.7;padding:0 16px 24px;text-align:center">
+        ${t('pro_page_desc')}
+      </div>
+      <div style="padding:0 16px">
+        <div class="pro-feature-item">
+          <div class="pro-feature-icon">◎</div>
+          <div>
+            <div class="pro-feature-name">${t('pro_flow_name')}</div>
+            <div class="pro-feature-sub">${t('pro_flow_sub')}</div>
+          </div>
+        </div>
+        <div class="pro-feature-item">
+          <div class="pro-feature-icon">🎙</div>
+          <div>
+            <div class="pro-feature-name">${t('pro_voice_name')}</div>
+            <div class="pro-feature-sub">${t('pro_voice_sub')}</div>
+          </div>
+        </div>
+        <div class="pro-feature-item">
+          <div class="pro-feature-icon">📊</div>
+          <div>
+            <div class="pro-feature-name">${t('pro_stats_name')}</div>
+            <div class="pro-feature-sub">${t('pro_stats_sub')}</div>
+          </div>
+        </div>
+      </div>
+      <div class="pro-page-footnote">${t('pro_page_footnote')}</div>
+    </div>
+  `;
+}
+
+// ═════════════════════════════════════
+//  子页：使用教程
+// ═════════════════════════════════════
+
+function _buildTutorialSubPageHTML() {
+  const sections = [
+    { title: t('tutorial_project_title'), desc: t('tutorial_project_desc'), pro: false },
+    { title: t('tutorial_stitch_title'), desc: t('tutorial_stitch_desc'), pro: false },
+    { title: t('tutorial_pattern_title'), desc: t('tutorial_pattern_desc'), pro: false },
+    { title: t('tutorial_refimage_title'), desc: t('tutorial_refimage_desc'), pro: false },
+    { title: t('tutorial_immersive_title'), desc: t('tutorial_immersive_desc'), pro: false },
+    { title: t('tutorial_highlight_title'), desc: t('tutorial_highlight_desc'), pro: true },
+    { title: t('tutorial_voice_title'), desc: t('tutorial_voice_desc'), pro: true },
+    { title: t('tutorial_stats_title'), desc: t('tutorial_stats_desc'), pro: true },
+    { title: t('tutorial_stitchlib_title'), desc: t('tutorial_stitchlib_desc'), pro: false },
+    { title: t('tutorial_data_title'), desc: t('tutorial_data_desc'), pro: false },
+  ];
+
+  return `
+    <div class="settings-subpage" style="padding:16px">
+      ${sections.map(s => `
+        <div class="tutorial-section">
+          <div class="tutorial-section-title">
+            ${s.title}
+            ${s.pro ? '<span class="pro-badge">PRO</span>' : ''}
+          </div>
+          <div class="tutorial-section-desc">${s.desc}</div>
+        </div>
+      `).join('')}
+    </div>
   `;
 }
 
