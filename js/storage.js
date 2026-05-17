@@ -226,6 +226,11 @@ export async function loadData() {
   }
 
   if (d) {
+    // 上界检查：拒绝来自更新版本的数据
+    if (d.schemaVersion > LATEST_SCHEMA) {
+      showToast('该备份来自更新版本的织影，请先升级应用');
+      return;
+    }
     Object.keys(state.data).forEach(k => delete state.data[k]);
     Object.assign(state.data, d);
   }
@@ -257,11 +262,9 @@ export async function loadData() {
   }
 
   // 1) 先跑 schema 迁移（v1→v2 可能把 coverImage 写入 localStorage img_*）
-  try {
-    migrateData(state.data);
-  } catch (e) {
-    console.error('[migrateData] failed:', e);
-    showToast('数据格式异常，部分功能可能受影响，建议导出备份');
+  const result = migrateData(state.data);
+  if (result !== state.data) {
+    showToast('数据升级失败，已恢复至上次版本，建议导出备份', null, 6000);
   }
 
   // 2) 再跑 localStorage → IndexedDB 迁移（一次补齐封面）
@@ -274,6 +277,9 @@ export async function loadData() {
 // ── 数据迁移：版本门控 ──
 
 export function migrateData(d) {
+  d.schemaVersion = parseInt(d.schemaVersion, 10) || 0;
+  try {
+    const backup = JSON.parse(JSON.stringify(d));
   if (!d.schemaVersion || d.schemaVersion < 1) {
     d.projects.forEach(p => {
       // 补全 customSettings
@@ -356,7 +362,9 @@ export function migrateData(d) {
   if (d.schemaVersion < 2) {
     d.projects.forEach(p => {
       if (p.coverImage) {
-        try { localStorage.setItem('img_' + p.id, p.coverImage); } catch(e) { /* ignore */ }
+        localStorage.setItem('img_' + p.id, p.coverImage);
+        const verified = localStorage.getItem('img_' + p.id);
+        if (!verified) throw new Error('v1→v2 coverImage write failed for ' + p.id);
       }
       delete p.coverImage;
     });
@@ -546,9 +554,18 @@ export function migrateData(d) {
   }
 
   d.schemaVersion = LATEST_SCHEMA;
+  } catch (err) {
+    console.error('[Migration] snapshot or migration failed at schemaVersion', d.schemaVersion, err);
+    return d;
+  }
+  return d;
 }
 
 export function exportPDF() {
+  if (/iPhone|iPad/.test(navigator.userAgent)) {
+    showToast('PDF 导出请使用浏览器菜单中的「打印」功能');
+    return;
+  }
   window.print();
 }
 
@@ -559,7 +576,8 @@ export function exportData() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = t('export_filename').replace('{date}', new Date().toISOString().slice(0,10));
+  const safeName = t('export_filename').replace(/[/\\:*?"<>|]/g, '_');
+  a.download = safeName.replace('{date}', new Date().toISOString().slice(0,10));
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -581,7 +599,8 @@ export function exportSingleProject(id) {
   const a = document.createElement('a');
   a.href = url;
   const date = new Date().toISOString().slice(0, 10);
-  a.download = `${proj.name}_${date}.knt`;
+  const safeName = proj.name.replace(/[/\\:*?"<>|]/g, '_');
+  a.download = `${safeName}_${date}.knt`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

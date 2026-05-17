@@ -1,5 +1,5 @@
 import { state, getProj, getActivePart, uid } from './state.js';
-import { showToast } from './ui.js';
+import { showToast, showSheet } from './ui.js';
 import { refreshBottomBar, pushStitch, undoStitch, triggerEdgeGlow, copyRoundStructure } from './stitch.js';
 import { addRoundBlank, setActiveRound } from './round.js';
 import { saveData } from './storage.js';
@@ -277,6 +277,17 @@ function saveMarkerDirect(roundId, idx, color) {
 export function initRecognition() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) return null;
+
+  // 清理旧实例的所有事件处理器，防止回调泄漏
+  if (state.recognition) {
+    state.recognition.onresult = null;
+    state.recognition.onerror = null;
+    state.recognition.onend = null;
+    state.recognition.onspeechend = null;
+    try { state.recognition.abort(); } catch (_) {}
+    state.recognition = null;
+  }
+
   const r = new SR();
   r.lang = getLang() === 'en' ? 'en-US' : 'zh-CN';
   r.continuous = true;
@@ -303,6 +314,8 @@ export function initRecognition() {
     }
   };
 
+  r.onspeechend = null;
+
   return r;
 }
 
@@ -311,8 +324,11 @@ export async function toggleVoiceMode() {
   if (state.flowState.voiceState === 'starting') {
     state.flowState.voiceState = 'off';
     if (state.recognition) {
+      state.recognition.onresult = null;
+      state.recognition.onerror = null;
       state.recognition.onend = null;
-      try { state.recognition.stop(); } catch(_) {}
+      state.recognition.onspeechend = null;
+      try { state.recognition.abort(); } catch(_) {}
       state.recognition = null;
     }
     state.voiceMode = false;
@@ -326,8 +342,11 @@ export async function toggleVoiceMode() {
     state.flowState.voiceState = 'off';
     state.voiceMode = false;
     if (state.recognition) {
+      state.recognition.onresult = null;
+      state.recognition.onerror = null;
       state.recognition.onend = null;
-      try { state.recognition.stop(); } catch(_) {}
+      state.recognition.onspeechend = null;
+      try { state.recognition.abort(); } catch(_) {}
       state.recognition = null;
     }
     clearWaiting();
@@ -461,5 +480,35 @@ export function openVoiceTutorial() {
     </div>
   </div>
   <button class="sheet-cancel" onclick="closeSheet()">${t('ok')}</button>`;
-  window.showSheet(content);
+  showSheet(content);
 }
+
+// ═══════════════════════════════════════════
+//  页面可见性：后台自动暂停语音
+// ═══════════════════════════════════════════
+
+state.voicePaused = false;
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && state.voiceMode) {
+    if (state.recognition) {
+      state.recognition.onresult = null;
+      state.recognition.onerror = null;
+      state.recognition.onend = null;
+      state.recognition.onspeechend = null;
+      try { state.recognition.abort(); } catch (_) {}
+    }
+    state.flowState.voiceState = 'off';
+    state.voicePaused = true;
+    clearWaiting();
+    setVoicePulse(false);
+    updateVoiceButton();
+    return;
+  }
+
+  if (!document.hidden && state.voicePaused) {
+    state.voicePaused = false;
+    updateVoiceButton();
+    showToast('语音已暂停，点击重新开启');
+  }
+});

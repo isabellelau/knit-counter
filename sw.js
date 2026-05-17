@@ -9,7 +9,9 @@ const PRECACHE = [
   './js/ui.js',
   './js/voice.js',
   './js/settings.js',
-  './js/pattern.js'
+  './js/pattern.js',
+  './lib/tesseract.min.js',
+  './lib/html2canvas.min.js'
 ];
 
 async function getVersionFromHtml() {
@@ -23,7 +25,7 @@ async function getVersionFromHtml() {
   }
 }
 
-let CACHE_NAME = 'crochet-1.130';
+let CACHE_NAME = 'crochet-1.131';
 
 self.addEventListener('install', (e) => {
   e.waitUntil(

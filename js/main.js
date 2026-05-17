@@ -1,17 +1,17 @@
 import { STITCH_LIB, COLOR_THEMES, OLD_ID_MAP, ALIAS_TO_ID, STITCHES, SM, parsePattern, extractStitches, normalizeStitch, resolveColor } from '../stitches.js';
 import { state, NUMBER_MAP, uid, getProj, getActivePart, isPartEmpty, getEditingPartId } from './state.js';
 import { saveData, loadData, migrateData, exportPDF, exportData, exportSingleProject, checkStorageQuota } from './storage.js';
-import { esc, showToast, showSheet, closeSheet, showEntryChoiceSheet, showConfirmDialog, confirmDialog, closeDialog } from './ui.js';
+import { escapeHtml, showToast, showSheet, closeSheet, showEntryChoiceSheet, showConfirmDialog, confirmDialog, closeDialog } from './ui.js';
 import { playSound, initRecognition, toggleVoiceMode, setVoicePulse, updateVoiceButton, openVoiceTutorial } from './voice.js';
 import { parseIntentL1, parseIntentL2 } from './voice-intent.js';
-import { openSettings, renderSettings, changeTheme, changeStitchTheme, toggleVoiceDefault, toggleVoiceSound, toggleVoiceSpeakFeedback, setVoiceWaitTimeout, setVoiceRepeatDefault, toggleVoiceFlowSync, clearAllData, navigateToSubPage, goBackFromSubPage, editProfileName, pickProfileAvatar, showAvatarSheet, openGlobalStitchLibrary, openGlobalStitchCustomize, saveGlobalStitchCustomize, resetGlobalStitchCustomize, deleteGlobalCustomStitch, openGlobalNewStitchForm, saveGlobalNewStitch } from './settings.js';
+import { openSettings, renderSettings, changeTheme, changeStitchTheme, toggleVoiceDefault, toggleVoiceSound, toggleVoiceSpeakFeedback, setVoiceWaitTimeout, setVoiceRepeatDefault, toggleVoiceFlowSync, clearAllData, navigateToSubPage, goBackFromSubPage, editProfileName, pickProfileAvatar, showAvatarSheet, openGlobalStitchLibrary, openGlobalStitchCustomize, saveGlobalStitchCustomize, resetGlobalStitchCustomize, deleteGlobalCustomStitch, openGlobalNewStitchForm, saveGlobalNewStitch, removeProfileAvatar, switchLang, toggleShowSymbol, switchNotation } from './settings.js';
 import {
   startImportFlow, startManualFlow, dismissEntryChoice,
   toggleSelectAllInSetup, startImportFromSetup,
   openPatternPasteSheet, cancelPasteSheet, handleParsePattern,
   showLoading, hideLoading, loadTesseract, handleOCR,
   openParseConfirmSheet, removeParsedItem, addConfirmRound, confirmImport,
-  updateCurrentPart, addNewPart, normalizeRoundNums,
+  updateCurrentPart, addNewPart, updatePendingInstruction, normalizeRoundNums,
   startStitchOnlyFlow,
 } from './pattern.js';
 import {
@@ -27,7 +27,7 @@ import {
   goNextRound, refreshBottomBar,
   instrEditorInsert, instrEditorInsertNum, instrEditorInsertSymbol,
   instrEditorBackspace, instrEditorClear, instrEditorConfirm, instrEditorToggleKB,
-  openMultiRoundEditor, instrEditorPrevRound, instrEditorNextRound, instrEditorConfirmMulti,
+  openMultiRoundEditor, _pickRefForMultiEditor, instrEditorPrevRound, instrEditorNextRound, instrEditorConfirmMulti,
   openMarkerSheet, openMarkersReviewSheet, saveMarker, removeMarker, markerSelectColor,
   copyRoundStructure, openProjectSettings, setNotationAndRefresh
 } from './stitch.js';
@@ -46,19 +46,57 @@ import {
   getTotalFocusTime, formatFocusTime, getTodayFocusTime, getTodayStitchCount,
   bumpDailyCount
 } from './project.js';
-import { pickCover, setProjectCover, removeProjectCover, addRefImage, removeRefImage, getRefImage, showRefImagesSheet, openRefImageViewer, pickRefImages } from './image.js';
-import { handleGenerateShare, showShareSheet, downloadShareImage, shareImageNative } from './share.js';
-import { openShareSheet, openImportShareSheet } from './share-pattern.js';
+import { pickCover, setProjectCover, removeProjectCover, addRefImage, removeRefImage, getRefImage, showRefImagesSheet, openRefImageViewer, pickRefImages, _closeRefViewer } from './image.js';
+import { handleGenerateShare, showShareSheet, downloadShareImage, shareImageNative, _toggleShareIncludeName, _shareDownloadCurrent, _shareNativeCurrent } from './share.js';
+import { openShareSheet, openImportShareSheet, _copyTextPattern, _copyFullProject, _doImportShared, _applyImportMode } from './share-pattern.js';
 import { openStatsPage, showProHint } from './stats.js';
-import { openAnnotator, saveAnnotation } from './annotator.js';
+import { openAnnotator, saveAnnotation, closeAnnotator, _exitAnnotator, _isAnnotatorOpen } from './annotator.js';
 import { expandInstruction, getNextStitchSid, renderHighlightReel } from './highlight.js';
-import { renderHome, renderProject } from './render.js';
+import { renderHome, renderProject, _renderSplitLeft } from './render.js';
 import { t, term, setLang, getLang, setNotation, getNotationKey, SUPPORTED_LANGS, getShowSymbol, setShowSymbol } from './i18n.js';
 
 let _onboardStep = 0;
 const ONBOARD_KEY = 'knit_onboarded_v1';
 
 window.state = state;
+
+// ═══════════════════════════════════════════
+//  全局异步错误兜底
+// ═══════════════════════════════════════════
+
+const _toastedErrors = new Set();
+
+const SILENT_PATTERNS = ['ResizeObserver', 'Script error', 'Load failed'];
+
+function _shouldSuppressToast(message) {
+  return SILENT_PATTERNS.some(p => message && message.includes(p));
+}
+
+window.addEventListener('unhandledrejection', event => {
+  const reason = event.reason;
+  const message = reason?.message || String(reason);
+  const stack = reason?.stack || '';
+  const prefix = stack.includes('html2canvas') ? 'html2canvas' :
+                 stack.includes('Tesseract') ? 'Tesseract' :
+                 stack.includes('fetch') ? 'fetch' :
+                 stack.includes('IndexedDB') ? 'IndexedDB' : 'Promise';
+  console.error(`[Unhandled] ${prefix} | ${message} | ${stack.slice(0, 100)}`);
+  if (!_shouldSuppressToast(message) && !_toastedErrors.has(message)) {
+    _toastedErrors.add(message);
+    showToast('操作遇到问题，如持续出现请导出备份', null, 5000);
+  }
+  event.preventDefault();
+});
+
+window.addEventListener('error', event => {
+  const { message, filename, lineno, colno, error } = event;
+  const stack = error?.stack || `${filename}:${lineno}:${colno}`;
+  console.error(`[Unhandled] error | ${message} | ${stack.slice(0, 100)}`);
+  if (!_shouldSuppressToast(message) && !_toastedErrors.has(message)) {
+    _toastedErrors.add(message);
+    showToast('操作遇到问题，如持续出现请导出备份', null, 5000);
+  }
+});
 
 export function setPageView(view) {
   document.documentElement.classList.remove('home-view', 'settings-view');
@@ -67,8 +105,8 @@ export function setPageView(view) {
 
 // ── navigation ──
 function goHome() {
-  if (window._isAnnotatorOpen && window._isAnnotatorOpen()) {
-    window._exitAnnotator(() => _doGoHome());
+  if (_isAnnotatorOpen && _isAnnotatorOpen()) {
+    _exitAnnotator(() => _doGoHome());
     return;
   }
   _doGoHome();
@@ -83,6 +121,10 @@ function _doGoHome() {
   if (state.voiceMode) {
     state.flowState.voiceState = 'off';
     if (state.recognition) {
+      state.recognition.onresult = null;
+      state.recognition.onerror = null;
+      state.recognition.onend = null;
+      state.recognition.onspeechend = null;
       try { state.recognition.abort(); } catch (_) {}
       state.recognition = null;
     }
@@ -207,53 +249,62 @@ document.getElementById("dialog").addEventListener("keydown", e => {
 //  暴露全局函数（供 HTML onclick 使用）
 // ═══════════════════════════════════════════
 const _globals = {
-  goHome, openProject, exportPDF, exportData, exportSingleProject, importData, checkStorageQuota,
-  showNewProjectDialog, showConfirmDialog, confirmDialog, closeDialog, deleteProject,
+  // === HTML onclick/onchange/onblur 必须保留 ===
+  goHome, openProject, exportData, exportSingleProject,
+  showNewProjectDialog, confirmDialog, closeDialog, deleteProject,
   renderProject, renderHome,
-  addRound, addRoundBlank, toggleRound, deleteRound, undoDeleteRound, setActiveRound,
+  addRound, addRoundBlank, toggleRound, deleteRound, setActiveRound,
   pushStitch, undoStitch, stitchTap,
   changeStitch, deleteStitch, startInsert, doInsert,
-  showSheet, closeSheet, openPatternPasteSheet,
-  handleParsePattern, handleOCR, removeParsedItem, addConfirmRound, confirmImport, updateCurrentPart, addNewPart,
-  showLoading, hideLoading, loadTesseract,
-  startImportFlow, startManualFlow, startStitchOnlyFlow, dismissEntryChoice,
+  closeSheet, openPatternPasteSheet,
+  handleParsePattern, handleOCR, removeParsedItem, addConfirmRound, updateCurrentPart, addNewPart, updatePendingInstruction,
+  startImportFlow, startManualFlow, startStitchOnlyFlow,
   toggleSelectAllInSetup, startImportFromSetup, cancelPasteSheet,
-  normalizeRoundNums,
-  renameProject,
   openStitchSetup, toggleSetupStitch, saveProjectStitches, closeSetupSheet,
-  showEntryChoiceSheet,
-  toggleFilterByRound, toggleRowTerms, getUnitLabel,
+  toggleFilterByRound, toggleRowTerms,
   openStitchCustomize, saveStitchCustomize, resetStitchCustomize, backToSetupGrid,
   openNewStitchForm, saveNewStitch, deleteCustomStitch,
-  addPart, switchPart, renamePart, deletePart,
-  startEditPartName, partNameBlur, getEditingPartId, handleEditBtnClick, handleDeleteBtnClick,
-  toggleProjMenu, archiveProject, showArchiveSuccessSheet, handlePwaHintOptOut, showPwaTutorial, unarchiveProject,
-  toggleVoiceMode, updateVoiceButton, setVoicePulse, playSound,
+  addPart, switchPart, handleDeleteBtnClick,
+  partNameBlur, handleEditBtnClick,
+  toggleProjMenu, archiveProject, handlePwaHintOptOut, showPwaTutorial, unarchiveProject,
+  toggleVoiceMode,
   openVoiceTutorial, toggleImmersiveMode, goNextRound,
-  renderDynamicPalette, renderFilterToggle, renderToggleRow, renderBarRow, triggerEdgeGlow, openInstructionEdit, saveRoundInstruction, refreshBottomBar,
+  openInstructionEdit,
   instrEditorInsert, instrEditorInsertNum, instrEditorInsertSymbol, instrEditorBackspace, instrEditorClear, instrEditorConfirm, instrEditorToggleKB,
-  openMultiRoundEditor, instrEditorPrevRound, instrEditorNextRound, instrEditorConfirmMulti,
-  toggleHighlightMode, updateHighlightButton, updateImmersiveButton,
-  openSettings, changeTheme, changeStitchTheme, toggleVoiceDefault, toggleVoiceSound, toggleVoiceSpeakFeedback, setVoiceWaitTimeout, setVoiceRepeatDefault, toggleVoiceFlowSync, clearAllData,
-  switchTab, renderSettings, updateTabNav,
+  instrEditorPrevRound, instrEditorNextRound, instrEditorConfirmMulti,
+  toggleHighlightMode,
+  changeTheme, changeStitchTheme, setVoiceWaitTimeout, setVoiceRepeatDefault, clearAllData,
+  switchTab,
   navigateToSubPage, goBackFromSubPage,
   editProfileName, pickProfileAvatar, showAvatarSheet,
   openGlobalStitchLibrary, openGlobalStitchCustomize, saveGlobalStitchCustomize, resetGlobalStitchCustomize, deleteGlobalCustomStitch, openGlobalNewStitchForm, saveGlobalNewStitch,
   editExpectedCount,
-  pickCover, setProjectCover, removeProjectCover, addRefImage, removeRefImage, getRefImage, showRefImagesSheet, openRefImageViewer, pickRefImages,
-  handleGenerateShare, showShareSheet, downloadShareImage, shareImageNative,
+  pickCover, removeProjectCover, removeRefImage, showRefImagesSheet, openRefImageViewer, pickRefImages,
+  handleGenerateShare,
   openShareSheet, openImportShareSheet,
   openStatsPage, showProHint,
-  startFocusSession, tickFocusSession, flushFocusSession, getTotalFocusTime, formatFocusTime, getTodayFocusTime, getTodayStitchCount, bumpDailyCount,
-  expandInstruction, getNextStitchSid, renderHighlightReel,
-  setPageView,
-  t, term, setLang, getLang, setNotation, getNotationKey, getShowSymbol, setShowSymbol,
   onboardNext,
-  initStaticText,
   openMarkerSheet, openMarkersReviewSheet, saveMarker, removeMarker, markerSelectColor,
   copyRoundStructure,
-  openAnnotator, saveAnnotation,
-  openProjectSettings, setNotationAndRefresh
+  openProjectSettings, setNotationAndRefresh,
+  escapeHtml,
+
+  // === onchange 必须保留（非 onclick 的 HTML 事件属性）===
+  importData,
+  toggleVoiceDefault, toggleVoiceSound, toggleVoiceSpeakFeedback, toggleVoiceFlowSync,
+
+  // === window.xxx 动态调用 ===
+  initStaticText,
+  openAnnotator,
+  closeAnnotator,
+  _exitAnnotator, _isAnnotatorOpen,
+  _closeRefViewer,
+  _renderSplitLeft,
+  removeProfileAvatar, switchLang, toggleShowSymbol, switchNotation,
+  _toggleShareIncludeName, _shareDownloadCurrent, _shareNativeCurrent,
+  _copyTextPattern, _copyFullProject, _doImportShared, _applyImportMode,
+  _pickRefForMultiEditor,
+  getUnitLabel, showEntryChoiceSheet, normalizeRoundNums, bumpDailyCount, tickFocusSession,
 };
 Object.entries(_globals).forEach(([k, v]) => { window[k] = v; });
 
@@ -313,6 +364,20 @@ if (savedTheme === 'morandi') {
 }
 initOnboarding();
 await loadData();
+
+// 存储持久化检查：提示用户定期备份
+(async () => {
+  try {
+    const persisted = await navigator.storage?.persist?.();
+    if (persisted !== true) throw new Error('not persisted');
+  } catch {
+    if (!localStorage.getItem('storage_persist_prompted')) {
+      showToast('建议定期导出备份，防止系统自动清除数据', null, 6000);
+      localStorage.setItem('storage_persist_prompted', '1');
+    }
+  }
+})();
+
 initScrollBehavior();
 renderHome();
 

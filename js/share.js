@@ -5,6 +5,7 @@ import { resolveColor } from '../stitches.js';
 import { showSheet, showToast, closeSheet } from './ui.js';
 import { showLoading, hideLoading } from './pattern.js';
 import { t } from './i18n.js';
+import { escapeHtml } from './utils.js';
 
 let _html2canvasReady = false;
 let _shareCtx = null;  // { projId, includeName, imageDataUrl, filename, projName }
@@ -14,7 +15,7 @@ function loadHtml2canvas() {
     if (_html2canvasReady) return resolve(window.html2canvas);
     if (window.html2canvas) { _html2canvasReady = true; return resolve(window.html2canvas); }
     const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+    script.src = './lib/html2canvas.min.js';
     script.onload = () => { _html2canvasReady = true; resolve(window.html2canvas); };
     script.onerror = () => reject(new Error('Failed to load html2canvas'));
     document.head.appendChild(script);
@@ -73,7 +74,7 @@ export async function generateShareImage(projId, includeName = true) {
   } else {
     const initial = getProjectInitial(proj.name);
     const color = getCoverColor(proj.id);
-    coverHTML = `<div style="width:390px;height:286px;background:${color};display:flex;align-items:center;justify-content:center;font-size:96px;color:rgba(255,255,255,0.7);font-family:sans-serif;">${initial}</div>`;
+    coverHTML = `<div style="width:390px;height:286px;background:${color};display:flex;align-items:center;justify-content:center;font-size:96px;color:rgba(255,255,255,0.7);font-family:sans-serif;">${escapeHtml(initial)}</div>`;
   }
 
   let capsulesHTML = topStitches.map(sid => {
@@ -88,7 +89,7 @@ export async function generateShareImage(projId, includeName = true) {
 <div style="width:390px;height:520px;background:${bgColor};overflow:hidden;font-family:'LXGW WenKai','PingFang SC','Microsoft YaHei',sans-serif;">
   ${coverHTML}
   <div style="height:160px;background:#fff;padding:18px 20px;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;">
-    <div style="font-size:20px;font-weight:700;color:#333;margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${proj.name}</div>
+    <div style="font-size:20px;font-weight:700;color:#333;margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(proj.name)}</div>
     <div style="margin-bottom:12px;line-height:1.4;">${capsulesHTML}</div>
     <div style="display:flex;text-align:center;">
       <div style="flex:1;">
@@ -108,7 +109,7 @@ export async function generateShareImage(projId, includeName = true) {
   <div style="height:74px;background:${accentColor};display:flex;align-items:center;justify-content:space-between;padding:0 20px;box-sizing:border-box;">
     <div>
       <div style="font-size:18px;font-weight:700;color:#fff;line-height:1.3;">${t('app_name')}</div>
-      <div style="font-size:10px;color:rgba(255,255,255,0.75);line-height:1.3;">${profileName ? profileName : t('home_empty_moti')}</div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.75);line-height:1.3;">${profileName ? escapeHtml(profileName) : t('home_empty_moti')}</div>
     </div>
     <div style="width:28px;height:28px;background:rgba(255,255,255,0.25);border-radius:7px;flex-shrink:0;"></div>
   </div>
@@ -186,7 +187,7 @@ export function showShareSheet(projId, imageDataUrl) {
   showSheet(html);
 }
 
-window._toggleShareIncludeName = async function() {
+export async function _toggleShareIncludeName() {
   if (!_shareCtx) return;
   _shareCtx.includeName = !_shareCtx.includeName;
   const toggle = document.getElementById('shareIncludeNameToggle');
@@ -202,13 +203,13 @@ window._toggleShareIncludeName = async function() {
   }
 };
 
-window._shareDownloadCurrent = function() {
+export function _shareDownloadCurrent() {
   if (!_shareCtx) return;
   downloadShareImage(_shareCtx.imageDataUrl, _shareCtx.filename);
   closeSheet();
 };
 
-window._shareNativeCurrent = function() {
+export function _shareNativeCurrent() {
   if (!_shareCtx) return;
   shareImageNative(_shareCtx.imageDataUrl, _shareCtx.filename, _shareCtx.projName);
 };
@@ -223,8 +224,14 @@ export function downloadShareImage(dataUrl, filename) {
 }
 
 export async function shareImageNative(dataUrl, filename, projName) {
-  const resp = await fetch(dataUrl);
-  const blob = await resp.blob();
+  let resp, blob;
+  try {
+    resp = await fetch(dataUrl);
+    blob = await resp.blob();
+  } catch (err) {
+    console.error('[share/shareImageNative]', err);
+    throw err;
+  }
   const file = new File([blob], filename, { type: 'image/png' });
 
   if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {

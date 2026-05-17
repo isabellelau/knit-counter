@@ -107,6 +107,8 @@ function _buildUI(projId, key, img) {
   const imgDrawW = cw;
   const imgDrawH = ch;
 
+  const touchController = new AbortController();
+
   _state = {
     projId, key, img,
     overlay, viewport, canvas, ctx,
@@ -120,8 +122,11 @@ function _buildUI(projId, key, img) {
     scale: 1, offsetX: 0, offsetY: 0,
     isDrawing: false, isPinching: false,
     dirty: false,
-    exitGuardFired: false
+    exitGuardFired: false,
+    touchController
   };
+
+  document.addEventListener('visibilitychange', _onVisibilityChange, { signal: touchController.signal });
 
   _initTouchEvents();
   _renderCanvas();
@@ -221,12 +226,13 @@ function _updateToolUI() {
 
 function _initTouchEvents() {
   if (!_state) return;
-  const { canvas } = _state;
+  const { canvas, touchController } = _state;
+  const opts = { signal: touchController.signal };
 
-  canvas.addEventListener('touchstart', _onTouchStart, { passive: false });
-  canvas.addEventListener('touchmove', _onTouchMove, { passive: false });
-  canvas.addEventListener('touchend', _onTouchEnd);
-  canvas.addEventListener('touchcancel', _onTouchEnd);
+  canvas.addEventListener('touchstart', _onTouchStart, { ...opts, passive: false });
+  canvas.addEventListener('touchmove', _onTouchMove, { ...opts, passive: false });
+  canvas.addEventListener('touchend', _onTouchEnd, opts);
+  canvas.addEventListener('touchcancel', _onTouchEnd, opts);
 }
 
 function _getCanvasPos(e) {
@@ -401,7 +407,7 @@ export function saveAnnotation() {
 
 // ── 退出 ──
 
-function _exitAnnotator(onDone) {
+export function _exitAnnotator(onDone) {
   if (!_state) { if (onDone) onDone(); return; }
 
   if (_state.dirty && (_state.strokeHistory.length > 0 || _state.currentStroke)) {
@@ -426,12 +432,25 @@ function _exitAnnotator(onDone) {
 
 export function closeAnnotator(silent) {
   if (!_state) return;
-  const { overlay } = _state;
+  const { overlay, canvas, ctx, touchController } = _state;
+
+  // 移除所有触摸事件监听
+  touchController.abort();
+
+  // 释放 Canvas GPU 纹理
+  if (ctx) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+  canvas.width = 0;
+  canvas.height = 0;
+
+  _state = null;
+
   overlay.style.opacity = '0';
   overlay.style.transition = 'opacity 0.2s';
   setTimeout(() => {
     if (overlay.parentNode) overlay.remove();
-    _state = null;
   }, 200);
 }
 
@@ -453,9 +472,4 @@ function _onVisibilityChange() {
   }
 }
 
-document.addEventListener('visibilitychange', _onVisibilityChange);
-
-// 暴露给外部
-window._closeAnnotator = closeAnnotator;
-window._isAnnotatorOpen = () => !!_state;
-window._exitAnnotator = _exitAnnotator;
+export function _isAnnotatorOpen() { return !!_state; }

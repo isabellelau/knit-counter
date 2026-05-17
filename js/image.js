@@ -33,6 +33,8 @@ export function compressImage(file, maxSize = 200, quality = 0.72) {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, width, height);
       canvas.toBlob(blob => {
+        canvas.width = 0;
+        canvas.height = 0;
         resolve(blob);
       }, 'image/jpeg', quality);
     };
@@ -161,11 +163,21 @@ export async function getProfileAvatar() {
 }
 
 export async function setProfileAvatar(base64) {
-  await storageAdapter.set('profile_avatar', base64);
+  try {
+    await storageAdapter.set('profile_avatar', base64);
+  } catch (err) {
+    console.error('[image/setProfileAvatar]', err);
+    throw err;
+  }
 }
 
 export async function removeProfileAvatar() {
-  await storageAdapter.remove('profile_avatar');
+  try {
+    await storageAdapter.remove('profile_avatar');
+  } catch (err) {
+    console.error('[image/removeProfileAvatar]', err);
+    throw err;
+  }
 }
 
 // ── 参考图（复用 IndexedDB covers store，key: ref_{projId}_{ts}）──
@@ -228,6 +240,11 @@ export async function getRefImage(key) {
 
 export async function addRefImage(projId, file) {
   if (!file) return;
+  const MAX_REF_SIZE = 20 * 1024 * 1024; // 20MB
+  if (file.size > MAX_REF_SIZE) {
+    showToast('参考图过大，请选择小于20MB的图片');
+    return;
+  }
   try {
     const blob = await compressImage(file, 1200, 0.80);
     const key = `ref_${projId}_${Date.now()}`;
@@ -382,7 +399,7 @@ export function openRefImageViewer(projId, currentKey) {
   });
 }
 
-function _closeRefViewer() {
+export function _closeRefViewer() {
   if (!_refViewerState) return;
   const { overlay } = _refViewerState;
   overlay.style.opacity = '0';
@@ -391,8 +408,6 @@ function _closeRefViewer() {
     _refViewerState = null;
   }, 200);
 }
-
-window._closeRefViewer = _closeRefViewer;
 
 // ── 从项目菜单/管理 Sheet 触发文件选择 ──
 

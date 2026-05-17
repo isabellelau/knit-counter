@@ -1,5 +1,5 @@
 import { state, uid, getProj, getActivePart } from './state.js';
-import { showConfirmDialog, showToast, showSheet, closeSheet, esc } from './ui.js';
+import { showConfirmDialog, showToast, showSheet, closeSheet, escapeHtml } from './ui.js';
 import { saveData } from './storage.js';
 import { t, term } from './i18n.js';
 import { normalizeRoundNums } from './pattern.js';
@@ -36,7 +36,7 @@ export function addRound() {
       itemsHtml += `<div class="sheet-item" onclick="copyRoundStructure('${round.id}')">
         <div class="sheet-item-icon" style="background:var(--accent-bg);color:var(--accent);font-size:13px">↻</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:14px;font-weight:600;color:var(--text)">${esc(label)}</div>
+          <div style="font-size:14px;font-weight:600;color:var(--text)">${escapeHtml(label)}</div>
           <div style="font-size:11px;color:var(--muted);margin-top:1px;display:flex;align-items:center;gap:3px">${total} ${term('stitches')} ${dots}</div>
         </div>
       </div>`;
@@ -198,7 +198,7 @@ export function setActiveRound(proj, rid) {
   function roundLabelHtml(r, idx, isActive) {
     const unit = getUnitLabel(proj);
     const base = r.isTextCard
-      ? (r.instruction || t('note'))
+      ? (escapeHtml(r.instruction) || t('note'))
       : (r.roundNum === 0 ? term('cast_on') : t('round_label').replace('{n}', r.roundNum != null ? r.roundNum : idx + 1).replace('{unit}', unit));
     return isActive
       ? base + ` <span style='font-size:10px;background:var(--accent);color:#fff;border-radius:4px;padding:1px 5px;margin-left:4px'>${term('active')}</span>`

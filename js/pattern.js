@@ -1,5 +1,5 @@
 import { state, uid, getProj, getActivePart, isPartEmpty } from './state.js';
-import { showSheet, closeSheet, showToast, esc, showConfirmDialog } from './ui.js';
+import { showSheet, closeSheet, showToast, escapeHtml, showConfirmDialog } from './ui.js';
 import { saveData } from './storage.js';
 import { parsePattern, extractStitches } from '../stitches.js';
 import { setPageView } from './main.js';
@@ -137,7 +137,7 @@ export function loadTesseract() {
     }
     _tesseractLoading = true;
     const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+    script.src = './lib/tesseract.min.js';
     script.onload = () => { _tesseractLoaded = true; _tesseractLoading = false; resolve(); };
     script.onerror = () => { _tesseractLoading = false; reject(new Error(t('tesseract_script_failed'))); };
     document.head.appendChild(script);
@@ -208,10 +208,10 @@ export function openParseConfirmSheet(parsed) {
     html += `<div class="sheet-item" style="padding:10px 16px;align-items:flex-start">
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px">${badge}</div>
-        <input id="edit-${idx}" value="${esc(item.instruction)}"
+        <input id="edit-${idx}" value="${escapeHtml(item.instruction)}"
           placeholder="${t('confirm_round_placeholder')}"
           style="width:100%;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:13px;background:var(--bg);color:var(--text);outline:none;font-family:inherit"
-          onchange="state.flowState.pendingParsed[${idx}].instruction=this.value.trim()">
+          onchange="updatePendingInstruction(${idx}, this.value)">
         ${item.seq && item.seq.length ? `<div style="font-size:11px;color:var(--muted);margin-top:3px">${t('detected_stitches')}${[...new Set(item.seq)].map(s => (s && typeof s === 'object' && s.type === 'cluster') ? s.raw : s).join(' · ')}</div>` : ''}
       </div>
       <button onclick="removeParsedItem(${idx})" style="background:none;border:none;color:#D0B0A0;font-size:20px;padding:4px 8px;cursor:pointer;line-height:1;margin-top:20px">×</button>
@@ -243,6 +243,12 @@ export function openParseConfirmSheet(parsed) {
   html += `<button class="sheet-cancel" onclick="openPatternPasteSheet()">${t('back_to_edit')}</button>`;
 
   showSheet(html);
+}
+
+export function updatePendingInstruction(idx, value) {
+  if (state.flowState.pendingParsed && state.flowState.pendingParsed[idx]) {
+    state.flowState.pendingParsed[idx].instruction = value.trim();
+  }
 }
 
 export function removeParsedItem(idx) {

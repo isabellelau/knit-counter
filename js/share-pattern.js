@@ -1,5 +1,5 @@
 import { state, uid, getProj } from './state.js';
-import { showSheet, showToast, closeSheet, esc } from './ui.js';
+import { showSheet, showToast, closeSheet, escapeHtml } from './ui.js';
 import { saveData } from './storage.js';
 import { t } from './i18n.js';
 
@@ -201,11 +201,11 @@ export function openShareSheet(projId) {
     <div class="sheet-title">${t('share_pattern_title')}</div>
 
     <button class="sheet-item" onclick="window._copyTextPattern('${projId}');closeSheet()">
-      <span class="sheet-item-icon">📝</span> ${esc(t('share_copy_text'))}
+      <span class="sheet-item-icon">📝</span> ${escapeHtml(t('share_copy_text'))}
     </button>
 
     <button class="sheet-item" onclick="window._copyFullProject('${projId}')">
-      <span class="sheet-item-icon">📦</span> ${esc(t('share_copy_full'))}<span class="pro-badge">PRO</span>
+      <span class="sheet-item-icon">📦</span> ${escapeHtml(t('share_copy_full'))}<span class="pro-badge">PRO</span>
     </button>
 
     <button class="sheet-cancel" onclick="closeSheet()">${t('cancel')}</button>
@@ -213,7 +213,7 @@ export function openShareSheet(projId) {
   showSheet(html);
 }
 
-window._copyTextPattern = function(projId) {
+export function _copyTextPattern(projId) {
   const proj = getProj(projId);
   if (!proj) return;
   const text = generateTextPattern(proj);
@@ -224,7 +224,7 @@ window._copyTextPattern = function(projId) {
   });
 };
 
-window._copyFullProject = async function(projId) {
+export async function _copyFullProject(projId) {
   try {
     const proj = getProj(projId);
     if (!proj) return;
@@ -252,7 +252,7 @@ export function openImportShareSheet() {
     <div class="sheet-handle"></div>
     <div class="sheet-title">${t('import_share_title')}</div>
     <div style="padding:8px 16px 12px">
-      <textarea id="import-share-textarea" placeholder="${esc(t('import_share_placeholder'))}" style="width:100%;height:140px;border:1.5px solid var(--border);border-radius:10px;padding:10px;font-size:13px;font-family:inherit;resize:vertical;background:var(--bg);color:var(--text);box-sizing:border-box"></textarea>
+      <textarea id="import-share-textarea" placeholder="${escapeHtml(t('import_share_placeholder'))}" style="width:100%;height:140px;border:1.5px solid var(--border);border-radius:10px;padding:10px;font-size:13px;font-family:inherit;resize:vertical;background:var(--bg);color:var(--text);box-sizing:border-box"></textarea>
       <div style="font-size:11px;color:var(--muted);margin-top:4px">${t('import_share_hint')}</div>
     </div>
     <div style="display:flex;gap:8px;padding:0 16px 12px">
@@ -263,7 +263,7 @@ export function openImportShareSheet() {
   showSheet(html);
 }
 
-window._doImportShared = async function() {
+export async function _doImportShared() {
   const textarea = document.getElementById('import-share-textarea');
   if (!textarea) return;
   const raw = textarea.value.trim();
@@ -279,9 +279,22 @@ window._doImportShared = async function() {
   }
 
   const b64 = match[1];
+
+  // 大小上界检查：base64 字符串过大
+  if (b64.length > 500000) {
+    showToast('文件过大，无法导入');
+    return;
+  }
+
   const data = await decodeAndDecompress(b64);
   if (!data || !validateProjectData(data)) {
     showToast(t('import_share_error'));
+    return;
+  }
+
+  // 大小上界检查：解压后数据过大
+  if (JSON.stringify(data).length > 10000000) {
+    showToast('文件过大，无法导入');
     return;
   }
 
@@ -386,7 +399,7 @@ window._doImportShared = async function() {
   showSheet(html);
 };
 
-window._applyImportMode = function(mode) {
+export function _applyImportMode(mode) {
   const proj = state.flowState.pendingImportProj;
   if (!proj) return;
   state.flowState.pendingImportProj = null;

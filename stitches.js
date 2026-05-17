@@ -389,6 +389,16 @@ export function extractStitches(text) {
     const prevPrevPrevChar = processed[m.index - 3] || '';
     const isChinese = (ch) => ch >= '一' && ch <= '鿿';
     if (isChinese(prevChar) && isChinese(prevPrevChar) && isChinese(prevPrevPrevChar)) {
+      // 尝试提取嵌入的数字+针法组合（如"倒二钩13F"→13×F）
+      const embedded = m[0].match(/(\d+)([A-Z]+)/i);
+      if (embedded) {
+        const embCount = parseInt(embedded[1], 10);
+        const embSid = embedded[2].toUpperCase();
+        const embId = normalizeStitch(embSid);
+        if (embId) {
+          for (let i = 0; i < embCount; i++) result.push(embId);
+        }
+      }
       continue;
     }
 

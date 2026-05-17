@@ -1,9 +1,8 @@
 import { state } from './state.js';
 import { t } from './i18n.js';
+import { escapeHtml } from './utils.js';
 
-export function esc(s) {
-  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
+export { escapeHtml };
 
 export function showToast(message, action, duration = 4000) {
   const existing = document.getElementById('app-toast');

@@ -5,7 +5,7 @@ import { getProjColor, getCustomStitchesGlobal, getStitchInfo, ALL_THEMES, refre
 import { t, setLang, getLang, setNotation, getNotationKey, SUPPORTED_LANGS, NOTATION_OPTIONS, getShowSymbol, setShowSymbol } from './i18n.js';
 import { STITCH_LIB, COLOR_THEMES } from '../stitches.js';
 import { setPageView } from './main.js';
-import { removeProjectCover, getProfileAvatar, setProfileAvatar, removeProfileAvatar } from './image.js';
+import { removeProjectCover, getProfileAvatar, setProfileAvatar, removeProfileAvatar as _removeProfileAvatar } from './image.js';
 
 let _settingsStack = [];
 let _settingsMode = 'page'; // 'page' | 'sheet'
@@ -94,7 +94,7 @@ function _buildProfileHeaderHTML() {
       <div class="profile-header-avatar-wrap" id="profile-header-avatar-wrap" onclick="pickProfileAvatar()" oncontextmenu="showAvatarSheet(event)">
         <span class="profile-header-avatar-emoji">🧶</span>
       </div>
-      <div class="profile-header-name" onclick="editProfileName()">${profileName}</div>
+      <div class="profile-header-name" onclick="editProfileName()">${escapeHtml(profileName)}</div>
       <div class="profile-header-stats">${t('home_total_projects').replace('{count}', totalProjs)} · ${t('home_total_stitches').replace('{count}', totalNeedles.toLocaleString())}</div>
     </div>
   `;
@@ -737,19 +737,24 @@ export function showAvatarSheet(event) {
     html += `<button class="sheet-item" style="color:var(--danger)" onclick="removeProfileAvatar();closeSheet()">${t('profile_remove_avatar')}</button>`;
   }
   html += `<button class="sheet-cancel" onclick="closeSheet()">${t('cancel')}</button>`;
-  window.showSheet(html);
+  showSheet(html);
 }
 
-window.removeProfileAvatar = async function() {
-  await removeProfileAvatar();
+export async function removeProfileAvatar() {
+  try {
+    await _removeProfileAvatar();
+  } catch (err) {
+    console.error('[settings/removeProfileAvatar]', err);
+    throw err;
+  }
   const wrap = document.querySelector('.profile-header-avatar-wrap');
   if (wrap) {
     wrap.innerHTML = `<span class="profile-header-avatar-emoji">🧶</span>`;
   }
   showToast(t('cover_updated'));
-};
+}
 
-window.switchLang = function(code) {
+export function switchLang(code) {
   if (getLang() === code) return;
   setLang(code);
   if (window.initStaticText) window.initStaticText();
@@ -772,7 +777,7 @@ window.switchLang = function(code) {
   _loadProfileAvatar();
 };
 
-window.toggleShowSymbol = function() {
+export function toggleShowSymbol() {
   const current = getShowSymbol();
   setShowSymbol(!current);
   const el = document.getElementById('settings-show-symbol-toggle');
@@ -781,7 +786,7 @@ window.toggleShowSymbol = function() {
   if (proj) renderDynamicPalette(proj);
 };
 
-window.switchNotation = function(code) {
+export function switchNotation(code) {
   if (getNotationKey() === code) return;
   setNotation(code);
   // Update notation pill selection
@@ -948,7 +953,7 @@ export function openGlobalStitchLibrary() {
       const isCustom = !!getCustomStitchesGlobal()[s.id];
       html += `<div class="sheet-item" onclick="openGlobalStitchCustomize('${s.id}')">
         <div class="sheet-item-icon" style="background:${info.color};color:#fff;font-weight:700;font-size:14px">${info.abbr}</div>
-        <div><div class="sheet-item-label">${info.label}${isCustom ? ' <span style="color:#FACC15;font-size:9px">✦</span>' : ''}</div><div class="sheet-item-sub">${s.id}</div></div>
+        <div><div class="sheet-item-label">${escapeHtml(info.label)}${isCustom ? ' <span style="color:#FACC15;font-size:9px">✦</span>' : ''}</div><div class="sheet-item-sub">${s.id}</div></div>
         <span style="margin-left:auto;color:var(--muted);font-size:20px">›</span>
       </div>`;
     });
@@ -969,11 +974,11 @@ export function openGlobalStitchCustomize(sid) {
 
   const isCustom = !!getCustomStitchesGlobal()[sid];
   let html = `<div class="sheet-handle"></div>
-    <div class="sheet-title">${t('customize_btn')} · <span style="font-weight:700">${info.label}</span> <small style="opacity:.5">(${sid})</small></div>
+    <div class="sheet-title">${t('customize_btn')} · <span style="font-weight:700">${escapeHtml(info.label)}</span> <small style="opacity:.5">(${sid})</small></div>
     <div style="padding:12px 16px">
       <div style="margin-bottom:14px">
         <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600">${t('name_field')}</div>
-        <input id="global-custom-name" value="${info.label}" maxlength="20"
+        <input id="global-custom-name" value="${escapeHtml(info.label)}" maxlength="20"
           style="width:100%;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:14px;background:var(--bg);color:var(--text);outline:none;font-family:inherit">
       </div>
       <div style="margin-bottom:14px">

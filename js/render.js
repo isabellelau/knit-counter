@@ -1,5 +1,5 @@
 import { state, getProj, getActivePart, getEditingPartId } from './state.js';
-import { esc } from './ui.js';
+import { escapeHtml } from './ui.js';
 import { saveData } from './storage.js';
 import { renderTaskSlide, refreshBottomBar,
          renderFilterToggle,
@@ -110,7 +110,7 @@ export async function renderHome() {
     <div class="proj-card" onclick="openProject('${p.id}')">
       ${coverHtml}
       <div class="proj-info">
-        <div class="proj-name">${p.name}</div>
+        <div class="proj-name">${escapeHtml(p.name)}</div>
         <div class="proj-meta">
           ${(p.parts||[]).length} ${term('part')} ·
           ${allRounds} ${term('round')} ·
@@ -144,7 +144,7 @@ export async function renderHome() {
     <div class="proj-card archived" onclick="openProject('${p.id}')">
       ${coverHtmlArc}
       <div class="proj-info">
-        <div class="proj-name">${p.name}</div>
+        <div class="proj-name">${escapeHtml(p.name)}</div>
         <div class="proj-meta">
           ${(p.parts||[]).length} ${term('part')} ·
           ${allRounds} ${term('round')} ·
@@ -267,9 +267,9 @@ export function renderProject() {
     const isEditing = pt.id === window.editingPartId;
     html += `<button class="part-tab${isActive ? " active" : ""}"
       onclick="switchPart('${pt.id}')"
-      title="${esc(pt.title)}">
-      <span class="part-name-text" style="${isEditing ? 'display:none' : ''}">${esc(pt.title)}</span>
-      <input class="part-name-input" value="${esc(pt.title)}"
+      title="${escapeHtml(pt.title)}">
+      <span class="part-name-text" style="${isEditing ? 'display:none' : ''}">${escapeHtml(pt.title)}</span>
+      <input class="part-name-input" value="${escapeHtml(pt.title)}"
         style="${isEditing ? '' : 'display:none'}"
         onclick="event.stopPropagation()"
         onfocus="this.setSelectionRange(this.value.length, this.value.length)"
@@ -317,7 +317,7 @@ export function renderProject() {
       <div class="round-badge round-badge--loop${isActive ? " active" : ""}" onclick="event.stopPropagation();setActiveRound(null,'${r.id}')" style="cursor:pointer" title="${t('set_as_current').replace('{unit}', unit)}">↻</div>
       ${markerDotsHtml}
       <div class="round-info">
-        <div class="round-label">${esc(r.instruction || t('loop_marker_label').replace('{from}', loopFrom).replace('{to}', loopTo))}${isActive ? ` <span style='font-size:11px;font-weight:var(--weight-semibold);background:var(--accent);color:#fff;border-radius:6px;padding:2px 7px;margin-left:6px'>${term('active')}</span>` : ""}</div>
+        <div class="round-label">${escapeHtml(r.instruction || t('loop_marker_label').replace('{from}', loopFrom).replace('{to}', loopTo))}${isActive ? ` <span style='font-size:11px;font-weight:var(--weight-semibold);background:var(--accent);color:#fff;border-radius:6px;padding:2px 7px;margin-left:6px'>${term('active')}</span>` : ""}</div>
         <div class="round-count">${t('round_count_label').replace('{total}', total)} ${dots}</div>
       </div>
       <button class="round-edit-btn" onclick="event.stopPropagation();openInstructionEdit('${r.id}')" title="${t('edit_instruction')}" style="font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer;padding:2px 6px;white-space:nowrap"><span style="font-size:13px;color:var(--muted);letter-spacing:1px;">🪡</span></button>
@@ -339,7 +339,7 @@ export function renderProject() {
       <div class="round-badge${isActive ? " active" : ""}${r.source === 'auto' ? " round-badge--auto" : ""}" onclick="event.stopPropagation();setActiveRound(null,'${r.id}')" style="cursor:pointer" title="${t('set_as_current').replace('{unit}', unit)}">${r.source === 'auto' ? '注' : (r.isTextCard ? "文" : (r.roundNum === 0 ? "起" : (r.roundNum != null ? r.roundNum : i + 1)))}</div>
       ${markerDotsHtml}
       <div class="round-info">
-        <div class="round-label">${r.isTextCard ? (r.instruction || t('note')) : (r.roundNum === 0 ? term('cast_on') : t('round_label').replace('{n}', r.roundNum != null ? r.roundNum : i + 1).replace('{unit}', unit))}${isActive ? ` <span style='font-size:11px;font-weight:var(--weight-semibold);background:var(--accent);color:#fff;border-radius:6px;padding:2px 7px;margin-left:6px'>${term('active')}</span>` : ""}</div>
+        <div class="round-label">${r.isTextCard ? (escapeHtml(r.instruction) || t('note')) : (r.roundNum === 0 ? term('cast_on') : t('round_label').replace('{n}', r.roundNum != null ? r.roundNum : i + 1).replace('{unit}', unit))}${isActive ? ` <span style='font-size:11px;font-weight:var(--weight-semibold);background:var(--accent);color:#fff;border-radius:6px;padding:2px 7px;margin-left:6px'>${term('active')}</span>` : ""}</div>
         <div class="round-count">${t('round_count_label').replace('{total}', total)} ${dots}</div>
       </div>
       <button class="round-edit-btn" onclick="event.stopPropagation();openInstructionEdit('${r.id}')" title="${t('edit_instruction')}" style="font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer;padding:2px 6px;white-space:nowrap"><span style="font-size:13px;color:var(--muted);letter-spacing:1px;">🪡</span></button>
@@ -374,7 +374,7 @@ export function renderProject() {
 
 // ── iPad 横屏左栏参考图 ──
 
-function _renderSplitLeft(proj) {
+export function _renderSplitLeft(proj) {
   const refKeys = Array.isArray(proj.refImages) ? [...proj.refImages] : [];
 
   let left = document.getElementById('ipad-split-left');
@@ -458,4 +458,3 @@ function _renderSplitLeft(proj) {
   });
 }
 
-window._renderSplitLeft = _renderSplitLeft;

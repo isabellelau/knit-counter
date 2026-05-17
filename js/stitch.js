@@ -1,5 +1,5 @@
 import { state, uid, getProj, getActivePart, addDailyCount } from './state.js';
-import { showSheet, closeSheet, showToast, esc, showConfirmDialog } from './ui.js';
+import { showSheet, closeSheet, showToast, escapeHtml, showConfirmDialog } from './ui.js';
 import { saveData } from './storage.js';
 import { STITCH_LIB, STITCHES, SM, extractStitches, resolveColor, ALIAS_TO_ID, STITCH_IDS, getTokenRE, setTokenRE, setOnBeforeExtract } from '../stitches.js';
 import { updateVoiceButton } from './voice.js';
@@ -237,7 +237,7 @@ export function openInstructionEdit(roundId) {
   displayIds = [...new Set(displayIds)];
 
   const buf = state.flowState.instructionBuffer;
-  const placeholder = esc(t('instruction_placeholder'));
+  const placeholder = escapeHtml(t('instruction_placeholder'));
 
   const stitchBtns = displayIds.map(sid => {
     const info = getStitchInfo(sid);
@@ -254,8 +254,8 @@ export function openInstructionEdit(roundId) {
 
 <div class="instr-editor-preview-wrap">
   <div class="instr-editor-preview-bar">
-    <div class="instr-editor-preview" id="instr-editor-preview">${buf ? esc(buf) : `<span class="instr-editor-placeholder">${placeholder}</span>`}</div>
-    <textarea id="instruction-edit-area" class="instr-editor-textarea" style="display:none" placeholder="${placeholder}">${esc(buf)}</textarea>
+    <div class="instr-editor-preview" id="instr-editor-preview">${buf ? escapeHtml(buf) : `<span class="instr-editor-placeholder">${placeholder}</span>`}</div>
+    <textarea id="instruction-edit-area" class="instr-editor-textarea" style="display:none" placeholder="${placeholder}">${escapeHtml(buf)}</textarea>
     <button class="instr-editor-kb-toggle" id="instr-editor-kb-toggle" onclick="instrEditorToggleKB()">${t('instr_editor_kb_toggle')}</button>
   </div>
 </div>
@@ -290,7 +290,7 @@ function _refreshInstrPreview() {
   if (!preview) return;
   const buf = state.flowState.instructionBuffer || '';
   if (buf.length === 0) {
-    preview.innerHTML = `<span class="instr-editor-placeholder">${esc(t('instruction_placeholder'))}</span>`;
+    preview.innerHTML = `<span class="instr-editor-placeholder">${escapeHtml(t('instruction_placeholder'))}</span>`;
   } else {
     preview.textContent = buf;
   }
@@ -410,7 +410,7 @@ function _refreshMultiRoundNav() {
   const buf = state.flowState.instructionBuffer || '';
   const cur = rounds[currentIdx];
   const rn = cur.roundNum || (currentIdx + 1);
-  navCurrent.innerHTML = `<span class="mr-nav-current-label">R${rn}:</span> ${esc(buf)}<span class="mr-nav-cursor">|</span>`;
+  navCurrent.innerHTML = `<span class="mr-nav-current-label">R${rn}:</span> ${escapeHtml(buf)}<span class="mr-nav-cursor">|</span>`;
 
   navIndicator.textContent = t('multi_round_nav_indicator')
     .replace('{n}', rn)
@@ -543,7 +543,7 @@ function _initEditorDividerDrag() {
   });
 }
 
-function _pickRefForMultiEditor(projId) {
+export function _pickRefForMultiEditor(projId) {
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = 'image/*';
@@ -591,8 +591,6 @@ function _refreshMultiEditorRefArea(projId) {
   _loadRefImagesInEditor();
   _initEditorRefSwipe();
 }
-
-window._pickRefForMultiEditor = _pickRefForMultiEditor;
 
 export function openMultiRoundEditor(projId) {
   const proj = getProj(projId);
@@ -647,7 +645,7 @@ export function openMultiRoundEditor(projId) {
   displayIds = [...new Set(displayIds)];
 
   const buf = state.flowState.instructionBuffer;
-  const placeholder = esc(t('instruction_placeholder'));
+  const placeholder = escapeHtml(t('instruction_placeholder'));
 
   const stitchBtns = displayIds.map(sid => {
     const info = getStitchInfo(sid);
@@ -707,8 +705,8 @@ export function openMultiRoundEditor(projId) {
 <div class="multi-editor-keyboard" id="multi-editor-keyboard">
   <div class="instr-editor-preview-wrap">
     <div class="instr-editor-preview-bar">
-      <div class="instr-editor-preview" id="instr-editor-preview">${buf ? esc(buf) : `<span class="instr-editor-placeholder">${placeholder}</span>`}</div>
-      <textarea id="instruction-edit-area" class="instr-editor-textarea" style="display:none" placeholder="${placeholder}">${esc(buf)}</textarea>
+      <div class="instr-editor-preview" id="instr-editor-preview">${buf ? escapeHtml(buf) : `<span class="instr-editor-placeholder">${placeholder}</span>`}</div>
+      <textarea id="instruction-edit-area" class="instr-editor-textarea" style="display:none" placeholder="${placeholder}">${escapeHtml(buf)}</textarea>
     </div>
   </div>
 
@@ -882,7 +880,7 @@ export function renderSpillHTML(sid, idx, r, proj, isDone = true) {
     style="position:relative;background:${bg};border-color:${borderColor};color:${color}"
     onclick="stitchTap('${r.id}',${idx})">
     <span class="spill-idx">${idx + 1}</span>
-    <span class="spill-abbr">${esc(info.label)}${getShowSymbol() ? ` (${info.id})` : ''}</span>
+    <span class="spill-abbr">${escapeHtml(info.label)}${getShowSymbol() ? ` (${info.id})` : ''}</span>
     ${markerDot}
   </span>`;
 }
@@ -1217,14 +1215,14 @@ function openStitchSheet(roundId, idx) {
   const projLabel = info.label;
 
   let html = `<div class="sheet-handle"></div>
-  <div class="sheet-title">${t('stitch_detail_title').replace('{idx}', idx + 1)} · <span style="color:${projColor};font-weight:700">${esc(projLabel)}</span></div>`;
+  <div class="sheet-title">${t('stitch_detail_title').replace('{idx}', idx + 1)} · <span style="color:${projColor};font-weight:700">${escapeHtml(projLabel)}</span></div>`;
 
   html += `<div class="sheet-section">${t('change_to')}</div>`;
   html += `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:8px 14px">`;
   const compareId = sid;
   getAllStitchesForProject(proj).forEach(st => {
     if (st.id === compareId) return;
-    html += `<button class="picker-btn" style="background:${st.color}" onclick="changeStitch('${roundId}',${idx},'${st.id}')">${esc(st.label)}</button>`;
+    html += `<button class="picker-btn" style="background:${st.color}" onclick="changeStitch('${roundId}',${idx},'${st.id}')">${escapeHtml(st.label)}</button>`;
   });
   html += `</div>`;
 
@@ -1299,7 +1297,7 @@ export function openMarkerSheet(roundId, idx) {
 
   <div style="padding:6px 16px 12px">
     <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600">${t('marker_note')}</div>
-    <input id="marker-note-input" type="text" placeholder="${t('marker_note_placeholder')}" maxlength="30" value="${esc(selNote)}"
+    <input id="marker-note-input" type="text" placeholder="${t('marker_note_placeholder')}" maxlength="30" value="${escapeHtml(selNote)}"
       style="width:100%;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:14px;background:var(--bg);color:var(--text);outline:none;font-family:inherit">
   </div>
 
@@ -1371,7 +1369,7 @@ export function openMarkersReviewSheet(roundId) {
       <span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${m.color};border:1.5px solid #fff;flex-shrink:0;box-shadow:0 0 0 1px var(--border)"></span>
       <div style="flex:1;min-width:0">
         <div style="font-size:14px;font-weight:600;color:var(--text)">${t('marker_pos').replace('{n}', pos)}</div>
-        ${m.note ? `<div style="font-size:11px;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(m.note)}</div>` : ''}
+        ${m.note ? `<div style="font-size:11px;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(m.note)}</div>` : ''}
       </div>
       <button class="bar-btn" style="flex:0;padding:4px 10px;font-size:11px;color:var(--danger);border-color:var(--danger-bg);background:var(--danger-bg)" onclick="event.stopPropagation();removeMarker('${roundId}',${m.index});openMarkersReviewSheet('${roundId}')">${t('marker_remove')}</button>
     </div>`;
@@ -1461,7 +1459,7 @@ export function startInsert(roundId, idx, dir) {
   <div class="sheet-title">${t('select_stitch_to_insert')}</div>
   <div class="picker-grid">`;
   getAllStitchesForProject(proj).forEach(s => {
-    html += `<button class="picker-btn" style="background:${s.color}" onclick="doInsert('${s.id}')">${esc(s.label)}</button>`;
+    html += `<button class="picker-btn" style="background:${s.color}" onclick="doInsert('${s.id}')">${escapeHtml(s.label)}</button>`;
   });
   html += `</div><button class="sheet-cancel" onclick="closeSheet()">${t('cancel')}</button>`;
   showSheet(html);
@@ -1637,7 +1635,7 @@ export function renderTaskSlide(proj) {
 
   return `<div class="task-slide" id="task-slide">
     <div style="width:100%">
-      <div class="task-slide-text" id="task-slide-text">${esc(instruction)}</div>
+      <div class="task-slide-text" id="task-slide-text">${escapeHtml(instruction)}</div>
       ${progressHtml}
     </div>
   </div>`;
@@ -1778,7 +1776,7 @@ export function renderDynamicPalette(proj) {
     }
 
     html += `<button class="${btnClass}" data-sid="${sid}" style="background:${info.color};${btnExtra}" onclick="pushStitch('${sid}')">
-      ${state.voiceMode ? `<span style="font-size:22px;font-weight:900;line-height:1">${idx + 1}</span><br><small style="opacity:.8;font-size:11px">${esc(info.label)}${getShowSymbol() ? `(${sid})` : ''}</small>` : `${esc(info.label)}${getShowSymbol() ? `<br><small style="opacity:.8">${sid}</small>` : ''}`}
+      ${state.voiceMode ? `<span style="font-size:22px;font-weight:900;line-height:1">${idx + 1}</span><br><small style="opacity:.8;font-size:11px">${escapeHtml(info.label)}${getShowSymbol() ? `(${sid})` : ''}</small>` : `${escapeHtml(info.label)}${getShowSymbol() ? `<br><small style="opacity:.8">${sid}</small>` : ''}`}
     </button>`;
   });
 
@@ -1855,7 +1853,7 @@ export function renderImmersive(proj) {
     <div class="round-hdr" onclick="toggleRound('${r.id}')">
       <div class="round-badge active">${r.isTextCard ? t('note').charAt(0) : (r.roundNum === 0 ? term('cast_on').charAt(0) : r.roundNum)}</div>
       <div class="round-info">
-        <div class="round-label">${r.isTextCard ? (r.instruction || t('note')) : (r.roundNum === 0 ? term('cast_on') : t('round_label').replace('{n}', r.roundNum).replace('{unit}', unit))} <span style='font-size:11px;font-weight:var(--weight-semibold);background:var(--accent);color:#fff;border-radius:6px;padding:2px 7px;margin-left:6px'>${term('active')}</span></div>
+        <div class="round-label">${r.isTextCard ? (escapeHtml(r.instruction) || t('note')) : (r.roundNum === 0 ? term('cast_on') : t('round_label').replace('{n}', r.roundNum).replace('{unit}', unit))} <span style='font-size:11px;font-weight:var(--weight-semibold);background:var(--accent);color:#fff;border-radius:6px;padding:2px 7px;margin-left:6px'>${term('active')}</span></div>
         <div class="round-count">${t('round_count_label').replace('{total}', total)}</div>
       </div>
       <button class="round-edit-btn" onclick="showToast(t('immersive_edit_blocked'))" title="${t('edit_instruction')}" style="font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer;padding:2px 6px;white-space:nowrap"><span style="font-size:13px;color:var(--muted);letter-spacing:1px;">🪡</span></button>
@@ -2141,7 +2139,7 @@ export function openStitchSetup(mode) {
         onclick="toggleSetupStitch('${s.id}')"
         data-checked="${isSel}"
         data-color="${color}"
-      >${dotMark}${esc(label)}<br><small style="display:block;line-height:1.4">${s.id}</small><small style="display:block;color:var(--accent);font-size:10px;cursor:pointer;line-height:1.2" onclick="event.stopPropagation();openStitchCustomize('${s.id}')">${t('customize_btn')}</small></button>`;
+      >${dotMark}${escapeHtml(label)}<br><small style="display:block;line-height:1.4">${s.id}</small><small style="display:block;color:var(--accent);font-size:10px;cursor:pointer;line-height:1.2" onclick="event.stopPropagation();openStitchCustomize('${s.id}')">${t('customize_btn')}</small></button>`;
     });
     html += `</div>`;
   });
@@ -2220,11 +2218,11 @@ export function openStitchCustomize(sid) {
   const s = STITCH_LIB[sid];
 
   let html = `<div class="sheet-handle"></div>
-      <div class="sheet-title">${t('customize_btn')} · <span style="font-weight:700">${esc(currentLabel)}</span> <small style="opacity:.5">(${sid})</small></div>
+      <div class="sheet-title">${t('customize_btn')} · <span style="font-weight:700">${escapeHtml(currentLabel)}</span> <small style="opacity:.5">(${sid})</small></div>
       <div style="padding:12px 16px">
         <div style="margin-bottom:14px">
           <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600">${t('name_field')}</div>
-          <input id="custom-name" value="${esc(currentLabel)}" maxlength="20"
+          <input id="custom-name" value="${escapeHtml(currentLabel)}" maxlength="20"
             style="width:100%;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:14px;background:var(--bg);color:var(--text);outline:none;font-family:inherit">
         </div>
         <div style="margin-bottom:14px">

@@ -122,10 +122,19 @@ function parseIntentL1(text) {
     if (/撤销|返回|undo|back/.test(t))
       return { type: IntentType.UNDO };
 
-    const numStitch = t.match(/^([一二三四五六七八九十\d]+)\s*(短针|中长针|长针|长长针|锁针|引拔|加针|减针|空针|.*针)/);
+    // 在文本任意位置搜索数字+针法组合（兼容"倒二钩13F""第3行20X"等嵌入格式）
+    const numStitch = t.match(/([一二三四五六七八九十\d]+)\s*(短针|中长针|长针|长长针|锁针|引拔|加针|减针|空针|.*针)/);
     if (numStitch) {
       const count = parseChineseNum(numStitch[1]);
       const sid = aliasToSid(numStitch[2]);
+      if (sid) return { type: IntentType.STITCH, sid, count };
+    }
+
+    // 英文/缩写嵌入匹配（"倒二钩13F""共钩5V"等）
+    const embedded = t.match(/(\d+)\s*([a-zA-Z]+)/);
+    if (embedded) {
+      const count = parseInt(embedded[1], 10);
+      const sid = aliasToSid(embedded[2]);
       if (sid) return { type: IntentType.STITCH, sid, count };
     }
 

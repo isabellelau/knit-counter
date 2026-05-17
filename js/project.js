@@ -1,5 +1,5 @@
 import { state, uid, getProj, getActivePart } from './state.js';
-import { showSheet, esc, showConfirmDialog, showEntryChoiceSheet } from './ui.js';
+import { showSheet, escapeHtml, showConfirmDialog, showEntryChoiceSheet } from './ui.js';
 import { pickCover, setProjectCover, removeProjectCover, getProjImage } from './image.js';
 import { saveData, migrateData, exportSingleProject } from './storage.js';
 import { getUnitLabel, checkResumePosition } from './stitch.js';
@@ -58,9 +58,13 @@ export function importData(input) {
 
       showConfirmDialog(t('import_confirm').replace('{count}', imported.projects.length).replace('{current}', state.data.projects.length), (ok) => {
         if (!ok) return;
+        const result = migrateData(imported);
+        if (result !== imported) {
+          showToast('导入数据格式异常，无法完成迁移，请先升级应用');
+          return;
+        }
         Object.keys(state.data).forEach(k => delete state.data[k]);
         Object.assign(state.data, imported);
-        migrateData(state.data);
         saveData();
         window.renderHome();
         alert(t('import_success'));
@@ -165,7 +169,7 @@ export async function toggleProjMenu(id, e) {
   `;
 
   showSheet(`
-    <div class="sheet-title">${proj.name}</div>
+    <div class="sheet-title">${escapeHtml(proj.name)}</div>
     ${coverActions}
     ${shareAction}
     ${archiveAction}
@@ -216,14 +220,14 @@ export function showArchiveSuccessSheet(proj) {
   const html = `<div class="sheet-handle"></div>
     <div style="text-align:center;padding:20px 16px 12px">
       <div style="font-size:36px;margin-bottom:8px">📦</div>
-      <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px">${t('archived_title').replace('{name}', esc(proj.name))}</div>
+      <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px">${t('archived_title').replace('{name}', escapeHtml(proj.name))}</div>
       <div style="font-size:12px;color:var(--muted)">${allRounds} ${unit} · ${t('round_count_label').replace('{total}', allNeedles)}</div>
     </div>
     ${pwaHint}
     <div style="margin:0 16px 8px;padding:14px;background:var(--bg);border-radius:12px">
       <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">${t('archive_backup_title')}</div>
       <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:10px">${t('archive_backup_desc')}</div>
-      <button class="bar-btn primary" style="width:100%" onclick="exportSingleProject('${proj.id}')">${t('archive_download_btn').replace('{name}', esc(proj.name))}</button>
+      <button class="bar-btn primary" style="width:100%" onclick="exportSingleProject('${proj.id}')">${t('archive_download_btn').replace('{name}', escapeHtml(proj.name))}</button>
     </div>
     <div id="backup-guide" style="display:none;margin:0 16px 8px;padding:12px 14px;background:var(--bg);border-radius:10px;font-size:12px;color:var(--muted);line-height:1.8">
       📁 <strong>${t('archive_where_backup')}</strong><br>
