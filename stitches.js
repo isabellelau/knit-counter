@@ -178,6 +178,31 @@ export function expandRepeatGroups(line) {
   return result;
 }
 
+function _pushRangeRounds(results, start, end, content, raw) {
+  const seq = extractStitches(content);
+  for (let i = start; i <= end; i++) {
+    results.push({
+      type: "round",
+      roundNum: i,
+      instruction: `R${start}-${end}: ${content}`,
+      seq,
+      raw
+    });
+  }
+  const remarks = extractRemarks(content);
+  if (remarks.length > 0) {
+    results.push({
+      type: "text",
+      roundNum: null,
+      isTextCard: true,
+      instruction: remarks.join('；'),
+      seq: [],
+      raw: content,
+      source: 'auto'
+    });
+  }
+}
+
 /**
  * 解析批量图解文本
  * @param {string} text - 用户粘贴的多行图解
@@ -195,8 +220,8 @@ export function parsePattern(text) {
     buf = buf ? buf + ' ' + line : line;
 
     for (const ch of line) {
-      if (ch === '(') depth++;
-      else if (ch === ')') depth = Math.max(0, depth - 1);
+      if (ch === '(' || ch === '[') depth++;
+      else if (ch === ')' || ch === ']') depth = Math.max(0, depth - 1);
     }
 
     if (depth === 0) {
@@ -243,33 +268,18 @@ export function parsePattern(text) {
     }
 
     // 2) 范围圈前缀：R7-11: / R7~11: / 第7-11圈：
-    const rangeMatch = raw.match(/^(?:R|Round|第)?\s*(\d+)\s*[\-~—]\s*(\d+)\s*[:：.]\s*(.*)/i);
+    const rangeMatch = raw.match(/^(?:R|Round|第)?\s*(\d+)\s*[\-~—]\s*(\d+)\s*(?:圈\s*)?[:：.]\s*(.*)/i);
     if (rangeMatch) {
       const [, startStr, endStr, content] = rangeMatch;
-      const start = parseInt(startStr, 10);
-      const end = parseInt(endStr, 10);
-      const seq = extractStitches(content);
-      for (let i = start; i <= end; i++) {
-        results.push({
-          type: "round",
-          roundNum: i,
-          instruction: `R${start}-${end}: ${content}`,
-          seq,
-          raw
-        });
-      }
-      const remarks = extractRemarks(content);
-      if (remarks.length > 0) {
-        results.push({
-          type: "text",
-          roundNum: null,
-          isTextCard: true,
-          instruction: remarks.join('；'),
-          seq: [],
-          raw: content,
-          source: 'auto'
-        });
-      }
+      _pushRangeRounds(results, parseInt(startStr, 10), parseInt(endStr, 10), content, raw);
+      return;
+    }
+
+    // 2b) 范围圈省略分隔符兜底：R1-3 10X / 1-5 6V / R2-4圈 8F
+    const looseRange = raw.match(/^(?:R|Round|第)?\s*(\d+)\s*[\-~—]\s*(\d+)\s*(?:圈)?\s+(.*)/i);
+    if (looseRange) {
+      const [, startStr, endStr, content] = looseRange;
+      _pushRangeRounds(results, parseInt(startStr, 10), parseInt(endStr, 10), content, raw);
       return;
     }
 
@@ -461,8 +471,14 @@ function extractRemarks(text) {
     const hasDigit = /\d/.test(trimmed);
     const chineseChars = (trimmed.match(/[一-鿿]/g) || []);
 
-    // 必须无数字、≥2 个中文字符、中文占比 ≥60%
-    if (hasDigit || chineseChars.length < 2 || chineseChars.length / trimmed.length < 0.6) {
+    const alphaLen = (trimmed.match(/[a-zA-Z]/g) || []).length;
+
+    // 中文备注：无数字、≥2 个中文字符、中文占比 ≥60%
+    const isChineseRemark = !hasDigit && chineseChars.length >= 2 && chineseChars.length / trimmed.length >= 0.6;
+    // 英文备注：无数字、≥3 个字母、非单 token（长度 > 3 避免拾取 stitch id 残片）
+    const isEnglishRemark = !hasDigit && alphaLen >= 3 && trimmed.length > 3 && alphaLen / trimmed.length >= 0.5;
+
+    if (!isChineseRemark && !isEnglishRemark) {
       continue;
     }
 
