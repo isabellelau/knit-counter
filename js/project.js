@@ -202,7 +202,7 @@ export function showArchiveSuccessSheet(proj) {
   const unit = getUnitLabel(proj);
 
   let pwaHint = '';
-  if (!isHintHidden) {
+  if (!isHintHidden && !(window.Capacitor?.isNativePlatform())) {
     pwaHint = `
       <div style="margin:0 16px 12px;padding:14px;background:#FEF3C7;border-radius:12px;font-size:12px;color:#92400E;line-height:1.6">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
@@ -253,6 +253,7 @@ export function handlePwaHintOptOut(e) {
 }
 
 export function showPwaTutorial() {
+  if (window.Capacitor?.isNativePlatform()) return;
   const content = `
     <div class="sheet-handle"></div>
     <div style="padding:16px 16px 8px;max-height:70vh;overflow-y:auto">

@@ -356,6 +356,8 @@ export default {
   storage_quota: '存储空间不足，请删除部分封面图片',
   storage_usage: '存储空间已用 {used}MB / {quota}MB · 建议导出备份后清理旧项目',
   export_filename: '织影备份_{date}.json',
+  export_pdf_app: '请使用分享功能导出图解，或在设置中导出备份',
+  export_pdf_ios: 'PDF 导出请使用浏览器菜单中的「打印」功能',
 
   // ═════════════════════════════════════
   //  封面
@@ -401,15 +403,20 @@ export default {
   // ═════════════════════════════════════
   //  Onboarding
   // ═════════════════════════════════════
-  onboard_step1_title: '为每件作品建立项目',
-  onboard_step1_desc: '围巾、毛衣、袜子……每个作品独立记录，支持封面图片和多个部件分区管理',
+  onboard_step1_title: '为每件作品建立项目并统计',
+  onboard_step1_desc: '每个作品独立记录，支持封面图片和多个部件分区管理。归档完成的作品数据完整保留，随时查看历史记录。',
   onboard_step2_label: '已记录 24 针',
   onboard_step2_title: '精准记录每一针',
-  onboard_step2_desc: '按圈记录针法序列，针数自动统计，支持图解导入和 OCR 文字识别',
-  onboard_step3_title: '开始你的第一个项目',
-  onboard_step3_desc: '一切准备就绪，马上开始记录你的钩织作品',
+  onboard_step2_desc: '导入文字图解后自动解析具体步骤和总针数，按圈记录针法序列，点击具体针目还可记录现实中对应颜色的记号扣。',
+  onboard_step3_title: '解锁你的钩织节奏',
+  onboard_step3_desc: '',
+  onboard_flow_title: '心流模式',
+  onboard_flow_desc: '用一键点击 / 语音确认推进当前针，自动跟随图解有效帮助即时纠错。',
+  onboard_voice_title: '语音进阶',
+  onboard_voice_desc: '连续说出「短针三个，长针两个」自动依次记录；说「去第8圈」直接跳转；说「标记红色」添加记号扣。',
+  onboard_tagline: 'PRO 功能现阶段免费开放，感谢早期用户 ✦',
   onboard_next: '下一步',
-  onboard_start: '开始使用',
+  onboard_start: '现在开始',
 
   // ═════════════════════════════════════
   //  进度/统计
@@ -557,4 +564,5 @@ export default {
   stats_no_data: '暂无数据',
   pro_hint_unlock: '解锁查看完整数据',
   pro_hint_toast: 'PRO 功能，敬请期待',
+  pro_feature_hint: 'PRO 功能，敬请期待',
 };

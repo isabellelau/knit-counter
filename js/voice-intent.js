@@ -215,4 +215,17 @@ function parseIntentL2(text) {
   return { type: IntentType.UNKNOWN, raw: text };
 }
 
+export function parseIntentL2Batch(text) {
+  const segments = text
+    .split(/[，,、]|然后|接着|(?<=[针圈个数了])再/)
+    .map(s => s.trim())
+    .filter(s => s.length > 0);
+
+  if (segments.length <= 1) {
+    return [parseIntentL2(text)];
+  }
+
+  return segments.map(seg => parseIntentL2(seg));
+}
+
 export { IntentType, parseIntentL1, parseIntentL2, parseColor, parseChineseNum };

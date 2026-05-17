@@ -7,12 +7,12 @@
   <title>织影</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#C07A45">
-  <meta name="version" content="1.132">
+  <meta name="version" content="1.133">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css">
+  <link rel="stylesheet" href="assets/fonts/lxgwwenkai-regular.css">
 </head>
 
 <body>
@@ -48,8 +48,8 @@
           </div>
         </div>
         <div class="onboard-text">
-          <h2 class="onboard-title">为每件作品建立项目</h2>
-          <p class="onboard-desc">围巾、毛衣、袜子……每个作品独立记录，支持封面图片和多个部件分区管理</p>
+          <h2 class="onboard-title">为每件作品建立项目并统计</h2>
+          <p class="onboard-desc">每个作品独立记录，支持封面图片和多个部件分区管理。归档完成的作品数据完整保留，随时查看历史记录。</p>
         </div>
       </div>
 
@@ -68,22 +68,32 @@
         </div>
         <div class="onboard-text">
           <h2 class="onboard-title">精准记录每一针</h2>
-          <p class="onboard-desc">按圈记录针法序列，针数自动统计，支持图解导入和 OCR 文字识别</p>
+          <p class="onboard-desc">导入文字图解后自动解析具体步骤和总针数，按圈记录针法序列，点击具体针目还可记录现实中对应颜色的记号扣。</p>
         </div>
       </div>
 
-      <!-- 卡片 3：开始 -->
-      <div class="onboard-slide">
-        <div class="onboard-visual">
-          <div class="onboard-app-icon">
-            <div class="onboard-icon-inner">🧶</div>
-          </div>
-          <div class="onboard-app-name">织影</div>
-        </div>
+      <!-- 卡片 3：PRO 功能 -->
+      <div class="onboard-slide onboard-slide--pro">
         <div class="onboard-text">
-          <h2 class="onboard-title">开始你的第一个项目</h2>
-          <p class="onboard-desc">一切准备就绪，马上开始记录你的钩织作品</p>
+          <h2 class="onboard-title">解锁你的钩织节奏</h2>
         </div>
+        <div class="onboard-features">
+          <div class="onboard-feature">
+            <div class="onboard-feature-icon">◎</div>
+            <div class="onboard-feature-body">
+              <div class="onboard-feature-title"></div>
+              <div class="onboard-feature-desc"></div>
+            </div>
+          </div>
+          <div class="onboard-feature">
+            <div class="onboard-feature-icon">🎙</div>
+            <div class="onboard-feature-body">
+              <div class="onboard-feature-title"></div>
+              <div class="onboard-feature-desc"></div>
+            </div>
+          </div>
+        </div>
+        <div class="onboard-tagline"></div>
       </div>
 
     </div>
@@ -187,8 +197,21 @@
   "></div>
 
   <script type="module" src="./js/main.js"></script>
+  <script type="module">
+    import { t } from './js/i18n.js';
+    const ft1 = document.querySelector('.onboard-feature:nth-child(1) .onboard-feature-title');
+    if (ft1) ft1.textContent = t('onboard_flow_title');
+    const fd1 = document.querySelector('.onboard-feature:nth-child(1) .onboard-feature-desc');
+    if (fd1) fd1.textContent = t('onboard_flow_desc');
+    const ft2 = document.querySelector('.onboard-feature:nth-child(2) .onboard-feature-title');
+    if (ft2) ft2.textContent = t('onboard_voice_title');
+    const fd2 = document.querySelector('.onboard-feature:nth-child(2) .onboard-feature-desc');
+    if (fd2) fd2.textContent = t('onboard_voice_desc');
+    const tagline = document.querySelector('.onboard-tagline');
+    if (tagline) tagline.textContent = t('onboard_tagline');
+  </script>
   <script>
-    if ('serviceWorker' in navigator) {
+    if ('serviceWorker' in navigator && location.protocol === 'https:') {
       navigator.serviceWorker.register('sw.js').then((reg) => {
         // 检测新版本并提示刷新
         reg.addEventListener('updatefound', () => {

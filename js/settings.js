@@ -656,10 +656,12 @@ function _buildAboutSubPageHTML() {
       <div style="font-size:var(--text-footnote);color:var(--muted)">v0.1</div>
     </div>
 
+    ${window.Capacitor?.isNativePlatform() ? '' : `
     <div class="settings-section-hd" style="text-align:center">${t('settings_install_section')}</div>
     <div class="settings-btn-row">
       <button class="settings-btn settings-btn-primary" onclick="showPwaTutorial()">${t('settings_install_btn')}</button>
     </div>
+    `}
   `;
 }
 

@@ -356,6 +356,8 @@ export default {
   storage_quota: 'Storage is full — try removing some cover images',
   storage_usage: '{used} MB / {quota} MB used · consider exporting a backup and cleaning up',
   export_filename: 'StitchEcho_backup_{date}.json',
+  export_pdf_app: 'Use the share feature to export charts, or export a backup in Settings',
+  export_pdf_ios: 'To export PDF, use the Print option in your browser menu',
 
   // ═════════════════════════════════════
   //  Cover image
@@ -402,14 +404,19 @@ export default {
   //  Onboarding
   // ═════════════════════════════════════
   onboard_step1_title: 'A home for every project',
-  onboard_step1_desc: 'Scarves, sweaters, socks… give each piece its own space, with cover photos and separate sections for different parts.',
+  onboard_step1_desc: 'Give each piece its own space — cover photos, separate sections for different parts, and archived projects kept intact for whenever you want to look back.',
   onboard_step2_label: '24 stitches recorded',
   onboard_step2_title: 'Track every stitch',
-  onboard_step2_desc: 'Record stitch sequences round by round. Counts are automatic. Import written patterns or scan them with OCR.',
-  onboard_step3_title: 'Start your first project',
-  onboard_step3_desc: 'Everything is ready. Let\'s get knitting.',
+  onboard_step2_desc: 'Paste a written pattern to auto-parse steps and stitch counts. Record sequences round by round, and tap individual stitches to add coloured markers that match your real ones.',
+  onboard_step3_title: 'Find your flow',
+  onboard_step3_desc: '',
+  onboard_flow_title: 'Flow Mode',
+  onboard_flow_desc: 'Tap or speak to advance to the next stitch — the chart follows you, helping you catch mistakes in real time.',
+  onboard_voice_title: 'Voice Pro',
+  onboard_voice_desc: 'Say "sc 3, dc 2" to record a whole sequence at once. Say "go to round 8" to jump, or "mark red" to place a stitch marker — all hands-free.',
+  onboard_tagline: 'PRO features are free during early access — thank you ✦',
   onboard_next: 'Next',
-  onboard_start: 'Let\'s go',
+  onboard_start: 'Get started',
 
   // ═════════════════════════════════════
   //  Progress / stats
@@ -557,4 +564,5 @@ export default {
   stats_no_data: 'No data yet',
   pro_hint_unlock: 'Unlock full stats',
   pro_hint_toast: 'PRO feature coming soon',
+  pro_feature_hint: 'PRO feature, coming soon',
 };

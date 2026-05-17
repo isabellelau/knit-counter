@@ -58,8 +58,6 @@ import { t, term, setLang, getLang, setNotation, getNotationKey, SUPPORTED_LANGS
 let _onboardStep = 0;
 const ONBOARD_KEY = 'knit_onboarded_v1';
 
-window.state = state;
-
 // ═══════════════════════════════════════════
 //  全局异步错误兜底
 // ═══════════════════════════════════════════
@@ -393,6 +391,14 @@ window.addEventListener('beforeunload', () => {
     localStorage.setItem('knit_emergency_backup', JSON.stringify(state.data));
   } catch (e) { /* ignore */ }
 });
+
+if (window.Capacitor?.isNativePlatform()) {
+  import('@capacitor/app').then(({ App }) => {
+    App.addListener('pause', () => {
+      flushFocusSession();
+    });
+  });
+}
 
 // ===== Onboarding =====
 

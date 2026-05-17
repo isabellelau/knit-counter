@@ -118,7 +118,7 @@ function renderHeatmap() {
 //  PRO mask wrapper
 // ═══════════════════════════════════════════
 
-const DEV_UNLOCK = true; // 测试完改回 false
+const DEV_UNLOCK = isPro();
 
 function proWrap(contentHTML) {
   if (DEV_UNLOCK) {

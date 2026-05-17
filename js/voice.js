@@ -4,7 +4,7 @@ import { refreshBottomBar, pushStitch, undoStitch, triggerEdgeGlow, copyRoundStr
 import { addRoundBlank, setActiveRound } from './round.js';
 import { saveData } from './storage.js';
 import { extractStitches } from '../stitches.js';
-import { parseIntentL1, parseIntentL2 } from './voice-intent.js';
+import { parseIntentL1, parseIntentL2, parseIntentL2Batch } from './voice-intent.js';
 import { getNextStitchSid } from './highlight.js';
 import { t, getLang } from './i18n.js';
 import { isPro } from './config.js';
@@ -62,11 +62,15 @@ export function playSound(type) {
 function handleVoiceResult(text, isFinal) {
   if (!isFinal) return;
 
-  const intent = isPro()
-    ? parseIntentL2(text)
-    : parseIntentL1(text);
-
-  executeIntent(intent);
+  if (isPro()) {
+    const intents = parseIntentL2Batch(text);
+    for (const intent of intents) {
+      executeIntent(intent);
+    }
+  } else {
+    const intent = parseIntentL1(text);
+    executeIntent(intent);
+  }
 }
 
 async function executeIntent(intent) {
@@ -271,7 +275,33 @@ function saveMarkerDirect(roundId, idx, color) {
 //  Speech Recognition
 // ═══════════════════════════════════════════
 
-export function initRecognition() {
+export async function initRecognition() {
+  if (window.Capacitor?.isNativePlatform()) {
+    const { SpeechRecognition } = await import('@capacitor-community/speech-recognition');
+
+    const permission = await SpeechRecognition.requestPermission();
+    if (permission.speechRecognition !== 'granted') {
+      showToast(t('voice_mic_denied_settings'));
+      return false;
+    }
+
+    SpeechRecognition.removeAllListeners();
+
+    SpeechRecognition.addListener('partialResults', (data) => {
+      if (data.matches?.[0]) handleVoiceResult(data.matches[0], false);
+    });
+
+    SpeechRecognition.addListener('listeningState', (data) => {
+      if (data.status === 'stopped' && state.voiceMode) {
+        SpeechRecognition.start({ language: 'zh-CN', partialResults: true });
+      }
+    });
+
+    state.recognition = SpeechRecognition;
+    return true;
+  }
+
+  // 浏览器路径
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) return null;
 
@@ -321,11 +351,16 @@ export async function toggleVoiceMode() {
   if (state.flowState.voiceState === 'starting') {
     state.flowState.voiceState = 'off';
     if (state.recognition) {
-      state.recognition.onresult = null;
-      state.recognition.onerror = null;
-      state.recognition.onend = null;
-      state.recognition.onspeechend = null;
-      try { state.recognition.abort(); } catch(_) {}
+      if (window.Capacitor?.isNativePlatform()) {
+        await state.recognition.stop();
+        state.recognition.removeAllListeners();
+      } else {
+        state.recognition.onresult = null;
+        state.recognition.onerror = null;
+        state.recognition.onend = null;
+        state.recognition.onspeechend = null;
+        try { state.recognition.abort(); } catch(_) {}
+      }
       state.recognition = null;
     }
     state.voiceMode = false;
@@ -339,11 +374,16 @@ export async function toggleVoiceMode() {
     state.flowState.voiceState = 'off';
     state.voiceMode = false;
     if (state.recognition) {
-      state.recognition.onresult = null;
-      state.recognition.onerror = null;
-      state.recognition.onend = null;
-      state.recognition.onspeechend = null;
-      try { state.recognition.abort(); } catch(_) {}
+      if (window.Capacitor?.isNativePlatform()) {
+        await state.recognition.stop();
+        state.recognition.removeAllListeners();
+      } else {
+        state.recognition.onresult = null;
+        state.recognition.onerror = null;
+        state.recognition.onend = null;
+        state.recognition.onspeechend = null;
+        try { state.recognition.abort(); } catch(_) {}
+      }
       state.recognition = null;
     }
     clearWaiting();
@@ -358,25 +398,37 @@ export async function toggleVoiceMode() {
   }
 
   // 关闭状态点击 = 开启，进入 starting
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) {
-    showToast(t('voice_not_supported'));
-    return;
-  }
 
   state.flowState.voiceState = 'starting';
   updateVoiceButton(); // 立即显示"启动中..."
 
-  // 请求权限
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    stream.getTracks().forEach(t => t.stop());
-    await new Promise(r => setTimeout(r, 300));
-  } catch(err) {
-    state.flowState.voiceState = 'off';
-    updateVoiceButton();
-    showToast(t('voice_mic_denied_settings'));
-    return;
+  if (window.Capacitor?.isNativePlatform()) {
+    // Capacitor：initRecognition 内部处理权限和监听器注册
+    const ok = await initRecognition();
+    if (!ok) {
+      state.flowState.voiceState = 'off';
+      updateVoiceButton();
+      return;
+    }
+  } else {
+    // 浏览器：检查 API + 请求麦克风权限
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      state.flowState.voiceState = 'off';
+      updateVoiceButton();
+      showToast(t('voice_not_supported'));
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(t => t.stop());
+      await new Promise(r => setTimeout(r, 300));
+    } catch(err) {
+      state.flowState.voiceState = 'off';
+      updateVoiceButton();
+      showToast(t('voice_mic_denied_settings'));
+      return;
+    }
   }
 
   // 权限拿到，但用户可能在等待期间又点了取消
@@ -385,16 +437,40 @@ export async function toggleVoiceMode() {
   // 正式启动
   state.flowState.voiceState = 'on';
   state.voiceMode = true;
-  state.recognition = initRecognition();
-  try {
-    state.recognition.start();
-  } catch(err) {
-    state.flowState.voiceState = 'off';
-    state.voiceMode = false;
-    state.recognition = null;
-    updateVoiceButton();
-    showToast(t('voice_start_failed'));
-    return;
+
+  if (window.Capacitor?.isNativePlatform()) {
+    try {
+      await state.recognition.start({ language: 'zh-CN', partialResults: true });
+    } catch(err) {
+      state.flowState.voiceState = 'off';
+      state.voiceMode = false;
+      state.recognition = null;
+      updateVoiceButton();
+      showToast(t('voice_start_failed'));
+      return;
+    }
+  } else {
+    state.recognition = await initRecognition();
+    if (!state.recognition) {
+      state.flowState.voiceState = 'off';
+      state.voiceMode = false;
+      updateVoiceButton();
+      return;
+    }
+    try {
+      state.recognition.start();
+    } catch(err) {
+      state.flowState.voiceState = 'off';
+      state.voiceMode = false;
+      state.recognition = null;
+      updateVoiceButton();
+      showToast(t('voice_start_failed'));
+      return;
+    }
+  }
+
+  if (_audioCtx && _audioCtx.state === 'suspended') {
+    await _audioCtx.resume();
   }
 
   playSound('enter');

@@ -111,7 +111,7 @@ export function showEntryChoiceSheet() {
     <div onclick="openImportShareSheet()" style="background:var(--card);border:2px solid var(--border);border-radius:14px;padding:18px 16px;cursor:pointer;display:flex;align-items:center;gap:14px">
       <div style="width:48px;height:48px;border-radius:12px;background:#DBEAFE;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">📥</div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:3px">${t('entry_import_share')}</div>
+        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:3px">${t('entry_import_share')} <span class="pro-badge">PRO</span></div>
         <div style="font-size:12px;color:var(--muted)">${t('entry_import_share_sub')}</div>
       </div>
       <div style="color:var(--muted);font-size:20px;flex-shrink:0">→</div>

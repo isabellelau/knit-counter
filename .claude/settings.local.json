@@ -20,7 +20,17 @@
       "Bash(git commit -m ' *)",
       "Bash(git checkout *)",
       "Bash(sed -i \"1619d\" js/stitch.js)",
-      "Bash(sed -i \"s/<div class=\\\\\"round-hdr\\\\\">/<div class=\\\\\"round-hdr\\\\\" onclick=\\\\\"toggleRound\\('\\\\${r.id}'\\)\\\\\">/\" js/stitch.js)"
+      "Bash(sed -i \"s/<div class=\\\\\"round-hdr\\\\\">/<div class=\\\\\"round-hdr\\\\\" onclick=\\\\\"toggleRound\\('\\\\${r.id}'\\)\\\\\">/\" js/stitch.js)",
+      "Bash(ls -la share-modal.js)",
+      "Bash(ls -la icon-192.png)",
+      "Bash(ls *.png *.js)",
+      "Bash(sed -i '1574s/.*/  \\\\/\\\\/ ── 心流状态栏（仅心流模式显示）──/' js/stitch.js)",
+      "Bash(sed -i '1575s/highlight/flowMode/' js/stitch.js)",
+      "Bash(sed -i '1586s/highlight/flowMode/' js/stitch.js)",
+      "Bash(git commit *)",
+      "Bash(python3 *)",
+      "Bash(git reset *)",
+      "WebFetch(domain:cdn.jsdelivr.net)"
     ]
   }
 }

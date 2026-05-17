@@ -1,28 +1,26 @@
 /**
  * STORAGE SCHEMA VERSIONING
  * =========================
- * Current version: LATEST_SCHEMA (currently 10)
+ * Current version: LATEST_SCHEMA (currently 16)
  *
  * Version history:
  *   v1 — initial versioned schema; added schemaVersion field;
  *         restructured migrateData() to version-gated blocks
  *   v2 — cover images moved out of project JSON into separate
  *         localStorage keys (img_{projId}); proj.coverImage removed
- *   v3 — 新增 state.data.settings.highlightEnabled（智能高亮常驻开关，默认 false）
- *   v4 — 新增 project.lastModified（时间戳，为 CloudKit 同步冲突解决预留）
- *   v5 — 新增 state.data.settings.globalCustomStitches（全局自定义针法库）
- *   v6 — 新增 state.data.settings.profile（本地昵称，无后端身份卡）
- *   v7 — 针法库全面全局化：合并项目级 customStitches/names/colors 到
- *         全局 globalCustomStitches / globalStitchCustomizations，
- *         废弃项目级 customSettings 的针法定义字段
- *   v8 — 新增 project.refImages（参考图，数组存储 IndexedDB covers key）
- *   v9 — 新增 project.focusSessions（专注时长记录）+ project.dailyCount（每日针数）
- *   v10 — 新增 project.markers（记号扣，针目级彩色标记+备注）
- *   v11 — 新增 part.lastPosition（钩织进度记忆，记录最后钩织位置）
- *   v12 — 新增 round.clusterRanges（复合针法簇范围，平行于 seq 的元数据）
- *   v13 — clusterRanges → seq 内 cluster token：将平行元数据数组内嵌为 seq 元素
- *   v14 — 将 seq 中的 cluster token 展开为独立针
- *   v15 — 新增语音设置字段 voiceSpeakFeedback / voiceWaitTimeout / voiceRepeatDefault
+ *   v3 — 新增 state.data.settings.highlightEnabled
+ *   v4 — 新增 project.lastModified
+ *   v5 — 新增 state.data.settings.globalCustomStitches
+ *   v6 — 新增 state.data.settings.profile
+ *   v7 — 针法库全面全局化
+ *   v8 — 新增 project.refImages
+ *   v9 — 新增 project.focusSessions + project.dailyCount
+ *   v10 — 新增 project.markers
+ *   v11 — 新增 part.lastPosition
+ *   v12 — 新增 round.clusterRanges
+ *   v13 — clusterRanges → seq 内 cluster token
+ *   v14 — cluster token 展开为独立针
+ *   v15 — 新增语音设置字段
  *   v16 — 新增心流语音联动开关 voiceFlowSync
  *
  * Rule: whenever you change the shape of state.data, you MUST:
@@ -36,119 +34,60 @@ import { state, uid } from './state.js';
 import { STITCH_LIB, OLD_ID_MAP } from '../stitches.js';
 import { showToast } from './ui.js';
 import { t } from './i18n.js';
-
-// ═══════════════════════════════════════
-//  IndexedDB 适配层
-// ═══════════════════════════════════════
-
-const DB_NAME = 'knit_db';
-const DB_VERSION = 1;
-
-let _db = null;
-
-export async function openDB() {
-  if (_db) return _db;
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = e => {
-      const db = e.target.result;
-      if (!db.objectStoreNames.contains('main')) {
-        db.createObjectStore('main');
-      }
-      if (!db.objectStoreNames.contains('covers')) {
-        db.createObjectStore('covers');
-      }
-    };
-    req.onsuccess = e => {
-      _db = e.target.result;
-      resolve(_db);
-    };
-    req.onerror = () => reject(req.error);
-  });
-}
-
-export const storageAdapter = {
-  async get(key) {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction('main', 'readonly');
-      const req = tx.objectStore('main').get(key);
-      req.onsuccess = () => resolve(req.result ?? null);
-      req.onerror = () => reject(req.error);
-    });
-  },
-  async set(key, value) {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction('main', 'readwrite');
-      const req = tx.objectStore('main').put(value, key);
-      req.onsuccess = () => resolve();
-      req.onerror = () => reject(req.error);
-    });
-  },
-  async remove(key) {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction('main', 'readwrite');
-      const req = tx.objectStore('main').delete(key);
-      req.onsuccess = () => resolve();
-      req.onerror = () => reject(req.error);
-    });
-  }
-};
+// 运行时检测 Capacitor 环境，避免静态 buildTarget 在浏览器打开 App 版时误判
 
 const STORAGE_KEY = 'crochet_v4';
 const OLD_KEYS = ['crochet_v3_fixed', 'crochet_v3'];
 const LATEST_SCHEMA = 16;
 
-// ═══════════════════════════════════════
-//  一次性迁移：localStorage → IndexedDB
-// ═══════════════════════════════════════
+// ═══════════════════════════════════════════
+//  Adapter routing
+// ═══════════════════════════════════════════
 
-async function migrateFromLocalStorage() {
-  // 迁移主数据
-  const oldData = localStorage.getItem(STORAGE_KEY);
-  if (oldData) {
-    try {
-      await storageAdapter.set(STORAGE_KEY, JSON.parse(oldData));
-      localStorage.removeItem(STORAGE_KEY);
-    } catch (e) { console.warn('migrateFromLocalStorage main failed:', e); }
-  }
+let _adapter = null;
 
-  // 迁移封面图片（base64 → Blob）
-  const keys = Object.keys(localStorage).filter(k => k.startsWith('img_'));
-  for (const key of keys) {
-    const base64 = localStorage.getItem(key);
-    if (base64) {
-      try {
-        const res = await fetch(base64);
-        const blob = await res.blob();
-        const projId = key.replace('img_', '');
-        const db = await openDB();
-        await new Promise((resolve, reject) => {
-          const tx = db.transaction('covers', 'readwrite');
-          const req = tx.objectStore('covers').put(blob, projId);
-          req.onsuccess = () => resolve();
-          req.onerror = () => reject(req.error);
-        });
-        localStorage.removeItem(key);
-      } catch (e) { console.warn('migrateFromLocalStorage cover failed:', key, e); }
-    }
+async function getAdapter() {
+  if (_adapter) return _adapter;
+  if (window.Capacitor?.isNativePlatform() ?? false) {
+    _adapter = await import('./adapters/storage-cap.js');
+  } else {
+    _adapter = await import('./adapters/storage-idb.js');
   }
-
-  // 清理旧 key
-  for (const key of OLD_KEYS) {
-    try { localStorage.removeItem(key); } catch { /* ignore */ }
-  }
+  return _adapter;
 }
 
-// ═══════════════════════════════════════
+// ═══════════════════════════════════════════
+//  Re-exports proxied to adapter
+// ═══════════════════════════════════════════
+
+export async function openDB() {
+  const a = await getAdapter();
+  return a.openDB();
+}
+
+export const storageAdapter = {
+  async get(key) {
+    const a = await getAdapter();
+    return a.storageAdapter.get(key);
+  },
+  async set(key, value) {
+    const a = await getAdapter();
+    return a.storageAdapter.set(key, value);
+  },
+  async remove(key) {
+    const a = await getAdapter();
+    return a.storageAdapter.remove(key);
+  }
+};
+
+// ═══════════════════════════════════════════
 //  save / load
-// ═══════════════════════════════════════
+// ═══════════════════════════════════════════
 
 export async function saveData() {
   try {
-    await storageAdapter.set(STORAGE_KEY, state.data);
+    const a = await getAdapter();
+    await a.save(state.data);
   } catch (e) {
     if (e?.name === 'QuotaExceededError') {
       showToast('存储空间不足，请导出备份后清理数据');
@@ -160,9 +99,9 @@ export async function saveData() {
   checkStorageQuota();
 }
 
-// ═══════════════════════════════════════
+// ═══════════════════════════════════════════
 //  存储用量检测（使用超过 80% 时提示）
-// ═══════════════════════════════════════
+// ═══════════════════════════════════════════
 
 export async function checkStorageQuota() {
   if (!navigator.storage?.estimate) return;
@@ -184,46 +123,8 @@ export async function checkStorageQuota() {
 }
 
 export async function loadData() {
-  let d = null;
-
-  // 优先读 IndexedDB
-  try {
-    d = await storageAdapter.get(STORAGE_KEY);
-  } catch (e) { /* ignore */ }
-
-  // 回退到 localStorage 旧 key
-  if (!d) {
-    const candidates = [
-      { key: 'crochet_v3_fixed', check: (v) => v && v.projects && v.projects.length > 0 },
-      { key: 'crochet_v3', check: (v) => v && v.projects && v.projects.length > 0 }
-    ];
-
-    for (const { key, check } of candidates) {
-      try {
-        const raw = localStorage.getItem(key);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (check(parsed)) { d = parsed; break; }
-        }
-      } catch (e) { /* ignore */ }
-    }
-
-    if (!d) {
-      for (const key of OLD_KEYS) {
-        try {
-          const raw = localStorage.getItem(key);
-          if (raw) { d = JSON.parse(raw); break; }
-        } catch (e) { /* ignore */ }
-      }
-    }
-
-    // 迁移到 IndexedDB 后清理
-    if (d) {
-      for (const key of OLD_KEYS) {
-        try { localStorage.removeItem(key); } catch { /* ignore */ }
-      }
-    }
-  }
+  const a = await getAdapter();
+  const d = await a.load();
 
   if (d) {
     // 上界检查：拒绝来自更新版本的数据
@@ -234,6 +135,7 @@ export async function loadData() {
     Object.keys(state.data).forEach(k => delete state.data[k]);
     Object.assign(state.data, d);
   }
+
   // 保底结构
   if (!state.data || typeof state.data !== "object") {
     console.warn('[loadData] state.data invalid, resetting');
@@ -257,37 +159,38 @@ export async function loadData() {
         Object.keys(state.data).forEach(k => delete state.data[k]);
         Object.assign(state.data, backup);
       }
-    } catch (e) { /* ignore */ }
+    } catch { /* ignore */ }
     localStorage.removeItem('knit_emergency_backup');
   }
 
-  // 1) 先跑 schema 迁移（v1→v2 可能把 coverImage 写入 localStorage img_*）
+  // 1) 先跑 schema 迁移
   const result = migrateData(state.data);
   if (result !== state.data) {
     showToast('数据升级失败，已恢复至上次版本，建议导出备份', null, 6000);
   }
 
-  // 2) 再跑 localStorage → IndexedDB 迁移（一次补齐封面）
-  await migrateFromLocalStorage();
+  // 2) 再跑 localStorage → IndexedDB 迁移（仅 Web 环境有实际逻辑）
+  if (a.migrateFromLocalStorage) {
+    await a.migrateFromLocalStorage();
+  }
 
   // 3) 落盘
   await saveData();
 }
 
-// ── 数据迁移：版本门控 ──
+// ═══════════════════════════════════════════
+//  migrateData — 版本门控数据迁移
+// ═══════════════════════════════════════════
 
 export function migrateData(d) {
   d.schemaVersion = parseInt(d.schemaVersion, 10) || 0;
   try {
-    const backup = JSON.parse(JSON.stringify(d));
-  if (!d.schemaVersion || d.schemaVersion < 1) {
+    if (!d.schemaVersion || d.schemaVersion < 1) {
     d.projects.forEach(p => {
-      // 补全 customSettings
       if (!p.customSettings) p.customSettings = { names: {}, colors: {}, customStitches: {} };
       if (!p.customSettings.customStitches) p.customSettings.customStitches = {};
       if (p.archived === undefined) p.archived = false;
 
-      // 旧版 → 新版：将顶层 rounds 封装为 parts
       if (!p.parts && p.rounds) {
         const partId = uid();
         p.parts = [{
@@ -304,19 +207,16 @@ export function migrateData(d) {
         delete p.customPalette;
       }
 
-      // 保底：确保 parts 数组存在
       if (!p.parts || !Array.isArray(p.parts)) {
         const partId = uid();
         p.parts = [{ id: partId, title: t('default_part_title'), rawPattern: '', rounds: [], activeRoundId: null, customPalette: null }];
         p.activePartId = partId;
       }
 
-      // 保底 activePartId
       if (!p.activePartId || !p.parts.find(pt => pt.id === p.activePartId)) {
         p.activePartId = p.parts[0]?.id || null;
       }
 
-      // 迁移每个 part 内的 rounds
       p.parts.forEach(part => {
         if (!part.rounds) part.rounds = [];
         if (part.customPalette === undefined) part.customPalette = null;
@@ -332,7 +232,6 @@ export function migrateData(d) {
           }
         });
 
-        // 保底 activeRoundId
         if (!part.activeRoundId && part.rounds.length) {
           part.activeRoundId = part.rounds[part.rounds.length - 1].id;
         }
@@ -340,7 +239,6 @@ export function migrateData(d) {
     });
   }
 
-  // v3 → v4: 补全 lastModified 时间戳
   if (d.schemaVersion < 4) {
     d.projects.forEach(p => {
       if (!p.lastModified) {
@@ -349,7 +247,6 @@ export function migrateData(d) {
     });
   }
 
-  // v2 → v3: 补全 highlightEnabled 字段
   if (d.schemaVersion < 3) {
     if (!d.settings) d.settings = {};
     if (d.settings.highlightEnabled === undefined) {
@@ -357,8 +254,6 @@ export function migrateData(d) {
     }
   }
 
-  // v1 → v2: 将 coverImage 从项目对象迁移到 localStorage key
-  //          → migrateFromLocalStorage() 再迁到 IndexedDB covers store
   if (d.schemaVersion < 2) {
     d.projects.forEach(p => {
       if (p.coverImage) {
@@ -370,7 +265,6 @@ export function migrateData(d) {
     });
   }
 
-  // v4 → v5: 补全全局自定义针法库
   if (d.schemaVersion < 5) {
     if (!d.settings) d.settings = {};
     if (!d.settings.globalCustomStitches) {
@@ -378,7 +272,6 @@ export function migrateData(d) {
     }
   }
 
-  // v5 → v6: 补全 profile 字段
   if (d.schemaVersion < 6) {
     if (!d.settings) d.settings = {};
     if (!d.settings.profile) {
@@ -386,9 +279,7 @@ export function migrateData(d) {
     }
   }
 
-  // v6 → v7: 针法库全面全局化
   if (d.schemaVersion < 7) {
-    // 确保全局字段存在
     if (!d.settings) d.settings = {};
     if (!d.settings.globalCustomStitches) d.settings.globalCustomStitches = {};
     if (!d.settings.globalStitchCustomizations) d.settings.globalStitchCustomizations = { names: {}, colors: {} };
@@ -398,18 +289,14 @@ export function migrateData(d) {
     const globalNames = d.settings.globalStitchCustomizations.names;
     const globalColors = d.settings.globalStitchCustomizations.colors;
 
-    // 将旧 settings.customColors 合并到 globalStitchCustomizations.colors（全局已有跳过）
     Object.keys(d.settings.customColors).forEach(sid => {
       if (!globalColors[sid]) {
         globalColors[sid] = d.settings.customColors[sid];
       }
     });
 
-    // 遍历所有项目，将项目级针法数据合并到全局
     d.projects.forEach(p => {
       if (!p.customSettings) return;
-
-      // customStitches → globalCustomStitches（全局已有跳过）
       if (p.customSettings.customStitches) {
         Object.keys(p.customSettings.customStitches).forEach(sid => {
           if (!globalCustom[sid]) {
@@ -417,8 +304,6 @@ export function migrateData(d) {
           }
         });
       }
-
-      // names → globalStitchCustomizations.names（全局已有跳过）
       if (p.customSettings.names) {
         Object.keys(p.customSettings.names).forEach(sid => {
           if (!globalNames[sid]) {
@@ -426,8 +311,6 @@ export function migrateData(d) {
           }
         });
       }
-
-      // colors → globalStitchCustomizations.colors（全局已有跳过）
       if (p.customSettings.colors) {
         Object.keys(p.customSettings.colors).forEach(sid => {
           if (!globalColors[sid]) {
@@ -435,22 +318,18 @@ export function migrateData(d) {
           }
         });
       }
-
-      // 清空项目级针法定义字段
       delete p.customSettings.customStitches;
       delete p.customSettings.names;
       delete p.customSettings.colors;
     });
   }
 
-  // v7 → v8: 补全 refImages
   if (d.schemaVersion < 8) {
     d.projects.forEach(p => {
       if (!Array.isArray(p.refImages)) p.refImages = [];
     });
   }
 
-  // v8 → v9: 补全 focusSessions + dailyCount
   if (d.schemaVersion < 9) {
     d.projects.forEach(p => {
       if (!Array.isArray(p.focusSessions)) p.focusSessions = [];
@@ -458,14 +337,12 @@ export function migrateData(d) {
     });
   }
 
-  // v9 → v10: 补全 markers
   if (d.schemaVersion < 10) {
     d.projects.forEach(p => {
       if (!Array.isArray(p.markers)) p.markers = [];
     });
   }
 
-  // v10 → v11: 补全 lastPosition
   if (d.schemaVersion < 11) {
     d.projects.forEach(p => {
       (p.parts || []).forEach(part => {
@@ -474,7 +351,6 @@ export function migrateData(d) {
     });
   }
 
-  // v11 → v12: 补全 round.clusterRanges
   if (d.schemaVersion < 12) {
     d.projects.forEach(p => {
       (p.parts || []).forEach(part => {
@@ -485,7 +361,6 @@ export function migrateData(d) {
     });
   }
 
-  // v12 → v13: 将 clusterRanges 平行数组迁移为 seq 内的 cluster token
   if (d.schemaVersion < 13) {
     d.projects.forEach(p => {
       (p.parts || []).forEach(part => {
@@ -516,7 +391,6 @@ export function migrateData(d) {
     });
   }
 
-  // v13 → v14: 将 seq 中的 cluster token 拆分为独立针
   if (d.schemaVersion < 14) {
     d.projects.forEach(p => {
       (p.parts || []).forEach(part => {
@@ -539,7 +413,6 @@ export function migrateData(d) {
     });
   }
 
-  // v14 → v15: 补全语音设置字段
   if (d.schemaVersion < 15) {
     if (!d.settings) d.settings = {};
     d.settings.voiceSpeakFeedback = d.settings.voiceSpeakFeedback ?? true;
@@ -547,7 +420,6 @@ export function migrateData(d) {
     d.settings.voiceRepeatDefault = d.settings.voiceRepeatDefault ?? 'ask';
   }
 
-  // v15 → v16: 补全心流语音联动开关
   if (d.schemaVersion < 16) {
     if (!d.settings) d.settings = {};
     d.settings.voiceFlowSync = d.settings.voiceFlowSync ?? false;
@@ -561,15 +433,22 @@ export function migrateData(d) {
   return d;
 }
 
+// ═══════════════════════════════════════════
+//  Export helpers
+// ═══════════════════════════════════════════
+
 export function exportPDF() {
+  if (window.Capacitor?.isNativePlatform()) {
+    showToast(t('export_pdf_app'), null, 5000);
+    return;
+  }
   if (/iPhone|iPad/.test(navigator.userAgent)) {
-    showToast('PDF 导出请使用浏览器菜单中的「打印」功能');
+    showToast(t('export_pdf_ios'), null, 5000);
     return;
   }
   window.print();
 }
 
-// ── 数据导出/导入 ──
 export function exportData() {
   const json = JSON.stringify(state.data, null, 2);
   const blob = new Blob([json], { type: 'application/json' });
@@ -577,7 +456,7 @@ export function exportData() {
   const a = document.createElement('a');
   a.href = url;
   const safeName = t('export_filename').replace(/[/\\:*?"<>|]/g, '_');
-  a.download = safeName.replace('{date}', new Date().toISOString().slice(0,10));
+  a.download = safeName.replace('{date}', new Date().toISOString().slice(0, 10));
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

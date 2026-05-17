@@ -226,10 +226,6 @@ export function _copyTextPattern(projId) {
 };
 
 export async function _copyFullProject(projId) {
-  if (!isPro()) {
-    showToast('完整项目导出为 PRO 功能，敬请期待');
-    return;
-  }
   try {
     const proj = getProj(projId);
     if (!proj) return;
@@ -248,6 +244,10 @@ export async function _copyFullProject(projId) {
 
 // ── Import shared project sheet ──
 export function openImportShareSheet() {
+  if (!isPro()) {
+    showToast(t('pro_feature_hint'));
+    return;
+  }
   document.getElementById("sheet").classList.remove("show");
   document.getElementById("overlay").classList.remove("show");
   state.flowState.importMode = 'create';

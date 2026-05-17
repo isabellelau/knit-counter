@@ -3465,7 +3465,68 @@ html.theme-dark .stats-card-row {
   color: var(--muted);
 }
 
-/* 卡片 3 mock */
+/* 卡片 3 PRO 功能介绍 */
+.onboard-slide--pro {
+  justify-content: flex-start;
+  padding-top: 60px;
+  overflow-y: auto;
+}
+
+.onboard-features {
+  width: 100%;
+  max-width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 28px;
+}
+
+.onboard-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.onboard-feature-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--accent-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.onboard-feature-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.onboard-feature-title {
+  font-size: var(--text-body);
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+.onboard-feature-desc {
+  font-size: var(--text-footnote);
+  color: var(--text-secondary);
+  line-height: var(--leading-loose);
+}
+
+.onboard-tagline {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 32px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+/* 卡片 3 mock (旧版，保留以防回退) */
 .onboard-app-icon {
   width: 100px;
   height: 100px;
