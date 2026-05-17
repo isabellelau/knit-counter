@@ -574,7 +574,7 @@ export default {
   //  Early Access Perks page
   // ═════════════════════════════════════
   pro_page_title: 'Early Access Perks',
-  pro_page_desc: 'Thank you for joining ZhiYing early. All PRO features are completely free during this period.',
+  pro_page_desc: 'Thank you for joining StitchEcho early. All PRO features are completely free during this period.',
   pro_flow_name: 'Flow Mode',
   pro_flow_sub: 'Auto-highlight the next stitch following the pattern; single tap to advance and catch mistakes in real time',
   pro_voice_name: 'Voice Pro',
@@ -614,5 +614,5 @@ export default {
   tutorial_stitchlib_desc: 'Customize stitch names and colours in Settings — changes apply globally across all projects.\nYou can also create new custom stitch types with an abbreviation ID, name, and category.\nCustom stitches automatically participate in pattern parsing and can be used in written patterns.\nAccess: Settings → Stitch Library.',
 
   tutorial_data_title: 'Data Management',
-  tutorial_data_desc: 'All data is stored locally on your device — nothing is uploaded to any server.\nWe recommend exporting regular backups to protect against device loss or data corruption.\n\n· Export backup: export all projects as a JSON file\n· Import backup: restore all data from a JSON file\n· Export single project: export one project as a .knt file from the project menu\n· Share pattern: export stitch sequences as a written pattern,\n  or as KNIT1 format for others to import (requires ZhiYing)\n\nAccess: Settings → Data Management.',
+  tutorial_data_desc: 'All data is stored locally on your device — nothing is uploaded to any server.\nWe recommend exporting regular backups to protect against device loss or data corruption.\n\n· Export backup: export all projects as a JSON file\n· Import backup: restore all data from a JSON file\n· Export single project: export one project as a .knt file from the project menu\n· Share pattern: export stitch sequences as a written pattern,\n  or as KNIT1 format for others to import (requires StitchEcho)\n\nAccess: Settings → Data Management.',
 };

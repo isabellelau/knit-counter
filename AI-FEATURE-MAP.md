@@ -2,7 +2,7 @@
 
 ## 项目概览
 
-- **应用名称**: 织影（ZhiYing）
+- **应用名称**: 织影（StitchEcho）
 - **技术栈**: 原生 JS (ES Modules) + PWA (Service Worker + Web Manifest)，无前端框架
 - **架构模式**: 事件驱动 + 领域模块化（每个功能域一个 JS 文件），伪 SPA（DOM 整体替换实现页面切换）
 - **状态管理**: 全局单例 `state` 对象 (`js/state.js`)，数据直接就地修改，通过 `saveData()` 持久化到 IndexedDB

@@ -1,4 +1,4 @@
-# 织影（ZhiYing）— Claude Code 工作上下文
+# 织影（StitchEcho）— Claude Code 工作上下文
 
 ## 当前分支：capacitor-prep
 
@@ -9,7 +9,7 @@
 
 ## 项目基本信息
 
-- **应用名称**: 织影（ZhiYing）—— 钩织针法追踪 App
+- **应用名称**: 织影（StitchEcho）—— 钩织针法追踪 App
 - **技术栈**: 原生 JS (ES Modules)，无构建步骤，无框架
 - **架构**: 事件驱动 + 领域模块化，伪 SPA（DOM 整体替换）
 - **状态管理**: 全局单例 `state`（`js/state.js`），通过 `saveData()` 持久化
@@ -128,6 +128,10 @@ js/
 
 - 在 `voice.js` 的 `toggleVoiceMode()` 开启分支中加 `await _audioCtx.resume()`
 - 防止 iOS 首次 `playSound()` 静默失败
+
+### 任务 6： 用 Vision Framework 封装成 Capacitor Plugin
+- 代替Tesseract.js
+- 工作量和语音插件相当，云 Mac 上一起做
 
 ---
 
