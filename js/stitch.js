@@ -8,6 +8,7 @@ import { getRefImage, addRefImage } from './image.js';
 import { setActiveRound } from './round.js';
 import { normalizeRoundNums } from './pattern.js';
 import { t, term, getShowSymbol, setNotation, getNotationKey } from './i18n.js';
+import { isPro } from './config.js';
 
 // ── 动态 token 正则：合并内置针法 + 自定义针法 ──
 
@@ -1979,6 +1980,10 @@ export function toggleImmersiveMode() {
 // ═════════════════════════════════════
 
 export function toggleHighlightMode() {
+  if (!isPro()) {
+    showToast('流式模式为 PRO 功能，敬请期待');
+    return;
+  }
   state.highlightMode = !state.highlightMode;
 
   if (state.highlightMode) {

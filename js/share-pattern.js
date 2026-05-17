@@ -1,5 +1,6 @@
 import { state, uid, getProj } from './state.js';
 import { showSheet, showToast, closeSheet, escapeHtml } from './ui.js';
+import { isPro } from './config.js';
 import { saveData } from './storage.js';
 import { t } from './i18n.js';
 
@@ -225,6 +226,10 @@ export function _copyTextPattern(projId) {
 };
 
 export async function _copyFullProject(projId) {
+  if (!isPro()) {
+    showToast('完整项目导出为 PRO 功能，敬请期待');
+    return;
+  }
   try {
     const proj = getProj(projId);
     if (!proj) return;

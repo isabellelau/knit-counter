@@ -7,6 +7,7 @@ import { extractStitches } from '../stitches.js';
 import { parseIntentL1, parseIntentL2 } from './voice-intent.js';
 import { getNextStitchSid } from './highlight.js';
 import { t, getLang } from './i18n.js';
+import { isPro } from './config.js';
 
 let _audioCtx = null;
 
@@ -57,10 +58,6 @@ export function playSound(type) {
 // ═══════════════════════════════════════════
 //  Intent Layer
 // ═══════════════════════════════════════════
-
-function isPro() {
-  return true; // TODO: wire up to billing
-}
 
 function handleVoiceResult(text, isFinal) {
   if (!isFinal) return;

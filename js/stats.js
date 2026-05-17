@@ -3,6 +3,7 @@ import { getTotalFocusTime, formatFocusTime } from './project.js';
 import { countSeqStitches } from './stitch.js';
 import { t, term } from './i18n.js';
 import { showToast } from './ui.js';
+import { isPro } from './config.js';
 
 // ═══════════════════════════════════════════
 //  Data calculations
@@ -242,6 +243,10 @@ export function buildStatsHTML() {
 }
 
 export function openStatsPage() {
+  if (!isPro()) {
+    showToast('详细统计为 PRO 功能，敬请期待');
+    return;
+  }
   document.documentElement.classList.remove('in-project');
 
   const lt = document.getElementById('large-title-wrap');
