@@ -10,6 +10,61 @@ import { removeProjectCover, getProfileAvatar, setProfileAvatar, removeProfileAv
 let _settingsStack = [];
 let _settingsMode = 'page'; // 'page' | 'sheet'
 
+// ── 左滑返回手势 ──
+let _swipeHandlers = null;
+
+function _bindSwipeBack() {
+  _unbindSwipeBack();
+  const root = _getContentRoot();
+  if (!root) return;
+
+  let startX = 0, startY = 0;
+
+  function onTouchStart(e) {
+    if (e.touches.length !== 1) { startX = 0; return; }
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+  }
+
+  function onTouchEnd(e) {
+    if (startX === 0 && startY === 0) return;
+    const endX = e.changedTouches[0].clientX;
+    const endY = e.changedTouches[0].clientY;
+    const dx = endX - startX;
+    const dy = Math.abs(endY - startY);
+
+    // 仅 settings 页生效
+    if (state.currentTab !== 'settings' && _settingsMode !== 'sheet') return;
+
+    // 左边缘右滑：起点 X < 40px，水平位移 > 60px，横向手势
+    if (startX < 40 && dx > 60 && dy < dx) {
+      if (_settingsStack.length > 0) {
+        goBackFromSubPage();
+      } else if (_settingsMode === 'sheet') {
+        closeSheet();
+      } else {
+        window.switchTab && window.switchTab('projects');
+      }
+    }
+
+    startX = 0;
+    startY = 0;
+  }
+
+  root.addEventListener('touchstart', onTouchStart, { passive: true });
+  root.addEventListener('touchend', onTouchEnd, { passive: true });
+
+  _swipeHandlers = { root, onTouchStart, onTouchEnd };
+}
+
+function _unbindSwipeBack() {
+  if (!_swipeHandlers) return;
+  const { root, onTouchStart, onTouchEnd } = _swipeHandlers;
+  root.removeEventListener('touchstart', onTouchStart);
+  root.removeEventListener('touchend', onTouchEnd);
+  _swipeHandlers = null;
+}
+
 function _getSubPageTitle(key) {
   const titles = {
     pro: '',
@@ -33,6 +88,7 @@ export function openSettings() {
   document.getElementById("sheet").classList.add("show");
   document.getElementById("overlay").classList.add("show");
   _loadProfileAvatar();
+  _bindSwipeBack();
 }
 
 // ── 全页版（从 Tab Bar 切换调用）──
@@ -52,6 +108,7 @@ export function renderSettings() {
   _settingsStack = [];
   _renderSettingsList();
   _loadProfileAvatar();
+  _bindSwipeBack();
 }
 
 async function _loadProfileAvatar() {
@@ -320,6 +377,7 @@ export function navigateToSubPage(key) {
   }
 
   _renderSubPageIntoRoot(subHTML, 'forward');
+  _bindSwipeBack();
 }
 
 export function goBackFromSubPage() {
@@ -347,6 +405,7 @@ export function goBackFromSubPage() {
     }
   }
   _loadProfileAvatar();
+  _bindSwipeBack();
 }
 
 // ═════════════════════════════════════

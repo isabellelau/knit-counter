@@ -180,18 +180,42 @@ export async function listBlobKeys() {
 //  向后兼容：openDB（mock）→ 供 image.js 使用
 // ═══════════════════════════════════════════
 
+/**
+ * 将 Promise 包装为 IndexedDB 请求对象，供 image.js 的事务风格代码使用。
+ * image.js 的 getCoverBlob / setCoverBlob 期望 .onsuccess / .onerror / .result。
+ */
+function _makeRequest(promise) {
+  const req = {
+    result: undefined,
+    error: undefined,
+    onsuccess: null,
+    onerror: null,
+  };
+  promise.then(
+    (result) => {
+      req.result = result;
+      if (req.onsuccess) req.onsuccess();
+    },
+    (error) => {
+      req.error = error;
+      if (req.onerror) req.onerror();
+    }
+  );
+  return req;
+}
+
 function _createMockDB() {
   const coversStore = {
-    async get(key) { return await getBlob(key); },
-    async put(value, key) { await setBlob(key, value); return key; },
-    async delete(key) { await removeBlob(key); },
-    async getAllKeys() { return await listBlobKeys(); },
+    get(key) { return _makeRequest(getBlob(key)); },
+    put(value, key) { return _makeRequest(setBlob(key, value).then(() => key)); },
+    delete(key) { return _makeRequest(removeBlob(key)); },
+    getAllKeys() { return _makeRequest(listBlobKeys()); },
   };
 
   const mainStore = {
-    async get(key) { return await storageAdapter.get(key); },
-    async put(value, key) { await storageAdapter.set(key, value); return key; },
-    async delete(key) { await storageAdapter.remove(key); },
+    get(key) { return _makeRequest(storageAdapter.get(key)); },
+    put(value, key) { return _makeRequest(storageAdapter.set(key, value).then(() => key)); },
+    delete(key) { return _makeRequest(storageAdapter.remove(key)); },
   };
 
   return {
