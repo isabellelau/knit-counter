@@ -42,6 +42,7 @@ async function _ensureBlobDir() {
     if (!e.message?.includes('exist') && !e.message?.includes('EXIST')) {
       console.error('[cap storage] mkdir error:', e.message, e.code);
       showToast('[DEBUG] mkdir: ' + e.message, null, 8000);
+      window.__dbg && window.__dbg('mkdir: ' + e.message);
     }
   }
   _blobDirReady = true;
@@ -60,6 +61,7 @@ export async function load() {
   } catch (err) {
     console.error('[cap storage] load error:', err.message, err.code);
     showToast('[DEBUG] load: ' + err.message, null, 8000);
+    window.__dbg && window.__dbg('load: ' + err.message);
     return null;
   }
 }
@@ -71,6 +73,7 @@ export async function save(data) {
   } catch (err) {
     console.error('[cap storage] save error:', err.message, err.code);
     showToast('[DEBUG] save: ' + err.message, null, 8000);
+    window.__dbg && window.__dbg('save: ' + err.message);
     throw err;
   }
 }
@@ -89,6 +92,7 @@ export async function getBlob(key) {
   } catch (err) {
     console.error('[cap storage] getBlob error:', err.message, err.code);
     showToast('[DEBUG] getBlob: ' + err.message, null, 8000);
+    window.__dbg && window.__dbg('getBlob: ' + err.message);
     return null;
   }
 }
@@ -122,6 +126,7 @@ export async function removeBlob(key) {
   } catch (err) {
     console.error('[cap storage] removeBlob error:', err.message, err.code);
     showToast('[DEBUG] removeBlob: ' + err.message, null, 8000);
+    window.__dbg && window.__dbg('removeBlob: ' + err.message);
   }
 }
 
@@ -136,6 +141,7 @@ export async function listBlobKeys() {
   } catch (err) {
     console.error('[cap storage] listBlobKeys error:', err.message, err.code);
     showToast('[DEBUG] listBlobKeys: ' + err.message, null, 8000);
+    window.__dbg && window.__dbg('listBlobKeys: ' + err.message);
     return [];
   }
 }
@@ -194,6 +200,7 @@ export const storageAdapter = {
     } catch (err) {
       console.error('[cap storage] storageAdapter.get error:', err.message, err.code);
       showToast('[DEBUG] adapter.get: ' + err.message, null, 8000);
+      window.__dbg && window.__dbg('adapter.get: ' + err.message);
       return null;
     }
   },
@@ -208,6 +215,7 @@ export const storageAdapter = {
     } catch (err) {
       console.error('[cap storage] storageAdapter.remove error:', err.message, err.code);
       showToast('[DEBUG] adapter.remove: ' + err.message, null, 8000);
+      window.__dbg && window.__dbg('adapter.remove: ' + err.message);
     }
   }
 };

@@ -49,7 +49,7 @@ let _adapter = null;
 async function getAdapter() {
   if (_adapter) return _adapter;
   const isNative = window.Capacitor?.isNativePlatform() ?? false;
-  showToast('[DEBUG] isNative: ' + isNative, null, 5000);
+  window.__dbg && window.__dbg('isNative: ' + isNative);
   if (isNative) {
     _adapter = await import('./adapters/storage-cap.js');
   } else {
@@ -125,10 +125,10 @@ export async function checkStorageQuota() {
 }
 
 export async function loadData() {
-  showToast('[DEBUG] loadData called', null, 3000);
+  window.__dbg && window.__dbg('loadData called');
   const a = await getAdapter();
   if (window.Capacitor?.isNativePlatform()) {
-    showToast('[DEBUG] cap load start', null, 3000);
+    window.__dbg && window.__dbg('cap load start');
   }
   const d = await a.load();
 

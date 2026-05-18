@@ -55,9 +55,17 @@ import { expandInstruction, getNextStitchSid, renderHighlightReel } from './high
 import { renderHome, renderProject, _renderSplitLeft } from './render.js';
 import { t, term, setLang, getLang, setNotation, getNotationKey, SUPPORTED_LANGS, getShowSymbol, setShowSymbol } from './i18n.js';
 
+// Debug buffer — Capacitor launch screen 遮挡即时 toast，改用延迟输出
+window.__debugLog = [];
+window.__dbg = function(msg) {
+  window.__debugLog.push(msg);
+  console.log('[dbg]', msg);
+};
+
 setTimeout(() => {
-  showToast('[DEBUG] app started', null, 3000);
-}, 1000);
+  const lines = window.__debugLog.join('\n');
+  showToast('[DEBUG] app started\n' + lines, null, 15000);
+}, 1500);
 
 let _onboardStep = 0;
 const ONBOARD_KEY = 'knit_onboarded_v1';
@@ -365,9 +373,9 @@ if (savedTheme === 'morandi') {
   html.classList.add('theme-dark');
 }
 initOnboarding();
-showToast('[DEBUG] before loadData', null, 3000);
+window.__dbg('before loadData');
 await loadData();
-showToast('[DEBUG] after loadData', null, 3000);
+window.__dbg('after loadData');
 
 // 存储持久化检查：提示用户定期备份
 (async () => {
