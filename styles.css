@@ -4084,6 +4084,14 @@ html.in-project body {
   height: 100dvh;
 }
 
+/* 锁定 nav-bar 高度，防止 body 在 flex/block 布局模式切换时
+   nav-bar 计算高度跳变（position:sticky 在两种模式下的盒模型路径不同） */
+html.in-project .nav-bar {
+  height: calc(44px + var(--nav-safe-top));
+  padding: var(--nav-safe-top) 8px 0;
+  flex-shrink: 0;
+}
+
 html.in-project #screen {
   overflow-y: hidden;
   overflow-x: hidden;
