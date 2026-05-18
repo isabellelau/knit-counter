@@ -255,11 +255,17 @@ document.getElementById("dialog").addEventListener("keydown", e => {
   if (e.key === "Escape") closeDialog();
 });
 
+// inline onmousedown 无法访问模块变量 state，需要一个全局 wrapper
+function _captureEditPartId() {
+  state.flowState.captureEdit = getEditingPartId();
+}
+
 // ═══════════════════════════════════════════
 //  暴露全局函数（供 HTML onclick 使用）
 // ═══════════════════════════════════════════
 const _globals = {
   // === HTML onclick/onchange/onblur 必须保留 ===
+  _captureEditPartId,
   goHome, openProject, exportData, exportSingleProject,
   showNewProjectDialog, confirmDialog, closeDialog, deleteProject,
   renderProject, renderHome,

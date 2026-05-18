@@ -117,9 +117,12 @@ export async function getBlob(key) {
     const res = await fetch(`data:application/octet-stream;base64,${data}`);
     return await res.blob();
   } catch (err) {
-    console.error('[cap storage] getBlob error:', err.message, err.code);
-    showToast('[DEBUG] getBlob: ' + err.message, null, 8000);
-    window.__dbg && window.__dbg('getBlob: ' + err.message);
+    // 文件不存在是正常情况，getBlob 应静默返回 null
+    if (!err.message?.includes('does not exist')) {
+      console.error('[cap storage] getBlob error:', err.message, err.code);
+      showToast('[DEBUG] getBlob: ' + err.message, null, 8000);
+      window.__dbg && window.__dbg('getBlob: ' + err.message);
+    }
     return null;
   }
 }

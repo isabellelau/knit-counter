@@ -261,7 +261,7 @@ export function renderProject() {
 
   // ── 部件选项卡 ──
   html += `<div class="part-tabs-wrap" id="part-tabs-wrap">
-      <div class="part-tabs-scroll" onmousedown="state.flowState.captureEdit=getEditingPartId()">`;
+      <div class="part-tabs-scroll" onmousedown="_captureEditPartId()">`;
   (proj.parts || []).forEach(pt => {
     const isActive = pt.id === (part?.id || proj.activePartId);
     const isEditing = pt.id === window.editingPartId;
