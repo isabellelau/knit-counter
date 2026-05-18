@@ -277,7 +277,12 @@ function saveMarkerDirect(roundId, idx, color) {
 
 export async function initRecognition() {
   if (window.Capacitor?.isNativePlatform()) {
-    const { SpeechRecognition } = await import('@capgo/capacitor-speech-recognition');
+    const SpeechRecognition = window.Capacitor.Plugins.SpeechRecognition;
+    if (!SpeechRecognition) {
+      console.error('[voice] SpeechRecognition plugin not found in Capacitor.Plugins');
+      window.__dbg && window.__dbg('voice: SpeechRecognition plugin missing');
+      return false;
+    }
 
     const permission = await SpeechRecognition.requestPermission();
     if (permission.speechRecognition !== 'granted') {

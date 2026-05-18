@@ -407,11 +407,12 @@ window.addEventListener('beforeunload', () => {
 });
 
 if (window.Capacitor?.isNativePlatform()) {
-  import('@capacitor/app').then(({ App }) => {
+  const App = window.Capacitor.Plugins?.App;
+  if (App) {
     App.addListener('pause', () => {
       flushFocusSession();
     });
-  });
+  }
 }
 
 // ===== Onboarding =====
