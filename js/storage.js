@@ -48,7 +48,9 @@ let _adapter = null;
 
 async function getAdapter() {
   if (_adapter) return _adapter;
-  if (window.Capacitor?.isNativePlatform() ?? false) {
+  const isNative = window.Capacitor?.isNativePlatform() ?? false;
+  showToast('[DEBUG] isNative: ' + isNative, null, 5000);
+  if (isNative) {
     _adapter = await import('./adapters/storage-cap.js');
   } else {
     _adapter = await import('./adapters/storage-idb.js');

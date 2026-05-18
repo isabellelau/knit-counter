@@ -55,6 +55,10 @@ import { expandInstruction, getNextStitchSid, renderHighlightReel } from './high
 import { renderHome, renderProject, _renderSplitLeft } from './render.js';
 import { t, term, setLang, getLang, setNotation, getNotationKey, SUPPORTED_LANGS, getShowSymbol, setShowSymbol } from './i18n.js';
 
+setTimeout(() => {
+  showToast('[DEBUG] app started', null, 3000);
+}, 1000);
+
 let _onboardStep = 0;
 const ONBOARD_KEY = 'knit_onboarded_v1';
 
