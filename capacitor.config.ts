@@ -9,7 +9,7 @@ const config: CapacitorConfig = {
   },
   ios: {
     // 确保 WebView 延伸到状态栏下方，safe-area inset 正确生效
-    contentInset: 'always',
+    contentInset: 'never',
     // 原生层背景色与 WebView --bg 一致，消除 overscroll 白边
     backgroundColor: '#FAF5F5',
   },
