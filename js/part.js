@@ -74,6 +74,7 @@ export function startEditPartName(icon, partId) {
 
 export function partNameBlur(input, partId) {
   renamePart(partId, input.value.trim());
+  state.flowState.captureEdit = null;
   window.editingPartId = null;
   window.renderProject();
 }
