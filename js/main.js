@@ -123,6 +123,7 @@ function goHome() {
 }
 
 function _doGoHome() {
+  window.editingPartId = null;
   document.documentElement.classList.remove('in-project');
   document.documentElement.classList.remove('ipad-split');
   const splitLeft = document.getElementById('ipad-split-left');

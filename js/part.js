@@ -5,6 +5,7 @@ import { saveLastPosition, checkResumePosition } from './stitch.js';
 import { t } from './i18n.js';
 
 export function addPart() {
+  window.editingPartId = null;
   const proj = getProj(state.curProjId);
   if (!proj) return;
   const prevPart = getActivePart(proj);
@@ -29,9 +30,7 @@ export function addPart() {
 export function switchPart(partId) {
   const proj = getProj(state.curProjId);
   if (!proj) return;
-  if (window.editingPartId !== null && window.editingPartId !== partId) {
-    window.editingPartId = null;
-  }
+  window.editingPartId = null;
   // 切换前保存当前部件位置
   const prevPart = getActivePart(proj);
   if (prevPart && prevPart.id !== partId) {

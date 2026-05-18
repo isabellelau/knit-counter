@@ -174,7 +174,15 @@ export async function renderHome() {
 
 export function renderProject() {
   // 编辑模式下禁止 DOM 重构，避免打断输入焦点
-  if (window.editingPartId !== null) return;
+  // 但如果 editingPartId 不属于当前项目，说明是跨页面泄漏的脏状态，清掉继续渲染
+  if (window.editingPartId !== null) {
+    const proj = getProj(state.curProjId);
+    if (!proj || !proj.parts?.some(p => p.id === window.editingPartId)) {
+      window.editingPartId = null;
+    } else {
+      return;
+    }
+  }
 
   document.documentElement.classList.add('in-project');
 
