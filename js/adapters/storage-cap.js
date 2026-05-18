@@ -4,7 +4,7 @@
  * 统一接口：load / save / getBlob / setBlob / removeBlob / listBlobKeys
  * 向后兼容导出：openDB（mock）/ storageAdapter（Preferences 封装）
  *
- * 依赖 @capacitor/preferences 和 @capacitor/filesystem 插件。
+ * 插件通过 window.Capacitor.Plugins 全局对象访问（无打包器环境）。
  */
 
 import { showToast } from '../ui.js';
@@ -12,18 +12,45 @@ import { showToast } from '../ui.js';
 const MAIN_KEY = 'crochet_v4';
 const KV_PREFIX = 'kv_';
 const BLOB_DIR = 'blobs';
+const DIR_DATA = 'DATA'; // Capacitor Filesystem Directory.Data 字符串值
 
 let _Preferences = null;
 let _Filesystem = null;
-let _Directory = null;
+let _ready = false;
 
 async function _ensurePlugins() {
-  if (_Preferences) return;
-  const prefs = await import('@capacitor/preferences');
-  const fs = await import('@capacitor/filesystem');
-  _Preferences = prefs.Preferences;
-  _Filesystem = fs.Filesystem;
-  _Directory = fs.Directory;
+  if (_ready) return;
+
+  // 从 Capacitor 全局对象取插件（WebView 无打包器，裸模块 import 不可用）
+  const prefs = window.Capacitor?.Plugins?.Preferences;
+  const fs = window.Capacitor?.Plugins?.Filesystem;
+
+  if (prefs && fs) {
+    _Preferences = prefs;
+    _Filesystem = fs;
+    _ready = true;
+    window.__dbg && window.__dbg('plugins ready');
+    return;
+  }
+
+  // 等 Capacitor 初始化完成
+  await new Promise(r => setTimeout(r, 100));
+
+  const prefs2 = window.Capacitor?.Plugins?.Preferences;
+  const fs2 = window.Capacitor?.Plugins?.Filesystem;
+
+  if (prefs2 && fs2) {
+    _Preferences = prefs2;
+    _Filesystem = fs2;
+    _ready = true;
+    window.__dbg && window.__dbg('plugins ready (100ms wait)');
+    return;
+  }
+
+  const keys = JSON.stringify(Object.keys(window.Capacitor?.Plugins || {}));
+  window.__dbg && window.__dbg('plugins NOT found. Available: ' + keys);
+  console.error('[cap storage] Capacitor plugins not available. Plugins:', keys);
+  throw new Error('Capacitor plugins not available: ' + keys);
 }
 
 let _blobDirReady = false;
@@ -34,7 +61,7 @@ async function _ensureBlobDir() {
   try {
     await _Filesystem.mkdir({
       path: BLOB_DIR,
-      directory: _Directory.Data,
+      directory: DIR_DATA,
       recursive: true,
     });
   } catch (e) {
@@ -85,7 +112,7 @@ export async function getBlob(key) {
   try {
     const { data } = await _Filesystem.readFile({
       path: `${BLOB_DIR}/${key}`,
-      directory: _Directory.Data,
+      directory: DIR_DATA,
     });
     const res = await fetch(`data:application/octet-stream;base64,${data}`);
     return await res.blob();
@@ -111,7 +138,7 @@ export async function setBlob(key, blob) {
   await _Filesystem.writeFile({
     path: `${BLOB_DIR}/${key}`,
     data: base64,
-    directory: _Directory.Data,
+    directory: DIR_DATA,
     recursive: true,
   });
 }
@@ -121,7 +148,7 @@ export async function removeBlob(key) {
   try {
     await _Filesystem.deleteFile({
       path: `${BLOB_DIR}/${key}`,
-      directory: _Directory.Data,
+      directory: DIR_DATA,
     });
   } catch (err) {
     console.error('[cap storage] removeBlob error:', err.message, err.code);
@@ -135,7 +162,7 @@ export async function listBlobKeys() {
   try {
     const { files } = await _Filesystem.readdir({
       path: BLOB_DIR,
-      directory: _Directory.Data,
+      directory: DIR_DATA,
     });
     return (files || []).map(f => f.name);
   } catch (err) {
