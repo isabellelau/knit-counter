@@ -365,7 +365,9 @@ if (savedTheme === 'morandi') {
   html.classList.add('theme-dark');
 }
 initOnboarding();
+showToast('[DEBUG] before loadData', null, 3000);
 await loadData();
+showToast('[DEBUG] after loadData', null, 3000);
 
 // 存储持久化检查：提示用户定期备份
 (async () => {
