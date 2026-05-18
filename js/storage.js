@@ -124,6 +124,9 @@ export async function checkStorageQuota() {
 
 export async function loadData() {
   const a = await getAdapter();
+  if (window.Capacitor?.isNativePlatform()) {
+    showToast('[DEBUG] cap load start', null, 3000);
+  }
   const d = await a.load();
 
   if (d) {

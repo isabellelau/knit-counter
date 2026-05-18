@@ -7,6 +7,8 @@
  * 依赖 @capacitor/preferences 和 @capacitor/filesystem 插件。
  */
 
+import { showToast } from '../ui.js';
+
 const MAIN_KEY = 'crochet_v4';
 const KV_PREFIX = 'kv_';
 const BLOB_DIR = 'blobs';
@@ -39,6 +41,7 @@ async function _ensureBlobDir() {
     // EEXIST / directory already exists is expected after first launch
     if (!e.message?.includes('exist') && !e.message?.includes('EXIST')) {
       console.error('[cap storage] mkdir error:', e.message, e.code);
+      showToast('[DEBUG] mkdir: ' + e.message, null, 8000);
     }
   }
   _blobDirReady = true;
@@ -56,6 +59,7 @@ export async function load() {
     return JSON.parse(value);
   } catch (err) {
     console.error('[cap storage] load error:', err.message, err.code);
+    showToast('[DEBUG] load: ' + err.message, null, 8000);
     return null;
   }
 }
@@ -66,6 +70,7 @@ export async function save(data) {
     await _Preferences.set({ key: MAIN_KEY, value: JSON.stringify(data) });
   } catch (err) {
     console.error('[cap storage] save error:', err.message, err.code);
+    showToast('[DEBUG] save: ' + err.message, null, 8000);
     throw err;
   }
 }
@@ -81,7 +86,9 @@ export async function getBlob(key) {
     });
     const res = await fetch(`data:application/octet-stream;base64,${data}`);
     return await res.blob();
-  } catch {
+  } catch (err) {
+    console.error('[cap storage] getBlob error:', err.message, err.code);
+    showToast('[DEBUG] getBlob: ' + err.message, null, 8000);
     return null;
   }
 }
@@ -112,7 +119,10 @@ export async function removeBlob(key) {
       path: `${BLOB_DIR}/${key}`,
       directory: _Directory.Data,
     });
-  } catch { /* 文件不存在则忽略 */ }
+  } catch (err) {
+    console.error('[cap storage] removeBlob error:', err.message, err.code);
+    showToast('[DEBUG] removeBlob: ' + err.message, null, 8000);
+  }
 }
 
 export async function listBlobKeys() {
@@ -123,7 +133,9 @@ export async function listBlobKeys() {
       directory: _Directory.Data,
     });
     return (files || []).map(f => f.name);
-  } catch {
+  } catch (err) {
+    console.error('[cap storage] listBlobKeys error:', err.message, err.code);
+    showToast('[DEBUG] listBlobKeys: ' + err.message, null, 8000);
     return [];
   }
 }
@@ -179,7 +191,9 @@ export const storageAdapter = {
     try {
       const { value } = await _Preferences.get({ key: KV_PREFIX + key });
       return value ?? null;
-    } catch {
+    } catch (err) {
+      console.error('[cap storage] storageAdapter.get error:', err.message, err.code);
+      showToast('[DEBUG] adapter.get: ' + err.message, null, 8000);
       return null;
     }
   },
@@ -191,7 +205,10 @@ export const storageAdapter = {
     await _ensurePlugins();
     try {
       await _Preferences.remove({ key: KV_PREFIX + key });
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.error('[cap storage] storageAdapter.remove error:', err.message, err.code);
+      showToast('[DEBUG] adapter.remove: ' + err.message, null, 8000);
+    }
   }
 };
 
