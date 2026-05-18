@@ -4078,14 +4078,16 @@ html.immersive-mode .rounds-wrap {
 html.in-project .float-state-pills { display: flex; }
 
 /* ── 项目详情页 flex 布局：header 固定、底部栏固定、圈列表唯一滚动 ── */
-html.in-project #app {
+html.in-project body {
+  display: flex;
+  flex-direction: column;
   height: 100dvh;
-  overflow: hidden;
 }
 
 html.in-project #screen {
   overflow-y: hidden;
   overflow-x: hidden;
+  flex: 1;
   display: flex;
   flex-direction: column;
 }
