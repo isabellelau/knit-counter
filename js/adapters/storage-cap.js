@@ -24,6 +24,26 @@ async function _ensurePlugins() {
   _Directory = fs.Directory;
 }
 
+let _blobDirReady = false;
+
+async function _ensureBlobDir() {
+  if (_blobDirReady) return;
+  await _ensurePlugins();
+  try {
+    await _Filesystem.mkdir({
+      path: BLOB_DIR,
+      directory: _Directory.Data,
+      recursive: true,
+    });
+  } catch (e) {
+    // EEXIST / directory already exists is expected after first launch
+    if (!e.message?.includes('exist') && !e.message?.includes('EXIST')) {
+      console.error('[cap storage] mkdir error:', e.message, e.code);
+    }
+  }
+  _blobDirReady = true;
+}
+
 // ═══════════════════════════════════════════
 //  Unified adapter interface
 // ═══════════════════════════════════════════
@@ -34,14 +54,20 @@ export async function load() {
     const { value } = await _Preferences.get({ key: MAIN_KEY });
     if (!value) return null;
     return JSON.parse(value);
-  } catch {
+  } catch (err) {
+    console.error('[cap storage] load error:', err.message, err.code);
     return null;
   }
 }
 
 export async function save(data) {
   await _ensurePlugins();
-  await _Preferences.set({ key: MAIN_KEY, value: JSON.stringify(data) });
+  try {
+    await _Preferences.set({ key: MAIN_KEY, value: JSON.stringify(data) });
+  } catch (err) {
+    console.error('[cap storage] save error:', err.message, err.code);
+    throw err;
+  }
 }
 
 // ── Blob 操作（Capacitor Filesystem）──
@@ -61,7 +87,7 @@ export async function getBlob(key) {
 }
 
 export async function setBlob(key, blob) {
-  await _ensurePlugins();
+  await _ensureBlobDir();
   const base64 = await new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -90,7 +116,7 @@ export async function removeBlob(key) {
 }
 
 export async function listBlobKeys() {
-  await _ensurePlugins();
+  await _ensureBlobDir();
   try {
     const { files } = await _Filesystem.readdir({
       path: BLOB_DIR,
