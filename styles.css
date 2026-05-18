@@ -2692,6 +2692,22 @@ html.theme-dark .stats-card-row {
       border-bottom: 0.5px solid var(--border);
     }
 
+    /* 设置页 page 模式：fixed 定位绕过 sticky 链问题 */
+    html.settings-view .settings-subhead {
+      position: fixed;
+      top: var(--safe-top-inset, 0px);
+      left: 0;
+      right: 0;
+      width: 100%;
+      max-width: 430px;
+      margin: 0 auto;
+    }
+
+    /* 补偿 fixed header 从流中移除的 44px 高度 */
+    html.settings-view .settings-subhead + * {
+      margin-top: 44px;
+    }
+
     .settings-subhead-back {
       display: flex;
       align-items: center;
@@ -4063,7 +4079,7 @@ html.in-project .float-state-pills { display: flex; }
 
 /* ── 项目详情页 flex 布局：header 固定、底部栏固定、圈列表唯一滚动 ── */
 html.in-project #screen {
-  overflow: visible;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
