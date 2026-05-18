@@ -164,6 +164,7 @@ html.theme-dark {
       display: flex;
       flex-direction: column;
       height: 100%;
+      min-height: 100dvh;
       max-width: 430px;
       margin: 0 auto;
     }
@@ -2684,7 +2685,7 @@ html.theme-dark .stats-card-row {
       z-index: 25;
       flex-shrink: 0;
       height: 44px;
-      padding: 12px 4px 0;
+      padding: 0 4px;
       background: var(--glass-bg);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
@@ -4045,6 +4046,37 @@ html.immersive-mode .pal-btn small {
 .float-state-pills { display: none; }
 html.in-project .float-state-pills { display: flex; }
 
+/* ── 项目详情页 flex 布局：header 固定、底部栏固定、圈列表唯一滚动 ── */
+html.in-project #screen {
+  overflow-y: visible;
+  display: flex;
+  flex-direction: column;
+}
+
+html.in-project #screen-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+html.in-project .part-tabs-wrap {
+  flex-shrink: 0;
+}
+
+html.in-project .sticky-wrap {
+  position: static;
+  flex-shrink: 0;
+}
+
+html.in-project .rounds-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 10px;
+}
+
 .proj-setting-notation-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -4098,7 +4130,7 @@ html.in-project .float-state-pills { display: flex; }
 
 /* ── Stats page ── */
 .stats-page {
-  padding: 12px 16px calc(24px + env(safe-area-inset-bottom));
+  padding: calc(12px + max(env(safe-area-inset-top, 0px), var(--safe-top, 0px))) 16px calc(24px + env(safe-area-inset-bottom));
 }
 
 .stats-section {
