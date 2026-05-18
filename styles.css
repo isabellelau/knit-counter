@@ -2686,14 +2686,14 @@ html.theme-dark .stats-card-row {
     }
 
     .settings-subhead {
-      --nav-safe-top: max(env(safe-area-inset-top, 0px), var(--safe-top, 0px));
       display: flex;
       align-items: center;
       position: sticky;
       top: 0;
       z-index: 25;
-      height: calc(44px + var(--nav-safe-top));
-      padding: var(--nav-safe-top) 4px 0;
+      flex-shrink: 0;
+      height: 44px;
+      padding: 0 4px;
       background: var(--glass-bg);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
@@ -3107,7 +3107,7 @@ html.theme-dark .stats-card-row {
       flex-direction: column;
       align-items: center;
       text-align: center;
-      padding: calc(env(safe-area-inset-top) + 24px) 20px 20px;
+      padding: 24px 20px 20px;
     }
 
     .profile-header-avatar-wrap {
@@ -3740,12 +3740,22 @@ html.settings-view .nav-bar {
   display: none;
 }
 
-html.settings-view #screen-content {
-  padding-top: calc(env(safe-area-inset-top) + 16px);
+/* settings 使用 flex 布局撑满屏幕 */
+html.settings-view #screen {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: calc(18px + 56px + 16px + env(safe-area-inset-bottom));
 }
 
-html.settings-view #screen {
-  padding-bottom: calc(18px + 56px + 16px);
+html.settings-view #screen-content {
+  flex: 1;
+  padding-top: 0;
+}
+
+html.settings-view #screen-content > .settings-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
 }
 
 html.immersive-mode #screen-content {
