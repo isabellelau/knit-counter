@@ -10,8 +10,102 @@ import { removeProjectCover, getProfileAvatar, setProfileAvatar, removeProfileAv
 let _settingsStack = [];
 let _settingsMode = 'page'; // 'page' | 'sheet'
 
-// ── 左滑返回手势 ──
+// ── 左滑返回手势（iOS 跟手交互）──
 let _swipeHandlers = null;
+let _swipeState = null;
+
+function _getSwipeTarget() {
+  const root = _getContentRoot();
+  if (!root) return null;
+  // 子页模式的 wrapper div 或 settings-page
+  return root.firstElementChild;
+}
+
+function _resolveBackAction() {
+  // 返回当前手势对应的导航动作（不执行，仅返回描述）
+  if (state.currentTab !== 'settings' && _settingsMode !== 'sheet') return null;
+
+  if (_settingsStack.length > 0) {
+    return { type: 'subpage' };
+  } else if (_settingsMode === 'sheet') {
+    return { type: 'closeSheet' };
+  } else {
+    return { type: 'switchTab', tab: 'projects' };
+  }
+}
+
+function _executeBackAction() {
+  if (_settingsStack.length > 0) {
+    goBackFromSubPage();
+  } else if (_settingsMode === 'sheet') {
+    closeSheet();
+  } else {
+    window.switchTab && window.switchTab('projects');
+  }
+}
+
+function _initSwipeState(target) {
+  target.classList.add('page-swipe-back');
+  const root = _getContentRoot();
+  if (root) {
+    root.style.transition = 'none';
+    root.style.overflowX = 'visible';
+  }
+  // #screen overflow-x:hidden 会裁切平移后的内容，临时放开
+  const screen = document.getElementById('screen');
+  if (screen) screen.style.overflowX = 'visible';
+  return { target, root, screen, dx: 0, started: false };
+}
+
+function _cleanupSwipe() {
+  if (!_swipeState) return;
+  const { target, root, screen, _onTransitionEnd } = _swipeState;
+  if (_onTransitionEnd) {
+    target.removeEventListener('transitionend', _onTransitionEnd);
+  }
+  target.classList.remove('page-swipe-back', 'page-swipe-completing', 'page-swipe-cancelling');
+  target.style.transform = '';
+  target.style.willChange = '';
+  if (root) {
+    root.style.transition = '';
+    root.style.transform = '';
+    root.style.overflowX = '';
+  }
+  if (screen) screen.style.overflowX = '';
+  _swipeState = null;
+}
+
+function _commitSwipe() {
+  if (!_swipeState) return;
+  const { target } = _swipeState;
+  target.classList.remove('page-swipe-back');
+  target.classList.add('page-swipe-completing');
+  target.style.transform = 'translateX(100%)';
+
+  function onDone() {
+    _cleanupSwipe();
+    _executeBackAction();
+    _bindSwipeBack(); // 重新绑定到新页面
+  }
+  _swipeState._onTransitionEnd = onDone;
+  target.addEventListener('transitionend', onDone, { once: true });
+}
+
+function _cancelSwipe() {
+  if (!_swipeState) return;
+  const { target } = _swipeState;
+  target.classList.remove('page-swipe-back');
+  target.classList.add('page-swipe-cancelling');
+  target.style.transform = 'translateX(0)';
+
+  function onDone() {
+    _cleanupSwipe();
+  }
+  _swipeState._onTransitionEnd = onDone;
+  target.addEventListener('transitionend', onDone, { once: true });
+}
+
+let _rafId = 0;
 
 function _bindSwipeBack() {
   _unbindSwipeBack();
@@ -19,50 +113,103 @@ function _bindSwipeBack() {
   if (!root) return;
 
   let startX = 0, startY = 0;
+  let gestureConfirmed = false;
 
   function onTouchStart(e) {
+    // 清理之前可能残留的滑动状态
+    if (_swipeState) {
+      _cleanupSwipe();
+    }
     if (e.touches.length !== 1) { startX = 0; return; }
     startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
+    gestureConfirmed = false;
+  }
+
+  function onTouchMove(e) {
+    if (startX === 0 && startY === 0) return;
+    // 仅边缘手势（startX < 40px）
+    if (startX >= 40) return;
+
+    const dx = e.touches[0].clientX - startX;
+    const dy = Math.abs(e.touches[0].clientY - startY);
+
+    // 还未确认手势方向
+    if (!gestureConfirmed) {
+      if (dx < 8) return;          // 还没形成有效位移
+      if (dy > dx * 0.8) return;   // 纵向为主，不拦截
+      gestureConfirmed = true;
+    }
+
+    e.preventDefault();
+
+    // 第一次有效移动：初始化滑动状态
+    if (!_swipeState) {
+      const backAction = _resolveBackAction();
+      if (!backAction) return;
+      const target = _getSwipeTarget();
+      if (!target) return;
+      _swipeState = _initSwipeState(target);
+      target.style.willChange = 'transform';
+      _swipeState.started = true;
+    }
+
+    _swipeState.dx = dx;
+
+    if (!_rafId) {
+      _rafId = requestAnimationFrame(() => {
+        _rafId = 0;
+        if (!_swipeState) return;
+        const d = _swipeState.dx;
+        _swipeState.target.style.transform = `translateX(${d}px)`;
+        // 底层反向视差（仅 page 模式，sheet 模式不适用）
+        if (_settingsMode === 'page' && _swipeState.root) {
+          const progress = Math.min(1, d / window.innerWidth);
+          const scale = 0.95 + 0.05 * progress;
+          _swipeState.root.style.transform = `scale(${scale})`;
+        }
+      });
+    }
   }
 
   function onTouchEnd(e) {
-    if (startX === 0 && startY === 0) return;
-    const endX = e.changedTouches[0].clientX;
-    const endY = e.changedTouches[0].clientY;
-    const dx = endX - startX;
-    const dy = Math.abs(endY - startY);
+    startX = 0; startY = 0;
 
-    // 仅 settings 页生效
-    if (state.currentTab !== 'settings' && _settingsMode !== 'sheet') return;
+    if (!_swipeState || !_swipeState.started) return;
 
-    // 左边缘右滑：起点 X < 40px，水平位移 > 60px，横向手势
-    if (startX < 40 && dx > 60 && dy < dx) {
-      if (_settingsStack.length > 0) {
-        goBackFromSubPage();
-      } else if (_settingsMode === 'sheet') {
-        closeSheet();
-      } else {
-        window.switchTab && window.switchTab('projects');
-      }
+    const dx = _swipeState.dx;
+    const threshold = window.innerWidth * 0.3;
+
+    if (dx > threshold) {
+      _commitSwipe();
+    } else {
+      _cancelSwipe();
     }
+  }
 
-    startX = 0;
-    startY = 0;
+  function onTouchCancel() {
+    startX = 0; startY = 0;
+    if (_swipeState) _cancelSwipe();
   }
 
   root.addEventListener('touchstart', onTouchStart, { passive: true });
+  root.addEventListener('touchmove', onTouchMove, { passive: false });
   root.addEventListener('touchend', onTouchEnd, { passive: true });
+  root.addEventListener('touchcancel', onTouchCancel, { passive: true });
 
-  _swipeHandlers = { root, onTouchStart, onTouchEnd };
+  _swipeHandlers = { root, onTouchStart, onTouchMove, onTouchEnd, onTouchCancel };
 }
 
 function _unbindSwipeBack() {
   if (!_swipeHandlers) return;
-  const { root, onTouchStart, onTouchEnd } = _swipeHandlers;
+  const { root, onTouchStart, onTouchMove, onTouchEnd, onTouchCancel } = _swipeHandlers;
   root.removeEventListener('touchstart', onTouchStart);
+  root.removeEventListener('touchmove', onTouchMove);
   root.removeEventListener('touchend', onTouchEnd);
+  if (onTouchCancel) root.removeEventListener('touchcancel', onTouchCancel);
   _swipeHandlers = null;
+  if (_rafId) { cancelAnimationFrame(_rafId); _rafId = 0; }
+  _cleanupSwipe();
 }
 
 function _getSubPageTitle(key) {

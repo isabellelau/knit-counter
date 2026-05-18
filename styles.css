@@ -194,6 +194,20 @@ html.theme-dark {
     #screen.enter-forward { animation: slide-in-right .25s cubic-bezier(.25,.46,.45,.94) }
     #screen.enter-back    { animation: slide-in-left  .25s cubic-bezier(.25,.46,.45,.94) }
 
+/* ── iOS 跟手滑动返回 ── */
+.page-swipe-back {
+  transition: none !important;
+  box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+}
+.page-swipe-completing {
+  transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+}
+.page-swipe-cancelling {
+  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+}
+
 /* ===== Nav Bar ===== */
 .nav-bar {
   --nav-safe-top: max(env(safe-area-inset-top, 0px), var(--safe-top, 0px));
