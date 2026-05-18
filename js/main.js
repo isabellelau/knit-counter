@@ -378,6 +378,20 @@ if (savedTheme === 'morandi') {
 } else if (savedTheme === 'night') {
   html.classList.add('theme-dark');
 }
+
+// ── 安全区检测 ──
+// iOS WKWebView 中 env(safe-area-inset-top) 有时返回 0，用 JS 实测兜底
+function detectSafeArea() {
+  const el = document.createElement('div');
+  el.style.cssText = 'position:fixed;top:0;left:0;width:1px;padding-top:env(safe-area-inset-top);pointer-events:none;z-index:-1';
+  document.body.appendChild(el);
+  const insetTop = parseFloat(getComputedStyle(el).paddingTop) || 0;
+  document.body.removeChild(el);
+  document.documentElement.style.setProperty('--safe-top', insetTop + 'px');
+  window.__dbg && window.__dbg('safe-area-inset-top: ' + insetTop + 'px');
+}
+detectSafeArea();
+
 initOnboarding();
 window.__dbg('before loadData');
 await loadData();
