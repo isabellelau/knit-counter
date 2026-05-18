@@ -32,7 +32,7 @@
   --success-bg:    #EDF3F0;
 
   /* 布局 */
-  --hdr-h:         57px;
+  --hdr-h:         calc(44px + max(env(safe-area-inset-top, 0px), var(--safe-top, 0px)));
   --radius-sm:     8px;
   --radius-md:     12px;
   --radius-lg:     18px;
@@ -2680,11 +2680,11 @@ html.theme-dark .stats-card-row {
       display: flex;
       align-items: center;
       position: sticky;
-      top: 0;
+      top: var(--safe-top-inset, 0px);
       z-index: 25;
       flex-shrink: 0;
       height: 44px;
-      padding: 0 4px;
+      padding: 12px 4px 0;
       background: var(--glass-bg);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
@@ -2696,7 +2696,8 @@ html.theme-dark .stats-card-row {
       align-items: center;
       gap: 2px;
       padding: 0 6px;
-      height: 36px;
+      min-height: 44px;
+      min-width: 44px;
       border: none;
       background: none;
       color: var(--accent);
@@ -3733,8 +3734,10 @@ html.settings-view .nav-bar {
 
 /* settings 使用 flex 布局撑满屏幕 */
 html.settings-view #screen {
+  --safe-top-inset: max(env(safe-area-inset-top, 0px), var(--safe-top, 0px));
   display: flex;
   flex-direction: column;
+  padding-top: var(--safe-top-inset);
 }
 
 html.settings-view #screen-content {
@@ -4294,13 +4297,15 @@ html.in-project .float-state-pills { display: flex; }
   display: flex;
   align-items: center;
   gap: 4px;
+  min-height: 44px;
+  min-width: 44px;
   background: none;
   border: none;
   font-size: 16px;
   font-weight: 600;
   color: var(--accent);
   cursor: pointer;
-  padding: 8px 0 16px;
+  padding: 12px 0 16px;
   margin-bottom: 4px;
 }
 
