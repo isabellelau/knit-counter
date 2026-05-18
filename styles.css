@@ -3703,6 +3703,10 @@ html.settings-view #screen-content {
   padding-top: calc(env(safe-area-inset-top) + 16px);
 }
 
+html.settings-view #screen {
+  padding-bottom: calc(18px + 56px + 16px);
+}
+
 html.immersive-mode #screen-content {
   padding-top: calc(env(safe-area-inset-top) + 16px);
 }
