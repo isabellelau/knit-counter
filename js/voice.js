@@ -277,7 +277,7 @@ function saveMarkerDirect(roundId, idx, color) {
 
 export async function initRecognition() {
   if (window.Capacitor?.isNativePlatform()) {
-    const { SpeechRecognition } = await import('@capacitor-community/speech-recognition');
+    const { SpeechRecognition } = await import('@capgo/capacitor-speech-recognition');
 
     const permission = await SpeechRecognition.requestPermission();
     if (permission.speechRecognition !== 'granted') {

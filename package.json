@@ -2,5 +2,16 @@
   "type": "module",
   "scripts": {
     "test": "node tests/stitches.test.js"
+  },
+  "dependencies": {
+    "@capacitor/cli": "^8.3.4",
+    "@capacitor/core": "^8.3.4",
+    "@capacitor/filesystem": "^8.1.2",
+    "@capacitor/preferences": "^8.0.1",
+    "@capgo/capacitor-speech-recognition": "^8.1.2"
+  },
+  "devDependencies": {
+    "@capacitor/ios": "^8.3.4",
+    "typescript": "^6.0.3"
   }
 }
