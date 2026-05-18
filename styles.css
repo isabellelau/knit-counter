@@ -149,21 +149,14 @@ html.theme-dark {
     html,
     body {
       height: 100%;
-      height: -webkit-fill-available;
-      height: 100dvh;
       background-color: var(--bg);
       overscroll-behavior: none;
       -webkit-overscroll-behavior: none;
     }
 
-    html {
-      overflow: hidden;
-    }
-
     body {
       font-family: var(--font-stack);
       color: var(--text);
-      overflow: hidden;
     }
 
     /* ── App root ── */
@@ -171,8 +164,6 @@ html.theme-dark {
       display: flex;
       flex-direction: column;
       height: 100%;
-      height: -webkit-fill-available;
-      height: 100dvh;
       max-width: 430px;
       margin: 0 auto;
     }
@@ -2674,7 +2665,7 @@ html.theme-dark .stats-card-row {
     /* ── Settings sub-page ── */
     .settings-page {
       min-height: 100%;
-      overflow: hidden;
+      overflow-x: hidden;
     }
 
     .settings-page.forward {
@@ -3744,12 +3735,13 @@ html.settings-view .nav-bar {
 html.settings-view #screen {
   display: flex;
   flex-direction: column;
-  padding-bottom: calc(18px + 56px + 16px + env(safe-area-inset-bottom));
 }
 
 html.settings-view #screen-content {
   flex: 1;
   padding-top: 0;
+  /* 为浮动 tab bar 让路，防止最后一项被遮挡 */
+  padding-bottom: calc(80px + env(safe-area-inset-bottom));
 }
 
 html.settings-view #screen-content > .settings-page {
